@@ -881,7 +881,30 @@ object DownloadCenter {
 
     internal fun sanitize(name: String): String {
         val clean = name.replace(Regex("[\\\\/:*?\"<>|\\u0000-\\u001F]"), "_").trim().trim('.')
-        return clean.ifEmpty { "download" }.take(120)
+        return fitName(clean.ifEmpty { "download" })
+    }
+
+    /** Longest name, in UTF-8 bytes, we create; Android file systems allow 255, leaving room for " (123)". */
+    private const val MAX_NAME_BYTES = 200
+    private const val MAX_NAME_CHARS = 120
+
+    /**
+     * Shortens an over-long file name without losing its extension, so "very long title….mp4" stays playable.
+     * Limits both characters and UTF-8 bytes (a 120-character Chinese or emoji name is 360+ bytes, which the file
+     * system rejects), and never splits a surrogate pair.
+     */
+    internal fun fitName(name: String): String {
+        fun fits(s: String) = s.length <= MAX_NAME_CHARS && s.toByteArray(Charsets.UTF_8).size <= MAX_NAME_BYTES
+        if (fits(name)) return name
+        val dot = name.lastIndexOf('.')
+        val ext = if (dot > 0 && name.length - dot in 2..11 && name.substring(dot + 1).none { it.isWhitespace() }) name.substring(dot) else ""
+        var base = name.substring(0, name.length - ext.length)
+        while (base.isNotEmpty() && !fits(base + ext)) {
+            val cut = if (base.length >= 2 && Character.isLowSurrogate(base.last())) 2 else 1
+            base = base.dropLast(cut)
+        }
+        base = base.trimEnd().trimEnd('.')
+        return if (base.isEmpty()) "download$ext" else base + ext
     }
 
     private fun unique(dir: File, name: String): File {

@@ -55,5 +55,16 @@ class DownloadsTest {
         assertEquals("a_b_c.txt", DownloadCenter.sanitize("a/b\\\\c.txt").replace("__", "_"))
         assertEquals("download", DownloadCenter.sanitize("..."))
         assertTrue(DownloadCenter.sanitize("x".repeat(300)).length <= 120)
+        // Long names keep their extension and stay inside the file system's 255-byte limit.
+        val long = DownloadCenter.sanitize("x".repeat(300) + ".mp4")
+        assertTrue(long.endsWith(".mp4")); assertTrue(long.length <= 120)
+        val cjk = DownloadCenter.sanitize("视".repeat(150) + ".pdf")
+        assertTrue(cjk.endsWith(".pdf")); assertTrue(cjk.toByteArray(Charsets.UTF_8).size <= 200)
+        val emoji = DownloadCenter.sanitize("🐺".repeat(100) + ".jpg")
+        assertTrue(emoji.endsWith(".jpg")); assertTrue(emoji.toByteArray(Charsets.UTF_8).size <= 200)
+        assertFalse("no broken surrogate pair", emoji.removeSuffix(".jpg").last().isHighSurrogate())
+        assertEquals("short name.txt", DownloadCenter.sanitize("short name.txt"))
+        // A "dot" far from the end isn't an extension: plain truncation.
+        assertEquals(120, DownloadCenter.sanitize("v1.2 " + "y".repeat(300)).length)
     }
 }
