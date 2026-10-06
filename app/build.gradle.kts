@@ -72,8 +72,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // 2.3.8 shipped as versionCode 13; rebuilt releases must sit above it to install as an update.
-        versionCode = 15
-        versionName = "2.4.1"
+        versionCode = 16
+        versionName = "2.5.0"
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += beastAbi }
     }

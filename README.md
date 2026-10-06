@@ -12,7 +12,7 @@ class names, pref keys, `beast.db`, the realm context ids, the built-in extensio
 logins, settings and downloads carry over. The brand string lives in one place: the `brand` entity at the top of
 `app/src/main/res/values/strings.xml`.
 
-* Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.4.1 (versionCode 15)
+* Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.5.0 (versionCode 16)
 * Engine: `org.mozilla.geckoview:geckoview-<abi>:157.0.20260924084938` from https://maven.mozilla.org/maven2/
 * Ad blocking: uBlock Origin 1.75.0 (official AMO XPI, unpacked into `app/src/main/assets/extensions/ublock/`),
   installed as a built-in extension. Also uses GeckoView Enhanced Tracking Protection (Strict),
@@ -42,6 +42,10 @@ logins, settings and downloads carry over. The brand string lives in one place: 
   * SAMPLE-AES / Widevine / PlayReady / FairPlay HLS
   * any page using EME
   See `docs/media-sniffer.md`. JS tests: `node --test app/src/test/js/` (also run by `ExtensionJsTest`).
+* `assets/extensions/beast-siteprefs/` (2.5, v1.1.0) also does **Forced dark mode** (BETA; GeckoView has no
+  algorithmic darkening): `dark-core.js` holds the CSS filter and the "already dark?" check (node-tested), the
+  content script applies it at `document_start`, and the app pushes the switch and the per-site exceptions
+  (`site_prefs.force_dark_off`, beast.db v5) with `Engine.syncForceDark()`, like the zoom map.
 * Built-in extensions are reinstalled in place once after each app update (`installBuiltIn`) so these changes apply.
 
 ## Downloads
