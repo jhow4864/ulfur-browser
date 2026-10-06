@@ -35,7 +35,8 @@ import java.util.Locale
 /**
  * Settings → Backup & restore. Export: pick sections → unlock the vault (if passwords) → passphrase twice →
  * encrypt ([BackupCrypto]) → save via SAF. Import: open via SAF → passphrase (or plain password CSV) →
- * pick sections → unlock (if passwords) → merge ([BackupManager.apply]) → write the vault → summary.
+ * pick sections → passwords via [PasswordVault.importWithAuth] (one prompt if the vault is unlocked or new, two if
+ * it exists and is locked) → other sections ([BackupManager.apply]) → summary.
  *
  * Must be created while the fragment is being constructed (it registers activity-result launchers).
  */
@@ -254,23 +255,33 @@ class BackupUi(private val fragment: Fragment) {
             .setPositiveButton(R.string.backup_continue) { _, _ ->
                 var s = Sections(false, false, false, false, false)
                 items.forEachIndexed { i, it -> s = it.pick(s, checked[i]) }
-                if (s.logins && !p.logins.isNullOrEmpty() && !PasswordVault.isUnlocked()) {
-                    PasswordVault.unlock(activity) { ok, err -> if (!ok && err != null) toast(err); applyImport(p, s, fromCsv) }
-                } else applyImport(p, s, fromCsv)
+                if (s.logins && !p.logins.isNullOrEmpty()) {
+                    // Unlock (if needed) + merge + encrypted write with the fewest prompts the vault key allows.
+                    PasswordVault.importWithAuth(activity, p.logins) { out ->
+                        if (out.result == null && out.error != null) toast(out.error)
+                        applyImport(p, s.copy(logins = false), fromCsv, out)
+                    }
+                } else applyImport(p, s, fromCsv, null)
             }
             .setNegativeButton(android.R.string.cancel, null).show()
     }
 
-    private fun applyImport(p: BackupPayload, s: Sections, fromCsv: Boolean) {
+    /** Applies the non-password sections; [logins] is the already-finished password import (null = not selected). */
+    private fun applyImport(p: BackupPayload, s: Sections, fromCsv: Boolean, logins: PasswordVault.ImportOutcome?) {
         val ctx = fragment.requireContext().applicationContext
         val progress = progress(R.string.backup_importing)
         fragment.viewLifecycleOwner.lifecycleScope.launch {
-            val sum = withContext(Dispatchers.IO) { runCatching { BackupManager.apply(ctx, p, s) }.getOrNull() }
+            val base = withContext(Dispatchers.IO) { runCatching { BackupManager.apply(ctx, p, s) }.getOrNull() }
             progress.dismiss()
-            if (sum == null) { error(str(R.string.backup_read_failed)); return@launch }
-            if (sum.themeChanged) UiTheme.apply()
-            val show = { saved: Boolean -> showSummary(sum, saved, fromCsv) }
-            if (PasswordVault.needsPersistAuth()) PasswordVault.flushPending(activity) { ok -> show(ok) } else show(true)
+            if (base == null) { error(str(R.string.backup_read_failed)); return@launch }
+            if (base.themeChanged) UiTheme.apply()
+            val r = logins?.result
+            val sum = when {
+                logins == null -> base
+                r == null -> base.copy(loginsLocked = true)
+                else -> base.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped)
+            }
+            showSummary(sum, logins?.saved ?: true, fromCsv)
         }
     }
 

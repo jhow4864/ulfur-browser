@@ -122,7 +122,12 @@ object PasswordVault {
      * Unlock with strong biometric and a [BiometricPrompt.CryptoObject].
      * Creates an empty vault on first use.
      */
-    fun unlock(activity: FragmentActivity, onResult: (ok: Boolean, error: String?) -> Unit) {
+    fun unlock(
+        activity: FragmentActivity,
+        title: String = "Unlock password vault",
+        subtitle: String = "Saved logins are encrypted on this phone",
+        onResult: (ok: Boolean, error: String?) -> Unit,
+    ) {
         init(activity)
         enforceIdle()
         if (isOpen) { touch(); onResult(true, null); return }
@@ -178,7 +183,7 @@ object PasswordVault {
                     }
                 })
             prompt.authenticate(
-                cryptoPromptInfo("Unlock password vault", "Saved logins are encrypted on this phone"),
+                cryptoPromptInfo(title, subtitle),
                 BiometricPrompt.CryptoObject(cipher),
             )
         } catch (e: Exception) {
@@ -297,6 +302,7 @@ object PasswordVault {
      * Backup / CSV import: merges [incoming] into the unlocked vault ([BackupMerge.mergeLogins]: exact duplicates
      * skipped, same origin+username with a different password updated, the rest added). Like [save], the change is
      * queued; call [flushPending] afterwards to write it (biometric confirm). Null if the vault is locked.
+     * The backup UI uses [importWithAuth], which also handles unlocking with the fewest prompts.
      */
     fun importLogins(incoming: List<SavedLogin>): BackupMerge.LoginResult? {
         if (!isUnlocked()) return null
@@ -308,6 +314,122 @@ object PasswordVault {
             notifyListeners()
         }
         return result
+    }
+
+    /**
+     * Biometric prompts a login import needs. The v2 key is per-use (timeout 0): one prompt authorises exactly one
+     * Keystore operation, so a vault that exists and is locked needs one to decrypt it and one to write the merge.
+     */
+    enum class ImportAuth(val prompts: Int) {
+        /** Vault already unlocked: merge in memory, one prompt to write (none if nothing changed). */
+        SAVE_ONLY(1),
+        /** No vault on disk yet: nothing to decrypt, so one encrypt prompt creates it with the imported logins. */
+        CREATE_WITH_IMPORT(1),
+        /** Vault exists and is locked: unlock (decrypt) prompt, then save (encrypt) prompt. */
+        UNLOCK_THEN_SAVE(2),
+    }
+
+    fun importAuthPlan(open: Boolean, vaultFileExists: Boolean): ImportAuth = when {
+        open -> ImportAuth.SAVE_ONLY
+        !vaultFileExists -> ImportAuth.CREATE_WITH_IMPORT
+        else -> ImportAuth.UNLOCK_THEN_SAVE
+    }
+
+    /**
+     * Result of [importWithAuth]. [result] null = the vault couldn't be unlocked/created ([error] says why, null if
+     * the user cancelled). [saved] false with changes = merged in memory but not written yet (write prompt cancelled).
+     */
+    data class ImportOutcome(val result: BackupMerge.LoginResult?, val saved: Boolean, val error: String? = null)
+
+    /** Same rule [unlock] uses to decide between "decrypt the existing vault" and "create a new one". */
+    private fun vaultFileExists(): Boolean = File(app.filesDir, FILE).let { it.isFile && it.length() > VaultCrypto.IV_SIZE }
+
+    /**
+     * Backup / CSV import with as few biometric prompts as the key allows ([importAuthPlan]): one when the vault is
+     * unlocked or doesn't exist yet (fresh install restoring a backup), two when an existing vault is locked.
+     * Main thread only (BiometricPrompt).
+     */
+    fun importWithAuth(activity: FragmentActivity, incoming: List<SavedLogin>, onResult: (ImportOutcome) -> Unit) {
+        init(activity)
+        enforceIdle()
+        fun saveMerged(stepOf2: Boolean) {
+            val r = importLogins(incoming)
+            if (r == null) { onResult(ImportOutcome(null, false, "Vault locked")); return }
+            if (!needsPersistAuth()) { onResult(ImportOutcome(r, true)); return }
+            flushPending(
+                activity,
+                title = if (stepOf2) "Save imported passwords (2 of 2)" else "Save imported passwords",
+                subtitle = "Confirm to write them to your encrypted vault",
+            ) { ok -> onResult(ImportOutcome(r, ok)) }
+        }
+        when (importAuthPlan(isOpen, vaultFileExists())) {
+            ImportAuth.SAVE_ONLY -> saveMerged(stepOf2 = false)
+            ImportAuth.UNLOCK_THEN_SAVE -> unlock(
+                activity,
+                title = "Unlock password vault (1 of 2)",
+                subtitle = "Then confirm once more to save the imported passwords",
+            ) { ok, err ->
+                if (ok) saveMerged(stepOf2 = true) else onResult(ImportOutcome(null, false, err))
+            }
+            ImportAuth.CREATE_WITH_IMPORT -> createWithImport(activity, incoming, onResult)
+        }
+    }
+
+    /** [ImportAuth.CREATE_WITH_IMPORT]: one encrypt prompt writes a brand-new vault holding [incoming]. */
+    private fun createWithImport(activity: FragmentActivity, incoming: List<SavedLogin>, onResult: (ImportOutcome) -> Unit) {
+        val preview = BackupMerge.mergeLogins(emptyList(), incoming, ::normalizeOrigin)
+        if (preview.added == 0) { onResult(ImportOutcome(preview, true)); return } // nothing valid: no prompt, no vault
+        if (!canAuthenticate(activity)) {
+            onResult(ImportOutcome(null, false, "Set up a fingerprint or face unlock in Settings first")); return
+        }
+        try {
+            val cipher = VaultCrypto.cipherForEncrypt()
+            val prompt = BiometricPrompt(activity, ContextCompat.getMainExecutor(activity),
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        val c = result.cryptoObject?.cipher
+                        if (c == null) { onResult(ImportOutcome(null, false, "Crypto unlock failed")); return }
+                        onResult(completeImportWithEncryptCipher(c, incoming))
+                    }
+                    override fun onAuthenticationError(code: Int, errString: CharSequence) {
+                        val cancelled = code == BiometricPrompt.ERROR_USER_CANCELED ||
+                            code == BiometricPrompt.ERROR_NEGATIVE_BUTTON || code == BiometricPrompt.ERROR_CANCELED
+                        onResult(ImportOutcome(null, false, if (cancelled) null else errString.toString()))
+                    }
+                })
+            prompt.authenticate(
+                cryptoPromptInfo("Save imported passwords", "Creates your encrypted password vault on this phone"),
+                BiometricPrompt.CryptoObject(cipher),
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "import start failed: ${e.javaClass.simpleName}")
+            onResult(ImportOutcome(null, false, unrecoverableMessage(e) ?: "Couldn't create the vault"))
+        }
+    }
+
+    /**
+     * Finishes [ImportAuth.CREATE_WITH_IMPORT] with an authenticated encrypt [cipher]. Re-checks state, since the
+     * vault may have changed while the prompt was up:
+     * - unlocked meanwhile → merge into the full in-memory list and write that (nothing is lost);
+     * - a vault file appeared while still locked → refuse: we can't see its contents, so writing would replace them;
+     * - otherwise write a new vault with the imported logins and open it (like [unlock]'s create branch).
+     */
+    internal fun completeImportWithEncryptCipher(cipher: Cipher, incoming: List<SavedLogin>): ImportOutcome {
+        enforceIdle()
+        if (!isOpen && vaultFileExists()) return ImportOutcome(null, false, "The vault changed, try the import again")
+        val base = if (isOpen) unlocked else emptyList()
+        val r = BackupMerge.mergeLogins(base, incoming, ::normalizeOrigin)
+        return try {
+            persistWithCipher(cipher, r.merged)
+            unlocked = r.merged
+            isOpen = true
+            touch()
+            notifyListeners()
+            ImportOutcome(r, true)
+        } catch (e: Exception) {
+            Log.e(TAG, "import write failed: ${e.javaClass.simpleName}")
+            ImportOutcome(null, false, "Couldn't write the vault")
+        }
     }
 
     fun toGeckoArray(list: List<SavedLogin>): Array<Autocomplete.LoginEntry> =
@@ -345,7 +467,12 @@ object PasswordVault {
     /**
      * If a save happened while the encrypt key needed re-auth, prompt again to flush to disk.
      */
-    fun flushPending(activity: FragmentActivity, onDone: (Boolean) -> Unit) {
+    fun flushPending(
+        activity: FragmentActivity,
+        title: String = "Save password vault",
+        subtitle: String = "Confirm to write encrypted passwords",
+        onDone: (Boolean) -> Unit,
+    ) {
         if (!pendingPersist || !isUnlocked()) { onDone(true); return }
         try {
             val cipher = VaultCrypto.cipherForEncrypt()
@@ -363,7 +490,7 @@ object PasswordVault {
                     override fun onAuthenticationError(code: Int, errString: CharSequence) = onDone(false)
                 })
             prompt.authenticate(
-                cryptoPromptInfo("Save password vault", "Confirm to write encrypted passwords"),
+                cryptoPromptInfo(title, subtitle),
                 BiometricPrompt.CryptoObject(cipher),
             )
         } catch (e: Exception) {

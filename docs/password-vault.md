@@ -60,3 +60,18 @@ Keep credit-card / address delegates empty.
 - Reset vault: deletes Keystore key + `passwords.vault` / meta (recovery after fingerprint change)
 - Save prompt + fill sheet: Engineer's side
 - `markUsed` updates memory + meta only (no biometric); encrypted write on next save
+
+## Backup / CSV import prompts (2.4.1)
+`PasswordVault.importWithAuth(activity, logins) { outcome -> … }` merges imported logins with the fewest
+biometric prompts the per-use key allows (`importAuthPlan`):
+
+| Vault state | Prompts | Why |
+|---|---|---|
+| Unlocked | 1 (save) — 0 if nothing changed | merge in memory, one encrypt |
+| No vault file yet (fresh install restoring a backup) | 1 | nothing to decrypt: one encrypt prompt creates the vault with the imported logins and opens it |
+| Exists and locked | 2 (labelled "1 of 2" / "2 of 2") | decrypt the old blob + encrypt the merged blob are two Keystore operations; a per-use (timeout 0) auth token covers exactly one |
+
+Getting the locked case to one prompt would need a time-bound key (weaker, new alias) or an in-memory data key
+wrapped by the Keystore key (new on-disk format, and every later write would stop asking for a fingerprint), so it
+was left at two. If the vault is unlocked while the single "create" prompt is up, the import is merged into the full
+in-memory list; if a vault file appears while still locked, the write is refused rather than replacing data it can't read.
