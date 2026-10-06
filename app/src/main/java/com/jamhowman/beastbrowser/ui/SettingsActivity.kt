@@ -71,6 +71,7 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(requireContext(), DownloadsActivity::class.java)); true
             }
             findPreference<Preference>("clear_now")?.setOnPreferenceClickListener { confirmClear(); true }
+            findPreference<Preference>("check_updates")?.let { com.jamhowman.beastbrowser.update.Updater.bindPreference(this, it) }
             findPreference<Preference>("about")?.apply {
                 summary = "Version ${BuildConfig.VERSION_NAME} · GeckoView ${org.mozilla.geckoview.BuildConfig.MOZ_APP_VERSION}"
                 setOnPreferenceClickListener { showAbout(); true }
