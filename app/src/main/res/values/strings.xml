@@ -53,4 +53,8 @@
     <string name="ctrl_ram_cap">RAM limit</string>
     <string name="search_tabs">Search tabs</string>
     <string name="widget_speed_dial">Speed dial</string>
+
+    <!-- 2.3.7: Media Radar -->
+    <string name="media_radar">Media Radar</string>
+    <string name="media_radar_empty">No streams on this page</string>
 </resources>

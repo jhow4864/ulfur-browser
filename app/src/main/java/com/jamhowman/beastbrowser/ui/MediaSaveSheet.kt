@@ -18,14 +18,20 @@ import org.mozilla.geckoview.GeckoSession
 
 /** Bottom sheet listing detected videos for the current tab, with one-tap Save into Download Center. */
 object MediaSaveSheet {
-    fun show(activity: AppCompatActivity, session: GeckoSession, isPrivate: Boolean, pageUrl: String, accentColor: Int) {
+    /** @param onlyId 2.3.7: show just this stream (from Media Radar); falls back to all if it's gone. */
+    fun show(activity: AppCompatActivity, session: GeckoSession, isPrivate: Boolean, pageUrl: String, accentColor: Int, onlyId: String? = null) {
         DownloadCenter.init(activity)
-        val items = MediaSniffer.forSession(session)
+        val all = MediaSniffer.forSession(session)
+        val items = onlyId?.let { id -> all.filter { it.id == id }.ifEmpty { null } } ?: all
         val b = SheetMediaSaveBinding.inflate(activity.layoutInflater)
         val dialog = BottomSheetDialog(activity)
         dialog.setContentView(b.root)
 
-        b.mediaTitle.text = if (items.size == 1) "Save video" else "Save videos"
+        b.mediaTitle.text = when {
+            onlyId != null && items.size == 1 -> "Save stream"
+            items.size == 1 -> "Save video"
+            else -> "Save videos"
+        }
         b.mediaSubtitle.text = buildString {
             append(if (items.isEmpty()) "Nothing to save" else "${items.size} ${if (items.size == 1) "stream" else "streams"}")
             if (isPrivate) append(" · private (hidden vault)")

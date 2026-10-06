@@ -440,6 +440,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (old != null && old !== tab) {
             old.session.setActive(false)
             runCatching { runtime.webExtensionController.setTabActive(old.session, false) }
+            if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
         }
         current = tab
         if (geckoView.session !== tab.session) {
@@ -605,6 +606,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.shieldButton.setOnClickListener { showShields() }
         b.readerButton.setOnClickListener { toggleReader() }
         b.mediaButton.setOnClickListener { current?.session?.let { onMediaBadgeTapped(it) } }
+        b.mediaButton.setOnLongClickListener { current?.session?.let { openMediaRadar(it) }; true }
         MediaSniffer.addListener { session ->
             if (current?.session === session) runOnUiThread { updateMediaBadge() }
         }
@@ -729,6 +731,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             override fun handleOnBackPressed() {
                 when {
                     fullscreenTab != null -> fullscreenTab?.session?.exitFullScreen()
+                    MediaRadar.isShowing(b.radar) -> MediaRadar.hide(b.radar)
                     b.switcher.root.isVisible -> hideSwitcher()
                     b.findBar.isVisible -> closeFind()
                     b.suggestList.isVisible -> {
@@ -1104,6 +1107,12 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             DownloadCenter.activeCount.let { n ->
                 MenuItem(R.drawable.ic_download, if (n > 0) "Downloads ($n)" else "Downloads", n > 0) { openDownloads() }
             },
+            (onPage && MediaSniffer.hasMedia(t.session)).let { hasMedia ->
+                MenuItem(R.drawable.ic_download, getString(R.string.media_radar), hasMedia) {
+                    if (hasMedia) openMediaRadar(t.session)
+                    else Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
+                }
+            },
             MenuItem(R.drawable.ic_reader, "Reading list") { startActivity(Intent(this, ReadingListActivity::class.java)) },
             MenuItem(R.drawable.ic_dashboard, getString(R.string.beast_control)) { showBeastControl() },
             MenuItem(if (bookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
@@ -1314,6 +1323,16 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     fun onMediaBadgeTapped(session: org.mozilla.geckoview.GeckoSession) {
         val tab = tabs.firstOrNull { it.session === session } ?: current ?: return
         MediaSaveSheet.show(this, session, tab.isPrivate, tab.url, accent.color)
+    }
+
+    /** 2.3.7: Media Radar overlay (media badge long-press / menu). */
+    private fun openMediaRadar(session: org.mozilla.geckoview.GeckoSession) {
+        val tab = tabs.firstOrNull { it.session === session } ?: current ?: return
+        if (!MediaSniffer.hasMedia(session)) {
+            Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        MediaRadar.show(this, b.radar, session, tab.isPrivate, tab.url, accent.color, accent.onColor)
     }
 
     private fun updateMediaBadge() {
