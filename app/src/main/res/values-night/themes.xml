@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark chrome: keep light status/nav icons off. -->
+    <!-- Dark chrome: keep light status icons off (nav icons stay light because Base no longer sets windowLightNavigationBar). -->
     <style name="Theme.Beast" parent="Theme.Beast.Base">
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="colorPrimaryContainer">#3A0A18</item>
         <item name="colorOnPrimaryContainer">#FFD9DF</item>
         <item name="colorSecondaryContainer">#2E1820</item>
         <item name="colorOnSecondaryContainer">#FFD9DF</item>
         <item name="ulfurAccentText">#FF3C61</item><item name="ulfurSurfaceTint">#371924</item>
+    </style>
+
+    <!-- Sheets on dark chrome: the surface colour on every API level (the values/ black bar is for API 26 light mode). -->
+    <style name="ThemeOverlay.Beast.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Beast.BottomSheet</item>
+        <item name="android:navigationBarColor">@color/surface</item>
     </style>
 
     <!-- 2.8 preset overlays, dark tokens (must stay dark when applyStyle() runs in night mode). -->

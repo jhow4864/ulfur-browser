@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 27+: dark navigation bar icons on the light background (night mode uses values-night instead). -->
+    <style name="Theme.Beast" parent="Theme.Beast.Base">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <!-- API 27+: sheets get the light surface bar; their dark icons come from Theme.Beast above. -->
+    <style name="ThemeOverlay.Beast.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Beast.BottomSheet</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+    </style>
+</resources>
