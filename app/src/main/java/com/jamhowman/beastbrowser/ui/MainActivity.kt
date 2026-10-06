@@ -189,8 +189,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
     }
     private var lastBadge = -1
-    /** Badge colour role currently painted on shieldBadge (roadmap 10), so it is only rebuilt on change. */
-    private var shieldBadgeKey: Pair<ShieldBadge.Tint, Boolean>? = null
+    /**
+     * What shieldBadge is currently painted with (roadmap 10), so it is only rebuilt on change: colour role, gradient,
+     * and the palette it was resolved from (a theme, realm, private or light/dark change repaints it). null = repaint.
+     */
+    private var shieldBadgeKey: Triple<ShieldBadge.Tint, Boolean, ThemePalette>? = null
     /** Tracks UI_MODE_NIGHT_* so we recolour chrome when light/dark flips without recreate. */
     private var lastUiNightMask = Configuration.UI_MODE_NIGHT_UNDEFINED
     private var imeVisible = false
@@ -1026,17 +1029,20 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.shieldIcon.setImageResource(style.icon)
         b.shieldIcon.imageTintList = ColorStateList.valueOf(shieldColor(style.iconTint))
         b.shieldButton.contentDescription = getString(style.description, fmt(n))
-        val badgeKey = style.badgeTint to style.badgeGradient
+        val badgeKey = Triple(style.badgeTint, style.badgeGradient, accent)
         if (badgeKey != shieldBadgeKey) {
             shieldBadgeKey = badgeKey
             val c = shieldColor(style.badgeTint)
+            // Many: the theme's own accent gradient from the same palette as the rest of the toolbar (2.8).
+            val gradient = if (style.badgeGradient) ShieldBadge.gradient(accent) else null
             (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let {
-                if (style.badgeGradient) {
+                if (gradient != null) {
                     it.orientation = GradientDrawable.Orientation.TL_BR
-                    it.colors = intArrayOf(c, accent.accentEnd)
+                    it.colors = gradient
                 } else it.setColor(c)
                 b.shieldBadge.background = it
             }
+            // onColor reads on the solid accent and across its gradient (SPEC onAccent).
             b.shieldBadge.setTextColor(if (style.badgeTint == ShieldBadge.Tint.ACCENT) accent.onColor else inkOn(c))
         }
         b.shieldBadge.isVisible = style.showCount
@@ -1105,9 +1111,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.swipe.setColorSchemeColors(c)
         b.btnMenu.imageTintList = ColorStateList.valueOf(c)
         b.menuDownloadRing.setIndicatorColor(c)
-        (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let { it.setColor(c); b.shieldBadge.background = it }
-        b.shieldBadge.setTextColor(accent.onColor)
-        shieldBadgeKey = ShieldBadge.Tint.ACCENT to false
+        shieldBadgeKey = null // updateShield (via refreshUi below) repaints the badge, gradient included, from the new palette
         (getDrawable(R.drawable.bg_tab_count)!!.mutate() as GradientDrawable).let {
             it.setStroke(dp(this, 2), c); b.tabCount.background = it
         }

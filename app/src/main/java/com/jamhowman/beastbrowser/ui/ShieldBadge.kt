@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.ShieldLevel
-import com.jamhowman.beastbrowser.data.Accent
+import com.jamhowman.beastbrowser.data.ThemePalette
 
 /**
  * Roadmap 10: how the toolbar shield looks for a [ShieldLevel]. The only place that maps shield state to
@@ -12,7 +12,10 @@ import com.jamhowman.beastbrowser.data.Accent
  * state logic in [ShieldLevel] or the wiring in MainActivity.updateShield().
  */
 object ShieldBadge {
-    /** Colour roles; MainActivity resolves them (accent of the current realm, R.color.text_hint, R.color.warn). */
+    /**
+     * Colour roles; MainActivity resolves them: ACCENT = the toolbar's [ThemePalette] (2.8: the realm's preset for
+     * light/dark, plus the private-mode override when one is set), MUTED = R.color.text_hint, WARN = R.color.warn.
+     */
     enum class Tint { ACCENT, MUTED, WARN }
 
     data class Style(
@@ -24,7 +27,7 @@ object ShieldBadge {
         val badgeTint: Tint,
         /** Spoken description, formatted with the blocked count. */
         @StringRes val description: Int,
-        /** Paint the badge as a diagonal gradient from [badgeTint] to [gradientEnd] instead of a flat fill. */
+        /** Paint the badge with the theme's accent gradient ([gradient]) instead of a flat [badgeTint] fill. */
         val badgeGradient: Boolean = false,
     )
 
@@ -42,14 +45,10 @@ object ShieldBadge {
     }
 
     /**
-     * Second gradient stop for each accent, taken from the 2.8 presets' accentEnd
-     * (branding/ulfur/mockups/themes.json, matched on legacyKey). Swap for the theme's own accentEnd once item 18 lands.
+     * Stops of the 'many' badge gradient (painted top-left to bottom-right, the spec's 135°): the active theme's own
+     * accentStart → accentEnd from [palette] (roadmap 18), so it follows the chosen preset and re-tints with it.
+     * Null when the palette doesn't allow text on its gradient (Ghost, SPEC "textFill": solid): the badge carries the
+     * count, so it falls back to the flat solid accent, like every other text-bearing fill in that palette.
      */
-    fun gradientEnd(accent: Accent): Int = when (accent) {
-        Accent.RED -> 0xFFE040FB.toInt()
-        Accent.CYAN -> 0xFF3D7BFF.toInt()
-        Accent.GREEN -> 0xFFC8FF2E.toInt()
-        Accent.ORANGE -> 0xFFFF4E1A.toInt()
-        Accent.PURPLE -> 0xFF5A4BFF.toInt()
-    }
+    fun gradient(palette: ThemePalette): IntArray? = if (palette.gradientCarriesText) palette.gradient else null
 }
