@@ -50,7 +50,7 @@ class TrackerTallyDb private constructor(context: Context) : SQLiteOpenHelper(co
             pending.merge(Key(day, site, category), count, Long::plus)
             if (!flushScheduled) {
                 flushScheduled = true
-                io.schedule({ runCatching { flush() } }, FLUSH_DELAY_MS, TimeUnit.MILLISECONDS)
+                io.schedule(Runnable { runCatching { flush() } }, FLUSH_DELAY_MS, TimeUnit.MILLISECONDS)
             }
         }
     }
