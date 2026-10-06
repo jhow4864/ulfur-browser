@@ -56,8 +56,10 @@ import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
 import com.jamhowman.beastbrowser.browser.UrlUtils
 import com.jamhowman.beastbrowser.data.Accent
+import com.jamhowman.beastbrowser.data.BeastControl
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.TabGroup
 import com.jamhowman.beastbrowser.search.SearchSuggest
 import com.jamhowman.beastbrowser.search.SuggestItem
 import com.jamhowman.beastbrowser.search.SuggestKind
@@ -66,6 +68,8 @@ import com.jamhowman.beastbrowser.passwords.PasswordVault
 import com.jamhowman.beastbrowser.databinding.ActivityMainBinding
 import com.jamhowman.beastbrowser.databinding.DialogAddTileBinding
 import com.jamhowman.beastbrowser.databinding.ItemMenuBinding
+import com.jamhowman.beastbrowser.databinding.ItemTabGroupPillBinding
+import com.jamhowman.beastbrowser.databinding.SheetBeastControlBinding
 import com.jamhowman.beastbrowser.databinding.SheetMenuBinding
 import com.jamhowman.beastbrowser.databinding.SheetShieldsBinding
 import com.jamhowman.beastbrowser.util.Domains
@@ -73,6 +77,7 @@ import com.jamhowman.beastbrowser.downloads.DownloadCenter
 import com.jamhowman.beastbrowser.media.MediaSniffer
 import com.jamhowman.beastbrowser.browser.HelperSessions
 import com.jamhowman.beastbrowser.reader.ReaderMode
+import com.jamhowman.beastbrowser.widget.SpeedDialWidget
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -114,6 +119,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private var nextId = 1L
     private var accent = Accent.RED
     private var switcherPrivate = false
+    /** Tab switcher search text (2.3.5); matches title, URL or group name. */
+    private var switcherQuery = ""
+    /** Tab switcher group filter ([TabGroup.id]); null = All. */
+    private var switcherGroupFilter: String? = null
     private var fullscreenTab: Tab? = null
     private var lastBadge = -1
     /** Tracks UI_MODE_NIGHT_* so we recolour chrome when light/dark flips without recreate. */
@@ -517,9 +526,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
 
     private fun saveTabs() {
-        if (!Prefs.restoreTabs || Prefs.clearOnExit) { Prefs.savedTabs = ""; return }
+        if (!Prefs.restoreTabs || Prefs.clearOnExit) { Prefs.savedTabs = ""; Prefs.savedTabGroups = ""; return }
         val normal = tabs.filter { !it.isPrivate }
         Prefs.savedTabs = normal.joinToString("\n") { if (it.showingHome) UrlUtils.HOME else ReaderMode.originalUrl(it.url) ?: it.url }
+        Prefs.savedTabGroups = normal.joinToString("\n") { it.groupId.orEmpty() }
         Prefs.savedTabIndex = normal.indexOf(current).coerceAtLeast(0)
     }
 
@@ -527,7 +537,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (!Prefs.restoreTabs || Prefs.clearOnExit) return
         val urls = Prefs.savedTabs.split('\n').filter { it.isNotBlank() }
         if (urls.isEmpty()) return
-        urls.forEach { newTab(it, select = false, lazy = true) }
+        val groups = Prefs.savedTabGroups.split('\n')
+        urls.forEachIndexed { i, url ->
+            newTab(url, select = false, lazy = true).groupId = groups.getOrNull(i)?.takeIf { it.isNotBlank() }
+        }
         tabs.getOrNull(Prefs.savedTabIndex)?.let { selectTab(it) }
     }
 
@@ -678,6 +691,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 MaterialAlertDialogBuilder(this).setTitle(tile.title).setMessage(tile.url)
                     .setPositiveButton("Remove") { _, _ ->
                         tileAdapter.tiles.remove(tile); SpeedDialStore.save(tileAdapter.tiles); tileAdapter.notifyDataSetChanged()
+                        SpeedDialWidget.refreshAll(this)
                     }
                     .setNeutralButton("Open in new tab") { _, _ -> newTab(tile.url) }
                     .setNegativeButton("Cancel", null).show()
@@ -698,6 +712,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 val name = d.tileName.text?.toString()?.trim().takeUnless { it.isNullOrEmpty() }
                     ?: Domains.display(UrlUtils.host(full)).substringBefore('.').replaceFirstChar { it.uppercase() }
                 tileAdapter.tiles.add(Tile(name, full)); SpeedDialStore.save(tileAdapter.tiles); tileAdapter.notifyDataSetChanged()
+                SpeedDialWidget.refreshAll(this)
                 snack("Added $name to Speed Dial")
             }
             .setNegativeButton("Cancel", null).show()
@@ -879,7 +894,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun setupSwitcher() {
         tabAdapter = TabCardAdapter(
             onSelect = { tab -> selectTab(tab); hideSwitcher() },
-            onClose = { tab -> closeTab(tab) })
+            onClose = { tab -> closeTab(tab) },
+            onGroup = { tab -> pickTabGroup(tab) })
         val sw = b.switcher
         sw.tabGrid.layoutManager = GridLayoutManager(this, 2)
         sw.tabGrid.adapter = tabAdapter
@@ -900,6 +916,52 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             tabs.filter { it.isPrivate == switcherPrivate }.forEach { closeTab(it) }
             if (switcherPrivate) hideSwitcher()
         }
+        sw.tabSearch.tabSearchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                switcherQuery = s?.toString().orEmpty().trim()
+                refreshSwitcher()
+            }
+        })
+        buildTabGroupPills()
+    }
+
+    /** "All" + one pill per [TabGroup] in its accent; the active filter is filled. */
+    private fun buildTabGroupPills() {
+        val strip = b.switcher.tabGroupStrip
+        strip.removeAllViews()
+        fun addPill(id: String?, label: String, color: Int) {
+            val pill = ItemTabGroupPillBinding.inflate(layoutInflater, strip, false)
+            pill.tabGroupName.text = label
+            pill.tabGroupName.setTextColor(color)
+            pill.tabGroupPill.strokeColor = color
+            pill.tabGroupPill.setCardBackgroundColor(
+                if (switcherGroupFilter == id) ColorStateList.valueOf((color and 0x00FFFFFF) or 0x33000000)
+                else ColorStateList.valueOf(getColor(R.color.surface2))
+            )
+            pill.root.setOnClickListener { switcherGroupFilter = id; buildTabGroupPills(); refreshSwitcher() }
+            strip.addView(pill.root)
+        }
+        addPill(null, getString(R.string.folder_all), accent.color)
+        TabGroup.entries.forEach { addPill(it.id, getString(it.labelRes), it.accent.color) }
+    }
+
+    /** Long-press a tab card → "Move to group" ("All" = no group). Groups are saved with the session. */
+    private fun pickTabGroup(tab: Tab) {
+        val choices: List<Pair<String?, String>> =
+            listOf<Pair<String?, String>>(null to getString(R.string.folder_all)) +
+                TabGroup.entries.map { it.id to getString(it.labelRes) }
+        val checked = choices.indexOfFirst { it.first == tab.groupId }.coerceAtLeast(0)
+        MaterialAlertDialogBuilder(this).setTitle("Move to group")
+            .setSingleChoiceItems(choices.map { it.second }.toTypedArray(), checked) { d, which ->
+                tab.groupId = choices[which].first
+                d.dismiss()
+                saveTabs()
+                buildTabGroupPills()
+                refreshSwitcher()
+            }
+            .setNegativeButton(android.R.string.cancel, null).show()
     }
 
     private fun showSwitcher() {
@@ -907,6 +969,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         current?.let { captureThumbnail(it) }
         switcherPrivate = current?.isPrivate == true
         b.switcher.switcherMode.check(if (switcherPrivate) R.id.modePrivate else R.id.modeNormal)
+        if (b.switcher.tabSearch.tabSearchInput.text?.toString() != switcherQuery) {
+            b.switcher.tabSearch.tabSearchInput.setText(switcherQuery)
+        }
+        buildTabGroupPills()
         refreshSwitcher()
         val root = b.switcher.root
         root.alpha = 0f; root.scaleX = 0.96f; root.scaleY = 0.96f
@@ -923,7 +989,16 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
 
     private fun refreshSwitcher() {
-        val items = tabs.filter { it.isPrivate == switcherPrivate }
+        val q = switcherQuery.lowercase(Locale.ROOT)
+        val items = tabs
+            .filter { it.isPrivate == switcherPrivate }
+            .filter { switcherGroupFilter == null || it.groupId == switcherGroupFilter }
+            .filter { t ->
+                q.isEmpty() ||
+                    t.displayTitle.lowercase(Locale.ROOT).contains(q) ||
+                    t.url.lowercase(Locale.ROOT).contains(q) ||
+                    TabGroup.from(t.groupId)?.let { getString(it.labelRes).lowercase(Locale.ROOT).contains(q) } == true
+            }
         tabAdapter.items = items
         tabAdapter.currentId = current?.id ?: -1
         tabAdapter.notifyDataSetChanged()
@@ -1030,13 +1105,14 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 MenuItem(R.drawable.ic_download, if (n > 0) "Downloads ($n)" else "Downloads", n > 0) { openDownloads() }
             },
             MenuItem(R.drawable.ic_reader, "Reading list") { startActivity(Intent(this, ReadingListActivity::class.java)) },
+            MenuItem(R.drawable.ic_dashboard, getString(R.string.beast_control)) { showBeastControl() },
             MenuItem(if (bookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
                 if (bookmarked) "Bookmarked" else "Bookmark", bookmarked) { toggleBookmark(t) },
             MenuItem(R.drawable.ic_share, "Share") { share(t) },
             MenuItem(R.drawable.ic_find, "Find in page") { openFind() },
             MenuItem(R.drawable.ic_desktop, "Desktop site", t.desktopMode) { toggleDesktop(t) },
             MenuItem(R.drawable.ic_up, zoomLabel(t), t.zoomPercent != 100) { showZoom(t) },
-            MenuItem(R.drawable.ic_dashboard, "Add to Speed Dial") {
+            MenuItem(R.drawable.ic_star, "Add to Speed Dial") {
                 if (onPage) showAddTile(t.title, t.url) else showAddTile(null, null)
             },
             MenuItem(R.drawable.ic_settings, "Settings") { settingsLauncher.launch(Intent(this, SettingsActivity::class.java)) },
@@ -1159,6 +1235,48 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             { runOnUiThread { t.translated = false; t.translateDismissed = true; updateTranslateChip() } },
             { runOnUiThread { t.translateDismissed = true; updateTranslateChip() } },
         )
+    }
+
+    // ======================================================================= Beast Control (2.3.5)
+
+    /**
+     * Live CPU / RAM / NET for the app, refreshed every 1.5 s, plus three limit sliders.
+     * The limits are soft: going over one only turns its figure the warning colour.
+     */
+    private fun showBeastControl() {
+        val dialog = BottomSheetDialog(this)
+        val s = SheetBeastControlBinding.inflate(layoutInflater)
+        s.cpuCap.value = BeastControl.cpuCap.toFloat()
+        s.ramCap.value = BeastControl.ramCap.toFloat()
+        s.netCap.value = BeastControl.netCap.toFloat()
+        fun paint() {
+            val snap = BeastControl.snapshot(this)
+            BeastControl.applySoftHints(snap)
+            val ok = accent.color
+            val warn = getColor(R.color.warn)
+            s.ctrlCpu.text = BeastControl.formatCpu(snap.cpuPercent)
+            s.ctrlRam.text = BeastControl.formatRam(snap.ramBytes)
+            s.ctrlNet.text = BeastControl.formatNet(snap.netBytes)
+            s.ctrlCpu.setTextColor(if (snap.cpuOverSoft) warn else ok)
+            s.ctrlRam.setTextColor(if (snap.ramOverSoft) warn else ok)
+            s.ctrlNet.setTextColor(if (snap.netOverSoft) warn else ok)
+        }
+        paint()
+        val ticker = object : Runnable {
+            override fun run() {
+                if (!dialog.isShowing) return
+                paint()
+                s.root.postDelayed(this, 1500)
+            }
+        }
+        s.root.postDelayed(ticker, 1500)
+        s.cpuCap.addOnChangeListener { _, v, fromUser -> if (fromUser) { BeastControl.cpuCap = v.toInt(); paint() } }
+        s.ramCap.addOnChangeListener { _, v, fromUser -> if (fromUser) { BeastControl.ramCap = v.toInt(); paint() } }
+        s.netCap.addOnChangeListener { _, v, fromUser -> if (fromUser) { BeastControl.netCap = v.toInt(); paint() } }
+        dialog.setOnDismissListener { s.root.removeCallbacks(ticker) }
+        dialog.setContentView(s.root)
+        dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        dialog.show()
     }
 
     // ======================================================================= Reader view

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:paddingTop="10dp"
+    android:paddingBottom="24dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
+    <View
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_sheet_handle"
+        android:layout_width="36dp"
+        android:layout_height="4dp" />
+    <TextView
+        android:textSize="18sp"
+        android:textColor="@color/text_primary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/beast_control"
+        android:fontFamily="sans-serif-medium" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:background="@drawable/bg_card"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp">
+        <LinearLayout
+            android:gravity="center"
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <TextView android:id="@+id/ctrlCpu" style="@style/BeastStatValue" />
+            <TextView android:text="@string/ctrl_cpu" style="@style/BeastStatLabel" />
+        </LinearLayout>
+        <LinearLayout
+            android:gravity="center"
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <TextView android:id="@+id/ctrlRam" style="@style/BeastStatValue" />
+            <TextView android:text="@string/ctrl_ram" style="@style/BeastStatLabel" />
+        </LinearLayout>
+        <LinearLayout
+            android:gravity="center"
+            android:orientation="vertical"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <TextView android:id="@+id/ctrlNet" style="@style/BeastStatValue" />
+            <TextView android:text="@string/ctrl_net" style="@style/BeastStatLabel" />
+        </LinearLayout>
+    </LinearLayout>
+    <TextView
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/ctrl_cpu_cap"
+        android:textAllCaps="true"
+        android:letterSpacing="0.06" />
+    <com.google.android.material.slider.Slider
+        android:value="100"
+        android:id="@+id/cpuCap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="5"
+        android:valueFrom="25"
+        android:valueTo="100"
+        app:thumbColor="?attr/colorPrimary"
+        app:trackColorActive="?attr/colorPrimary"
+        app:trackColorInactive="@color/track_muted" />
+    <TextView
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ctrl_ram_cap"
+        android:textAllCaps="true"
+        android:letterSpacing="0.06" />
+    <com.google.android.material.slider.Slider
+        android:value="100"
+        android:id="@+id/ramCap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="5"
+        android:valueFrom="25"
+        android:valueTo="100"
+        app:thumbColor="?attr/colorPrimary"
+        app:trackColorActive="?attr/colorPrimary"
+        app:trackColorInactive="@color/track_muted" />
+    <TextView
+        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/ctrl_net_cap"
+        android:textAllCaps="true"
+        android:letterSpacing="0.06" />
+    <com.google.android.material.slider.Slider
+        android:value="100"
+        android:id="@+id/netCap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:stepSize="5"
+        android:valueFrom="25"
+        android:valueTo="100"
+        app:thumbColor="?attr/colorPrimary"
+        app:trackColorActive="?attr/colorPrimary"
+        app:trackColorInactive="@color/track_muted" />
+</LinearLayout>

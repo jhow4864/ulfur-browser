@@ -17,6 +17,8 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession) {
     /** Page zoom percent for this tab (100 = default). Remembered per host in BrowserDb. */
     var zoomPercent = 100
     var parentId: Long? = null
+    /** 2.3.5: [com.jamhowman.beastbrowser.data.TabGroup] id, or null. */
+    var groupId: String? = null
     var pendingUrl: String? = null
     var canGoBack = false
     var canGoForward = false

@@ -6,11 +6,14 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.Tab
+import com.jamhowman.beastbrowser.data.TabGroup
 import com.jamhowman.beastbrowser.databinding.ItemTabCardBinding
 
 class TabCardAdapter(
     private val onSelect: (Tab) -> Unit,
     private val onClose: (Tab) -> Unit,
+    /** Long-press → "Move to group" (2.3.5). */
+    private val onGroup: (Tab) -> Unit = {},
 ) : RecyclerView.Adapter<TabCardAdapter.VH>() {
 
     var items: List<Tab> = emptyList()
@@ -41,7 +44,11 @@ class TabCardAdapter(
         h.b.placeholder.isVisible = thumb == null
         h.b.placeholder.text = tab.displayTitle.firstOrNull()?.uppercase() ?: "B"
         h.b.placeholder.setTextColor(accent)
+        val group = TabGroup.from(tab.groupId)
+        h.b.groupStrip.isVisible = group != null
+        if (group != null) h.b.groupStrip.setBackgroundColor(group.accent.color)
         h.b.root.setOnClickListener { onSelect(tab) }
+        h.b.root.setOnLongClickListener { onGroup(tab); true }
         h.b.close.setOnClickListener { onClose(tab) }
     }
 }

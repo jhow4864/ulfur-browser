@@ -42,4 +42,15 @@
     <string name="translate_page">Translate page · %1$s</string>
     <string name="translate_show_original">Show original</string>
     <string name="use_this">Use this</string>
+
+    <!-- 2.3.5: Beast Control, tab search, Speed Dial widget -->
+    <string name="beast_control">Beast Control</string>
+    <string name="ctrl_cpu">CPU</string>
+    <string name="ctrl_cpu_cap">CPU limit</string>
+    <string name="ctrl_net">NET</string>
+    <string name="ctrl_net_cap">Network limit</string>
+    <string name="ctrl_ram">RAM</string>
+    <string name="ctrl_ram_cap">RAM limit</string>
+    <string name="search_tabs">Search tabs</string>
+    <string name="widget_speed_dial">Speed dial</string>
 </resources>

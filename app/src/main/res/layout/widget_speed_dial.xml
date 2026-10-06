@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:id="@+id/widgetRoot"
+    android:background="@drawable/bg_card"
+    android:padding="10dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:textSize="11sp"
+        android:textColor="@color/text_secondary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/widget_speed_dial"
+        android:textAllCaps="true"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.06" />
+    <GridLayout
+        android:id="@+id/widgetGrid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:rowCount="2"
+        android:columnCount="2"
+        android:useDefaultMargins="true">
+        <TextView
+            android:textSize="14sp"
+            android:textColor="@color/gx_red"
+            android:gravity="center"
+            android:id="@+id/tile0"
+            android:background="@drawable/bg_card"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fontFamily="sans-serif-black"
+            android:layout_rowWeight="1"
+            android:layout_columnWeight="1" />
+        <TextView
+            android:textSize="14sp"
+            android:textColor="@color/gx_red"
+            android:gravity="center"
+            android:id="@+id/tile1"
+            android:background="@drawable/bg_card"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fontFamily="sans-serif-black"
+            android:layout_rowWeight="1"
+            android:layout_columnWeight="1" />
+        <TextView
+            android:textSize="14sp"
+            android:textColor="@color/gx_red"
+            android:gravity="center"
+            android:id="@+id/tile2"
+            android:background="@drawable/bg_card"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fontFamily="sans-serif-black"
+            android:layout_rowWeight="1"
+            android:layout_columnWeight="1" />
+        <TextView
+            android:textSize="14sp"
+            android:textColor="@color/gx_red"
+            android:gravity="center"
+            android:id="@+id/tile3"
+            android:background="@drawable/bg_card"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:fontFamily="sans-serif-black"
+            android:layout_rowWeight="1"
+            android:layout_columnWeight="1" />
+    </GridLayout>
+</LinearLayout>

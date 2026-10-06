@@ -43,6 +43,10 @@ object Prefs {
     var savedTabs: String
         get() = sp.getString("saved_tabs", "") ?: ""
         set(v) = sp.edit { putString("saved_tabs", v) }
+    /** 2.3.5: [TabGroup] id per saved tab (newline-joined, parallel to [savedTabs]; "" = no group). */
+    var savedTabGroups: String
+        get() = sp.getString("saved_tab_groups", "") ?: ""
+        set(v) = sp.edit { putString("saved_tab_groups", v) }
     var savedTabIndex: Int
         get() = sp.getInt("saved_tab_index", 0)
         set(v) = sp.edit { putInt("saved_tab_index", v) }
