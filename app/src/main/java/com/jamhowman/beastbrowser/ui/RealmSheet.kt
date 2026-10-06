@@ -73,7 +73,7 @@ object RealmSheet {
 
         root.addView(TextView(activity).apply {
             text = when (current) {
-                Realm.PLAY -> "Play uses Beast's original cookie jar (your existing logins). Shared across realms: uBlock filters, bookmarks, history (not Ghost), saved passwords, downloads."
+                Realm.PLAY -> activity.getString(R.string.realm_note_play)
                 Realm.WORK -> "Work has its own persistent jar. Shared across realms: uBlock filters, bookmarks, history, saved passwords, downloads."
                 Realm.GHOST -> "Ghost is private browsing in its own jar: no history, nothing on disk, wiped when the last Ghost tab closes."
             }

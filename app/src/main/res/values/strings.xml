@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Brand name: defined ONCE in the entity below and used as &brand; in every user-visible string
+  (layouts and preferences.xml reference these strings). A future rename is this one line.
+  Code-side identifiers (package, classes, pref keys, beast.db, extension ids, contextIds) stay "beast".
+-->
+<!DOCTYPE resources [
+    <!ENTITY brand "Ulfur">
+]>
 <resources>
-    <string name="app_name">Beast Browser</string>
+    <string name="app_name">&brand;</string>
     <string name="search_hint">Search or enter address</string>
     <string name="search_hint_private">Private search or address</string>
     <string name="back">Back</string>
@@ -30,7 +38,7 @@
     <string name="empty_library_title">No bookmarks yet</string>
     <string name="empty_tabs_body">Open a page or tap + to start a new tab.</string>
     <string name="empty_tabs_title">No open tabs</string>
-    <string name="empty_vault_body">When you sign in, Beast will offer to save it.</string>
+    <string name="empty_vault_body">When you sign in, &brand; will offer to save it.</string>
     <string name="empty_vault_title">No saved passwords</string>
     <string name="folder_all">All</string>
     <string name="folder_other">Other</string>
@@ -43,8 +51,8 @@
     <string name="translate_show_original">Show original</string>
     <string name="use_this">Use this</string>
 
-    <!-- 2.3.5: Beast Control, tab search, Speed Dial widget -->
-    <string name="beast_control">Beast Control</string>
+    <!-- 2.3.5: Control sheet, tab search, Speed Dial widget (resource name kept) -->
+    <string name="beast_control">&brand; Control</string>
     <string name="ctrl_cpu">CPU</string>
     <string name="ctrl_cpu_cap">CPU limit</string>
     <string name="ctrl_net">NET</string>
@@ -61,4 +69,23 @@
     <!-- 2.3.8: Realms -->
     <string name="realms">Realms</string>
     <string name="search_hint_ghost">Ghost search or address</string>
+
+    <!-- Ulfur rebrand: user-visible text that names the app (all via &brand;) -->
+    <string name="shields_brand">&brand; Shields</string>
+    <string name="shields_up">&brand; Shields are up</string>
+    <string name="about_title">About &brand;</string>
+    <string name="pref_clear_on_exit_summary">Wipes history, cookies, site data and cache when you exit &brand;</string>
+    <!-- Public Downloads subfolder for new downloads (DownloadCenter). Old records keep their stored URI/path. -->
+    <string name="downloads_folder" translatable="false">&brand;</string>
+    <string name="pref_downloads_summary">Active and finished downloads (saved to Downloads/&brand;)</string>
+    <string name="downloads_empty_body">Files you download appear here with live progress.\nThey\'re saved to Downloads/&brand;.</string>
+    <plurals name="downloads_clear_message">
+        <item quantity="one">Removes %1$d finished, failed or cancelled entry from this list. Downloaded files stay in Downloads/&brand;.</item>
+        <item quantity="other">Removes %1$d finished, failed or cancelled entries from this list. Downloaded files stay in Downloads/&brand;.</item>
+    </plurals>
+    <string name="private_downloads_note">Private downloads stay inside &brand; only. They never appear in Gallery or Files. Uninstalling the app or clearing its storage permanently deletes them.</string>
+    <string name="vault_stored_note">Stored encrypted in &brand;\'s vault.</string>
+    <string name="realm_note_play">Play uses &brand;\'s original cookie jar (your existing logins). Shared across realms: uBlock filters, bookmarks, history (not Ghost), saved passwords, downloads.</string>
+    <string name="error_https_only">&brand;\'s HTTPS-Only mode couldn\'t find a secure version of %1$s. Your connection would be unencrypted.</string>
+    <string name="error_insecure_cert">The site\'s certificate couldn\'t be verified, so &brand; blocked the connection to protect you.</string>
 </resources>

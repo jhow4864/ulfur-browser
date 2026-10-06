@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Beast Site Prefs",
+  "name": "Ulfur Site Prefs",
   "version": "1.0.0",
-  "description": "Applies per-host page zoom remembered by Beast Browser.",
+  "description": "Applies per-host page zoom remembered by Ulfur.",
   "browser_specific_settings": {
     "gecko": { "id": "beast-siteprefs@jamhowman.com" }
   },

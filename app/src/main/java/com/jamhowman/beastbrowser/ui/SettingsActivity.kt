@@ -104,7 +104,7 @@ class SettingsActivity : AppCompatActivity() {
 
         private fun showAbout() {
             val ubo = Engine.ublock?.metaData?.version ?: "not loaded"
-            MaterialAlertDialogBuilder(requireContext()).setTitle("Beast Browser")
+            MaterialAlertDialogBuilder(requireContext()).setTitle(R.string.app_name)
                 .setMessage(
                     "Version ${BuildConfig.VERSION_NAME}\n\n" +
                     "Engine: Mozilla GeckoView ${org.mozilla.geckoview.BuildConfig.MOZ_APP_VERSION} (MPL 2.0)\n" +

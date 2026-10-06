@@ -3,7 +3,7 @@
 
     <PreferenceCategory app:title="Shields" app:iconSpaceReserved="false">
         <SwitchPreferenceCompat app:key="block_ads" app:defaultValue="true" app:iconSpaceReserved="false"
-            app:title="Beast Shields"
+            app:title="@string/shields_brand"
             app:summary="Firefox Enhanced Tracking Protection (Strict): ads, analytics, social, cryptominers, fingerprinters, email trackers" />
         <SwitchPreferenceCompat app:key="ublock" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="uBlock Origin (built in)"
@@ -28,7 +28,7 @@
         <SwitchPreferenceCompat app:key="safe_browsing" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="Safe Browsing" app:summary="Warn about known phishing and malware sites" />
         <SwitchPreferenceCompat app:key="clear_on_exit" app:defaultValue="false" app:iconSpaceReserved="false"
-            app:title="Clear data on exit" app:summary="Wipes history, cookies, site data and cache when you exit Beast" />
+            app:title="Clear data on exit" app:summary="@string/pref_clear_on_exit_summary" />
         <Preference app:key="clear_now" app:iconSpaceReserved="false" app:title="Clear browsing data now" />
         <Preference app:key="passwords" app:iconSpaceReserved="false"
             app:title="Passwords"
@@ -56,10 +56,10 @@
 
     <PreferenceCategory app:title="General" app:iconSpaceReserved="false">
         <Preference app:key="downloads" app:iconSpaceReserved="false" app:title="Downloads"
-            app:summary="Active and finished downloads (saved to Downloads/Beast)" />
+            app:summary="@string/pref_downloads_summary" />
         <SwitchPreferenceCompat app:key="restore_tabs" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="Restore tabs on start" app:summary="Normal tabs only. Private tabs are never saved" />
         <Preference app:key="check_updates" app:iconSpaceReserved="false" app:title="Check for updates" />
-        <Preference app:key="about" app:iconSpaceReserved="false" app:title="About Beast Browser" />
+        <Preference app:key="about" app:iconSpaceReserved="false" app:title="@string/about_title" />
     </PreferenceCategory>
 </PreferenceScreen>

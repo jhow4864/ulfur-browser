@@ -1275,7 +1275,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val m = SheetMenuBinding.inflate(layoutInflater)
         val onPage = !t.showingHome
         m.menuShield.imageTintList = ColorStateList.valueOf(accent.color)
-        m.menuTitle.text = if (onPage) "${fmt(t.blockedOnPage)} blocked on this page" else "Beast Shields are up"
+        m.menuTitle.text = if (onPage) "${fmt(t.blockedOnPage)} blocked on this page" else getString(R.string.shields_up)
         m.menuSubtitle.text = "${fmt(Stats.total.get())} ads & trackers blocked in total"
         m.menuHeader.setOnClickListener { dialog.dismiss(); showShields() }
         val bookmarked = onPage && db.isBookmarked(t.url)
@@ -2057,8 +2057,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val target = uri.orEmpty()
         val httpsOnly = code == WebRequestError.ERROR_HTTPS_ONLY
         val (title, msg) = when {
-            httpsOnly -> "Secure connection not available" to "Beast's HTTPS-Only mode couldn't find a secure version of ${esc(Domains.display(UrlUtils.host(target)))}. Your connection would be unencrypted."
-            category == WebRequestError.ERROR_CATEGORY_SECURITY -> "Connection isn't secure" to "The site's certificate couldn't be verified, so Beast blocked the connection to protect you."
+            httpsOnly -> "Secure connection not available" to getString(R.string.error_https_only, esc(Domains.display(UrlUtils.host(target))))
+            category == WebRequestError.ERROR_CATEGORY_SECURITY -> "Connection isn't secure" to getString(R.string.error_insecure_cert)
             category == WebRequestError.ERROR_CATEGORY_SAFEBROWSING -> "Dangerous site blocked" to "This site is reported as deceptive or harmful."
             code == WebRequestError.ERROR_UNKNOWN_HOST -> "Site not found" to "Check the address or your connection."
             category == WebRequestError.ERROR_CATEGORY_NETWORK -> "Can't connect" to "The site took too long to respond or refused the connection."

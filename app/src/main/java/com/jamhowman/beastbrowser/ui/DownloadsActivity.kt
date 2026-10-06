@@ -157,7 +157,7 @@ class DownloadsActivity : AppCompatActivity() {
         if (n == 0) return
         MaterialAlertDialogBuilder(this)
             .setTitle("Clear completed?")
-            .setMessage("Removes $n finished, failed or cancelled ${if (n == 1) "entry" else "entries"} from this list. Downloaded files stay in Downloads/Beast.")
+            .setMessage(resources.getQuantityString(R.plurals.downloads_clear_message, n, n))
             .setPositiveButton("Clear") { _, _ -> DownloadCenter.clearFinished() }
             .setNegativeButton(android.R.string.cancel, null).show()
     }

@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Beast Helper",
+  "name": "Ulfur Helper",
   "version": "1.2.0",
-  "description": "Built-in helper for Beast Browser: per-site HTTPS-Only exceptions, Reader view, media detection.",
+  "description": "Built-in helper for Ulfur: per-site HTTPS-Only exceptions, Reader view, media detection.",
   "browser_specific_settings": {
     "gecko": {
       "id": "beast-helper@jamhowman.com"

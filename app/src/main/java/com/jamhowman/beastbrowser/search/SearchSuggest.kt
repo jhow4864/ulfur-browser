@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser.search
 
+import com.jamhowman.beastbrowser.BuildConfig
 import com.jamhowman.beastbrowser.browser.UrlUtils
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.SearchEngine
@@ -89,7 +90,7 @@ object SearchSuggest {
                 readTimeout = TIMEOUT_MS
                 requestMethod = "GET"
                 setRequestProperty("Accept", "application/json")
-                setRequestProperty("User-Agent", "BeastBrowser/2.3")
+                setRequestProperty("User-Agent", "Ulfur/${BuildConfig.VERSION_NAME}")
                 instanceFollowRedirects = true // HttpURLConnection never follows https -> http
                 useCaches = false
             }

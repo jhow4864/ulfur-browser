@@ -42,7 +42,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Private downloads stay inside Beast Browser only. They never appear in Gallery or Files. Uninstalling the app or clearing its storage permanently deletes them."
+            android:text="@string/private_downloads_note"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
     </LinearLayout>

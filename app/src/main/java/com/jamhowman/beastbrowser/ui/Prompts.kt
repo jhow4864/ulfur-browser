@@ -167,7 +167,7 @@ class Prompts(
         val box = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
         val pad = dp(activity, 22)
         box.addView(TextView(activity).apply {
-            text = "$user\n$host\n\nStored encrypted in Beast's vault."
+            text = "$user\n$host\n\n" + activity.getString(R.string.vault_stored_note)
             setTextColor(activity.getColor(R.color.text_secondary))
             textSize = 14f
             setPadding(pad, dp(activity, 8), pad, 0)

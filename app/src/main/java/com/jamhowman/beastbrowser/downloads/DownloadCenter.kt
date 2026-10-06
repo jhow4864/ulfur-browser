@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser.downloads
 
+import com.jamhowman.beastbrowser.R
 import android.Manifest
 import android.content.ContentValues
 import android.content.Context
@@ -50,7 +51,9 @@ import java.util.concurrent.atomic.AtomicLong
  * - State is a [StateFlow] of immutable [DownloadItem]s; workers publish progress ~2-3x per second.
  * - Pause closes the connection and keeps the partial file; resume re-requests with `Range: bytes=N-`
  *   through GeckoWebExecutor (falls back to a restart when the server doesn't support ranges).
- * - Normal files go to Downloads/Beast (MediaStore on Android 10+, public folder / app folder on 8-9).
+ * - Normal files go to Downloads/<[R.string.downloads_folder]> ("Ulfur"; "Beast" before the rebrand) via MediaStore on
+ *   Android 10+, public folder / app folder on 8-9. Records store the absolute content URI / file path, so files
+ *   downloaded into the old Downloads/Beast folder keep opening, sharing and deleting normally.
  * - Private-tab downloads go to app-private `filesDir/private_downloads/` with a `.nomedia` file
  *   so Gallery/Files never see them. Finished private downloads are kept in a separate vault list
  *   behind biometric unlock; unfinished ones are cancelled when private browsing ends.
@@ -60,7 +63,8 @@ object DownloadCenter {
     private const val MAX_PARALLEL = 3
     private const val STORE = "downloads.json"
     private const val PRIVATE_STORE = "private_downloads.json"
-    const val SUBDIR = "Beast"
+    /** Public Downloads subfolder for NEW downloads only (existing records keep their stored URI / path). */
+    private val subdir: String get() = app.getString(R.string.downloads_folder)
     const val PRIVATE_DIR = "private_downloads"
 
     private lateinit var app: Context
@@ -249,7 +253,7 @@ object DownloadCenter {
         val gone = _items.value.filter { it.status.isFinished }
         val vault = gone.filter { it.isPrivate && it.status == DlStatus.DONE }
         gone.filter { it.status != DlStatus.DONE }.forEach { d -> io.execute { deleteTarget(d) } }
-        // Non-private DONE: keep file in Downloads/Beast. Private DONE: move into the vault.
+        // Non-private DONE: keep file in Downloads/<downloads_folder>. Private DONE: move into the vault.
         _items.update { list -> list.filterNot { it.status.isFinished } }
         if (vault.isNotEmpty()) {
             _privateItems.update { cur ->
@@ -561,7 +565,7 @@ object DownloadCenter {
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, item.fileName)
                 put(MediaStore.Downloads.MIME_TYPE, item.mime)
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + SUBDIR)
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/" + subdir)
                 put(MediaStore.Downloads.IS_PENDING, 1)
             }
             val uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: throw IOException("Can't create file in Downloads")
@@ -573,7 +577,7 @@ object DownloadCenter {
         }
         val publicOk = ContextCompat.checkSelfPermission(app, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         @Suppress("DEPRECATION")
-        val dir = if (publicOk) File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), SUBDIR)
+        val dir = if (publicOk) File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), subdir)
             else app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: File(app.filesDir, "downloads")
         dir.mkdirs()
         val f = unique(dir, item.fileName)

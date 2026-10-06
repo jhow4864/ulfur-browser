@@ -67,7 +67,7 @@
                 android:layout_marginTop="8dp"
                 android:gravity="center"
                 android:lineSpacingExtra="2dp"
-                android:text="Files you download appear here with live progress.\nThey're saved to Downloads/Beast."
+                android:text="@string/downloads_empty_body"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
         </LinearLayout>
