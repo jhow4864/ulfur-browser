@@ -247,6 +247,25 @@ object Engine {
         }
     }
 
+    /**
+     * Shields sheet "Hide cookie banners on this site": uBO's per-site no-cosmetic-filtering switch for [url]
+     * (true = banners hidden, i.e. cosmetic filtering on). Turning it off also stops uBO's other cosmetic
+     * cleanup on that site; network blocking stays on. null if uBO/bridge isn't available.
+     */
+    fun uboCookieHidingOn(url: String, cb: (Boolean?) -> Unit) {
+        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        uboBridge.request(JSONObject().put("type", "getCosmetic").put("url", url), 2500) {
+            cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", true) else null)
+        }
+    }
+
+    fun setUboCookieHiding(url: String, on: Boolean, cb: (Boolean?) -> Unit = {}) {
+        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        uboBridge.request(JSONObject().put("type", "setCosmetic").put("url", url).put("enabled", on), 2500) {
+            cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", on) else null)
+        }
+    }
+
     // ------------------------------------------------------------------ uBlock Origin
 
     private fun installUblock(r: GeckoRuntime, reinstall: Boolean) {

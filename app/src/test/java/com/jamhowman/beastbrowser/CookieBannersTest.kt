@@ -29,6 +29,19 @@ class CookieBannersTest {
             .forEach { assertTrue(it, bridge.contains(it)) }
     }
 
+    @Test fun shieldsSheetHasPerSiteSwitchOnUboCosmeticFiltering() {
+        val bridge = file("assets/extensions/ublock/js/beast-bridge.js").readText()
+        listOf("case 'getCosmetic'", "case 'setCosmetic'", "'no-cosmetic-filtering'", "persist: true", "µb.toggleHostnameSwitch")
+            .forEach { assertTrue(it, bridge.contains(it)) }
+        val sheet = file("res/layout/sheet_shields.xml").readText()
+        assertTrue(sheet.contains("@+id/cookieSwitch"))
+        assertTrue(sheet.contains("@+id/cookieState"))
+        assertTrue(sheet.indexOf("@+id/cookieSwitch") > sheet.indexOf("@+id/shieldsSwitch"))
+        val app = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        assertEquals("Hide cookie banners on this site", app.getString(R.string.shields_cookies_site))
+        assertEquals("Cookie banners shown on bbc.co.uk", app.getString(R.string.shields_cookies_shown, "bbc.co.uk"))
+    }
+
     @Test fun settingIsOnByDefaultUnderShieldsAndBackedUp() {
         val xml = file("res/xml/preferences.xml").readText()
         val row = Regex("""<SwitchPreferenceCompat app:key="cookie_banners"[^>]*/>""", RegexOption.DOT_MATCHES_ALL).find(xml)?.value

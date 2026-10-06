@@ -1750,6 +1750,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
         render()
         bindAutoplaySwitch(s, t, dialog)
+        bindCookieSwitch(s, t, dialog)
         // Fresh state from uBO (it may have been changed in uBO's own panel)
         if (!t.showingHome) Engine.uboSiteEnabled(t.url) { on ->
             t.uboSiteOn = on; t.uboSiteHost = UrlUtils.host(t.url).orEmpty()
@@ -1779,6 +1780,40 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
 
     private var shieldsRefresh: (() -> Unit)? = null
+
+    /**
+     * 2.7: "Hide cookie banners on this site". Only shown when uBO is running, its cookie lists are on
+     * (Settings > Hide cookie banners) and the site isn't trusted in uBO; it reflects uBO's per-site
+     * no-cosmetic-filtering switch, so the rest of Shields stays up when banners are let through.
+     */
+    private fun bindCookieSwitch(s: SheetShieldsBinding, t: Tab, dialog: BottomSheetDialog) {
+        s.cookieSwitch.isVisible = false
+        s.cookieState.isVisible = false
+        if (t.showingHome || !Prefs.blockAds || !Prefs.cookieBanners || t.uboSiteOn == false) return
+        val url = t.url
+        val host = UrlUtils.host(url).orEmpty()
+        if (host.isEmpty()) return
+        Engine.uboCookieHidingOn(url) { on ->
+            if (on == null || !dialog.isShowing || t.url != url) return@uboCookieHidingOn
+            s.cookieSwitch.setOnCheckedChangeListener(null)
+            s.cookieSwitch.isChecked = on
+            s.cookieState.setText(if (on) R.string.shields_cookies_on else R.string.shields_cookies_off)
+            s.cookieSwitch.isVisible = true
+            s.cookieState.isVisible = true
+            s.cookieSwitch.setOnCheckedChangeListener { _, hide ->
+                dialog.dismiss()
+                setSiteCookieHiding(t, url, host, hide)
+            }
+        }
+    }
+
+    private fun setSiteCookieHiding(t: Tab, url: String, host: String, hide: Boolean) {
+        Engine.setUboCookieHiding(url, hide) { res ->
+            if (res == null) { snack("Couldn't reach uBlock Origin"); return@setUboCookieHiding }
+            allTabs.filter { !it.showingHome && UrlUtils.host(it.url).orEmpty() == host }.forEach { it.session.reload() }
+        }
+        snack(getString(if (hide) R.string.shields_cookies_hidden else R.string.shields_cookies_shown, host))
+    }
 
     /** 2.5: "Allow autoplay on this site" (Settings > Media > Autoplay decides everywhere else). */
     private fun bindAutoplaySwitch(s: SheetShieldsBinding, t: Tab, dialog: BottomSheetDialog) {
