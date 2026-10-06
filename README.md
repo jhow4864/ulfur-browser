@@ -84,8 +84,17 @@ The file contains:
     keyAlias=beast
     keyPassword=...
 
-Without it, release builds fall back to the local debug key. A release-signed APK cannot be installed over a
-debug-signed one (or the reverse); uninstall first.
+**Release builds never fall back to the debug key.** (2.3.4 to 2.3.8 were accidentally debug-signed that way, which
+forced a one-time reinstall.)
+* If keystore.properties or the keystore is missing, incomplete or won't open, `assembleRelease` / `bundleRelease`
+  stop at once in `:app:validateReleaseSigning`. The error names the file or the missing keys, never a password.
+* Afterwards, `:app:verifyReleaseApkSigner` / `:app:verifyReleaseBundleSigner` check the packaged APK/AAB. They fail
+  if it is signed with `CN=Android Debug`, or if its certificate SHA-256 differs from `ulfur.expectedCertSha256`
+  (default: the real release certificate, `1f04b66b…f6dd16`; pass `-Pulfur.expectedCertSha256=` to skip the pin).
+* `tools/build_small_apk.sh` applies the same rules (`ULFUR_EXPECTED_CERT_SHA256`).
+* Debug builds don't need the key.
+
+A release-signed APK cannot be installed over a debug-signed one (or the reverse); uninstall first.
 
 ## Licences
 * uBlock Origin is GPL-3.0 (c) Raymond Hill and contributors (https://github.com/gorhill/uBlock). Ulfur's
