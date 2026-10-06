@@ -43,4 +43,17 @@ class ShieldLevelTest {
         assertNotEquals(up.icon, down.icon)
         assertEquals(ShieldBadge.style(ShieldLevel.NONE, false).description, down.description)
     }
+
+    @Test fun manyReadsAsAWinNotAWarning() {
+        val some = ShieldBadge.style(ShieldLevel.SOME, shieldsUp = true)
+        val many = ShieldBadge.style(ShieldLevel.MANY, shieldsUp = true)
+        assertNotEquals(some.icon, many.icon)
+        assertTrue(many.badgeGradient)
+        assertFalse(some.badgeGradient)
+        assertNotEquals(ShieldBadge.Tint.WARN, many.badgeTint)
+    }
+
+    @Test fun everyAccentHasAGradientEnd() {
+        for (a in com.jamhowman.beastbrowser.data.Accent.entries) assertNotEquals(a.color, ShieldBadge.gradientEnd(a))
+    }
 }
