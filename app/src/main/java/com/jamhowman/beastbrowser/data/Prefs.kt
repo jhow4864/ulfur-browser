@@ -57,8 +57,17 @@ object Prefs {
         set(v) = sp.edit { putString("autoplay_applied", v) }
     val searchSuggestions get() = sp.getBoolean("search_suggestions", true)
     val searchEngine get() = SearchEngine.from(sp.getString("search_engine", null))
-    /** Accent of the current [realm] (2.3.8: per-realm accents). */
-    val accent: Accent get() = accentFor(realm)
+    /** Accent theme of the current [realm] (2.3.8: per-realm accents; 2.8: [ThemePreset]s). */
+    val accent: ThemePreset get() = accentFor(realm)
+    /** 2.8: the theme picked in Settings > Appearance (Play's accent, key `accent`). Work follows it while on AUTO. */
+    val theme: ThemePreset get() = accentFor(Realm.PLAY)
+    /**
+     * 2.8 animated new-tab wolf (SPEC "Animated wolf" switch, item 19). Stored here so the Appearance screen and
+     * the wolf share one key; nothing reads it until item 19 ships.
+     */
+    var wolfAnimation: Boolean
+        get() = sp.getBoolean("wolf_animation", true)
+        set(v) = sp.edit { putBoolean("wolf_animation", v) }
 
     // ---- 2.3.8: Realms. Key names match 2.3.8 so upgraded installs keep their state. ----
 
@@ -73,16 +82,32 @@ object Prefs {
         Realm.GHOST -> null
     }
 
-    /** Play: GX Red. Work: Cyber Cyan, or Lava Orange if Play already uses Cyan. Ghost: Ultraviolet. */
-    fun defaultAccent(realm: Realm): Accent = when (realm) {
-        Realm.PLAY -> Accent.RED
-        Realm.WORK -> if (Accent.from(sp.getString("accent", null)) == Accent.CYAN) Accent.ORANGE else Accent.CYAN
-        Realm.GHOST -> Accent.PURPLE
+    /**
+     * Play: Blood Moon (GX Red's successor, same `red` key). Work: Frost, or Ember if Play already uses Frost
+     * (the 2.3.8 Cyan/Orange rule, shown as AUTO). Ghost: the fixed dim Ghost palette (2.8; was Ultraviolet).
+     */
+    fun defaultAccent(realm: Realm): ThemePreset = when (realm) {
+        Realm.PLAY -> ThemePreset.DEFAULT
+        Realm.WORK -> if (accentFor(Realm.PLAY) == ThemePreset.FROST) ThemePreset.EMBER else ThemePreset.FROST
+        Realm.GHOST -> ThemePreset.GHOST
     }
 
-    fun accentFor(realm: Realm): Accent {
-        val key = accentKey(realm) ?: return Accent.PURPLE
-        return sp.getString(key, null)?.let { Accent.from(it) } ?: defaultAccent(realm)
+    fun accentFor(realm: Realm): ThemePreset {
+        val key = accentKey(realm) ?: return ThemePreset.GHOST
+        return ThemePreset.parse(sp.getString(key, null)) ?: defaultAccent(realm)
+    }
+
+    /** [realm] has a preset of its own (Work: CUSTOM rather than AUTO). Always false for Ghost. */
+    fun hasCustomAccent(realm: Realm): Boolean {
+        val key = accentKey(realm) ?: return false
+        return ThemePreset.parse(sp.getString(key, null)) != null
+    }
+
+    /** Stores [preset] for [realm] under its [ThemePreset.storageKey]; null clears it (Work back to AUTO). Ghost is fixed. */
+    fun setAccent(realm: Realm, preset: ThemePreset?) {
+        val key = accentKey(realm) ?: return
+        require(preset == null || preset.selectable) { "${preset?.key} can't be picked" }
+        sp.edit { if (preset == null) remove(key) else putString(key, preset.storageKey) }
     }
 
     var ghostHintShown: Boolean

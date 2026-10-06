@@ -70,12 +70,14 @@ import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
 import com.jamhowman.beastbrowser.browser.UrlUtils
-import com.jamhowman.beastbrowser.data.Accent
+import com.jamhowman.beastbrowser.data.AppTheme
 import com.jamhowman.beastbrowser.data.BeastControl
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Realm
 import com.jamhowman.beastbrowser.data.TabGroup
+import com.jamhowman.beastbrowser.data.ThemePalette
+import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.search.SearchSuggest
 import com.jamhowman.beastbrowser.search.SuggestItem
 import com.jamhowman.beastbrowser.search.SuggestKind
@@ -147,7 +149,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private val allTabs: List<Tab> get() = realmTabs.values.flatten()
     private var current: Tab? = null
     private var nextId = 1L
-    private var accent = Accent.RED
+    /** 2.8: the realm's theme preset resolved for light/dark (+ the private-mode override, item 11). See [syncPalette]. */
+    private var accent = ThemePalette.of(ThemePreset.DEFAULT, night = true)
     private var switcherPrivate = false
     /** Tab switcher search text (2.3.5); matches title, URL or group name. */
     private var switcherQuery = ""
@@ -218,8 +221,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         realm = Prefs.realm
-        accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
+        accent = currentPalette()
+        AppTheme.applyOverlays(theme, accent)
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         b = ActivityMainBinding.inflate(layoutInflater)
@@ -282,11 +285,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         super.onResume()
         Engine.applySettings()
         syncForceDark() // Settings may have switched forced dark or edited "Never force dark on"
-        if (Prefs.accent != accent) {
-            accent = Prefs.accent
-            theme.applyStyle(accent.overlay, true)
-            applyAccent()
-        }
+        syncPalette() // Settings > Appearance may have picked another theme: re-tint in place, no restart
         // Settings → theme (or system flip while we were paused): config may have changed already.
         maybeReapplyUiModeChrome(resources.configuration)
         // Settings → Import backup may have added speed-dial tiles.
@@ -315,7 +314,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
      * (white text on a light address bar). Push fresh theme colours onto chrome views.
      */
     private fun reapplyUiModeChrome() {
-        theme.applyStyle(accent.overlay, true)
+        accent = currentPalette() // accentText / surfaceTint differ between light and dark
+        AppTheme.applyOverlays(theme, accent)
         val bg = getColor(R.color.bg)
         val text = getColor(R.color.text_primary)
         val hint = getColor(R.color.text_hint)
@@ -550,6 +550,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (tab.isPrivate) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         lastBadge = -1
+        syncPalette() // private ↔ normal: the private-mode override (item 11), if any
         refreshUi()
         updateHomeStats()
         updatePipParams()
@@ -713,9 +714,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             val next = realmCurrent[r]?.takeIf { it in tabs } ?: tabs.lastOrNull()
             if (next != null) selectTab(next) else newTab()
         }
-        accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
-        applyAccent()
+        syncPalette()
         updateHomeStats()
         if (b.switcher.root.isVisible) {
             syncSwitcherMode()
@@ -1048,8 +1047,26 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
     }
 
+    /** Palette for the current realm and tab (private tabs and Ghost get [AppTheme.privateOverride], if set). */
+    private fun currentPalette(): ThemePalette =
+        AppTheme.palette(this, realm, private = realm.alwaysPrivate || current?.isPrivate == true)
+
+    /** Re-tints in place when the theme, realm or private state changed the palette. True if it did. */
+    private fun syncPalette(): Boolean {
+        val p = currentPalette()
+        if (p == accent) return false
+        accent = p
+        AppTheme.applyOverlays(theme, p)
+        applyAccent()
+        return true
+    }
+
     private fun applyAccent() {
         val c = accent.color
+        // Behind the status and navigation bars (edge-to-edge): bg, unless an override (private mode) tints them.
+        val bars = accent.systemBars ?: getColor(R.color.bg)
+        b.root.setBackgroundColor(bars)
+        window.navigationBarColor = bars
         accentLine(b.accentLineTop, c, 0x99)
         accentLine(b.accentLineBottom, c, 0x55)
         b.progress.setIndicatorColor(c)

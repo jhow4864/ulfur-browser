@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.jamhowman.beastbrowser.R
-import com.jamhowman.beastbrowser.data.Accent
+import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.databinding.ItemDownloadBinding
 import com.jamhowman.beastbrowser.downloads.DlFormat
 import com.jamhowman.beastbrowser.downloads.DlStatus
@@ -19,7 +19,7 @@ enum class DlAction { PAUSE, RESUME, CANCEL, RETRY, OPEN, SHARE, DELETE, MORE }
 
 /** Download cards. Progress-only changes rebind in place (no flicker) via a payload. */
 class DownloadAdapter(
-    private val accent: Accent,
+    private val accent: ThemePreset,
     private val onAction: (DownloadItem, DlAction, android.view.View) -> Unit,
 ) : ListAdapter<DownloadItem, DownloadAdapter.VH>(Diff) {
 

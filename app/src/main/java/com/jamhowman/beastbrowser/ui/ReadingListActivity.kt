@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.jamhowman.beastbrowser.R
-import com.jamhowman.beastbrowser.data.Accent
+import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.databinding.ActivityReadingListBinding
 import com.jamhowman.beastbrowser.databinding.ItemReadingBinding
@@ -92,7 +92,7 @@ class ReadingListActivity : AppCompatActivity() {
 }
 
 class ReadingAdapter(
-    private val accent: Accent,
+    private val accent: ThemePreset,
     private val onOpen: (SavedArticle) -> Unit,
     private val onDelete: (SavedArticle) -> Unit,
 ) : RecyclerView.Adapter<ReadingAdapter.VH>() {

@@ -8,37 +8,98 @@
         <item name="colorOnPrimaryContainer">#FFD9DF</item>
         <item name="colorSecondaryContainer">#2E1820</item>
         <item name="colorOnSecondaryContainer">#FFD9DF</item>
+        <item name="ulfurAccentText">#FF3C61</item><item name="ulfurSurfaceTint">#371924</item>
     </style>
 
-    <!-- Accent overlays must stay dark when applyStyle() runs in night mode. -->
-    <style name="ThemeOverlay.Beast.Accent.Red">
-        <item name="colorPrimary">@color/gx_red</item><item name="colorSecondary">@color/gx_red</item>
-        <item name="colorTertiary">@color/gx_red</item><item name="colorAccent">@color/gx_red</item>
+    <!-- 2.8 preset overlays, dark tokens (must stay dark when applyStyle() runs in night mode). -->
+    <style name="ThemeOverlay.Ulfur.Preset.BloodMoon">
+        <item name="colorPrimary">#FF2D55</item><item name="colorSecondary">#FF2D55</item>
+        <item name="colorTertiary">#FF2D55</item><item name="colorAccent">#FF2D55</item>
         <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
-        <item name="colorPrimaryContainer">#3A0A18</item><item name="colorSecondaryContainer">#2E1820</item>
+        <item name="colorPrimaryContainer">#371924</item><item name="colorSecondaryContainer">#371924</item>
+        <item name="ulfurAccentStart">#FF2D55</item><item name="ulfurAccentEnd">#E040FB</item>
+        <item name="ulfurAccent">#FF2D55</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#FF3C61</item><item name="ulfurSurfaceTint">#371924</item>
+        <item name="ulfurEye">#FF7A9A</item>
     </style>
-    <style name="ThemeOverlay.Beast.Accent.Purple">
-        <item name="colorPrimary">@color/gx_purple</item><item name="colorSecondary">@color/gx_purple</item>
-        <item name="colorTertiary">@color/gx_purple</item><item name="colorAccent">@color/gx_purple</item>
+    <style name="ThemeOverlay.Ulfur.Preset.Frost">
+        <item name="colorPrimary">#00E1FF</item><item name="colorSecondary">#00E1FF</item>
+        <item name="colorTertiary">#00E1FF</item><item name="colorAccent">#00E1FF</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#13323C</item><item name="colorSecondaryContainer">#13323C</item>
+        <item name="ulfurAccentStart">#00E1FF</item><item name="ulfurAccentEnd">#3D7BFF</item>
+        <item name="ulfurAccent">#00E1FF</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#00E1FF</item><item name="ulfurSurfaceTint">#13323C</item>
+        <item name="ulfurEye">#3D7BFF</item>
+    </style>
+    <style name="ThemeOverlay.Ulfur.Preset.Toxic">
+        <item name="colorPrimary">#2BFF88</item><item name="colorSecondary">#2BFF88</item>
+        <item name="colorTertiary">#2BFF88</item><item name="colorAccent">#2BFF88</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#19372B</item><item name="colorSecondaryContainer">#19372B</item>
+        <item name="ulfurAccentStart">#2BFF88</item><item name="ulfurAccentEnd">#C8FF2E</item>
+        <item name="ulfurAccent">#2BFF88</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#2BFF88</item><item name="ulfurSurfaceTint">#19372B</item>
+        <item name="ulfurEye">#C8FF2E</item>
+    </style>
+    <style name="ThemeOverlay.Ulfur.Preset.Ember">
+        <item name="colorPrimary">#FF7A1A</item><item name="colorSecondary">#FF7A1A</item>
+        <item name="colorTertiary">#FF7A1A</item><item name="colorAccent">#FF7A1A</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#37241C</item><item name="colorSecondaryContainer">#37241C</item>
+        <item name="ulfurAccentStart">#FFA41B</item><item name="ulfurAccentEnd">#FF4E1A</item>
+        <item name="ulfurAccent">#FF7A1A</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#FF7A1A</item><item name="ulfurSurfaceTint">#37241C</item>
+        <item name="ulfurEye">#FF4E1A</item>
+    </style>
+    <style name="ThemeOverlay.Ulfur.Preset.Void">
+        <item name="colorPrimary">#A63BFF</item><item name="colorSecondary">#A63BFF</item>
+        <item name="colorTertiary">#A63BFF</item><item name="colorAccent">#A63BFF</item>
         <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
-        <item name="colorPrimaryContainer">#2A0F45</item><item name="colorSecondaryContainer">#24183A</item>
+        <item name="colorPrimaryContainer">#2A1B3C</item><item name="colorSecondaryContainer">#2A1B3C</item>
+        <item name="ulfurAccentStart">#9C33FF</item><item name="ulfurAccentEnd">#5A4BFF</item>
+        <item name="ulfurAccent">#A63BFF</item><item name="ulfurOnAccent">#FFFFFF</item>
+        <item name="ulfurAccentText">#B65FFF</item><item name="ulfurSurfaceTint">#2A1B3C</item>
+        <item name="ulfurEye">#5A4BFF</item>
     </style>
-    <style name="ThemeOverlay.Beast.Accent.Cyan">
-        <item name="colorPrimary">@color/gx_cyan</item><item name="colorSecondary">@color/gx_cyan</item>
-        <item name="colorTertiary">@color/gx_cyan</item><item name="colorAccent">@color/gx_cyan</item>
-        <item name="colorOnPrimary">#001F26</item><item name="colorOnSecondary">#001F26</item>
-        <item name="colorPrimaryContainer">#003640</item><item name="colorSecondaryContainer">#13282E</item>
+    <style name="ThemeOverlay.Ulfur.Preset.Gold">
+        <item name="colorPrimary">#FFC233</item><item name="colorSecondary">#FFC233</item>
+        <item name="colorTertiary">#FFC233</item><item name="colorAccent">#FFC233</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#372E1F</item><item name="colorSecondaryContainer">#372E1F</item>
+        <item name="ulfurAccentStart">#FFD54A</item><item name="ulfurAccentEnd">#FF9F1C</item>
+        <item name="ulfurAccent">#FFC233</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#FFC233</item><item name="ulfurSurfaceTint">#372E1F</item>
+        <item name="ulfurEye">#FF9F1C</item>
     </style>
-    <style name="ThemeOverlay.Beast.Accent.Green">
-        <item name="colorPrimary">@color/gx_green</item><item name="colorSecondary">@color/gx_green</item>
-        <item name="colorTertiary">@color/gx_green</item><item name="colorAccent">@color/gx_green</item>
-        <item name="colorOnPrimary">#00210E</item><item name="colorOnSecondary">#00210E</item>
-        <item name="colorPrimaryContainer">#003A1C</item><item name="colorSecondaryContainer">#142A1E</item>
+    <style name="ThemeOverlay.Ulfur.Preset.Sakura">
+        <item name="colorPrimary">#FF8AD8</item><item name="colorSecondary">#FF8AD8</item>
+        <item name="colorTertiary">#FF8AD8</item><item name="colorAccent">#FF8AD8</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#372636</item><item name="colorSecondaryContainer">#372636</item>
+        <item name="ulfurAccentStart">#FF8AD8</item><item name="ulfurAccentEnd">#B57BFF</item>
+        <item name="ulfurAccent">#FF8AD8</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#FF8AD8</item><item name="ulfurSurfaceTint">#372636</item>
+        <item name="ulfurEye">#B57BFF</item>
     </style>
-    <style name="ThemeOverlay.Beast.Accent.Orange">
-        <item name="colorPrimary">@color/gx_orange</item><item name="colorSecondary">@color/gx_orange</item>
-        <item name="colorTertiary">@color/gx_orange</item><item name="colorAccent">@color/gx_orange</item>
-        <item name="colorOnPrimary">#2A1100</item><item name="colorOnSecondary">#2A1100</item>
-        <item name="colorPrimaryContainer">#4A2200</item><item name="colorSecondaryContainer">#2E2016</item>
+    <style name="ThemeOverlay.Ulfur.Preset.Ash">
+        <item name="colorPrimary">#D8D8E2</item><item name="colorSecondary">#D8D8E2</item>
+        <item name="colorTertiary">#D8D8E2</item><item name="colorAccent">#D8D8E2</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#313138</item><item name="colorSecondaryContainer">#313138</item>
+        <item name="ulfurAccentStart">#F2F2F7</item><item name="ulfurAccentEnd">#8E8EA0</item>
+        <item name="ulfurAccent">#D8D8E2</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#D8D8E2</item><item name="ulfurSurfaceTint">#313138</item>
+        <item name="ulfurEye">#8E8EA0</item>
+    </style>
+    <style name="ThemeOverlay.Ulfur.Preset.Ghost">
+        <item name="colorPrimary">#9A92B8</item><item name="colorSecondary">#9A92B8</item>
+        <item name="colorTertiary">#9A92B8</item><item name="colorAccent">#9A92B8</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
+        <item name="colorPrimaryContainer">#282732</item><item name="colorSecondaryContainer">#282732</item>
+        <item name="ulfurAccentStart">#8C84A8</item><item name="ulfurAccentEnd">#5E5874</item>
+        <item name="ulfurAccent">#9A92B8</item><item name="ulfurOnAccent">#0E0E12</item>
+        <item name="ulfurAccentText">#9A92B8</item><item name="ulfurSurfaceTint">#282732</item>
+        <item name="ulfurEye">#7A6A9A</item>
     </style>
 </resources>

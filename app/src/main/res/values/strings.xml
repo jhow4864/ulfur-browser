@@ -266,4 +266,34 @@
         <item quantity="one">%1$d setting</item>
         <item quantity="other">%1$d settings</item>
     </plurals>
+    <!-- 2.8 Settings > Appearance: theme picker (Designer's SPEC.md "Theme picker", roadmap item 18) -->
+    <string name="appearance_title">Appearance</string>
+    <string name="pref_appearance_title">Theme &amp; accent</string>
+    <string name="pref_appearance_summary">%1$s · %2$s mode</string>
+    <string name="appearance_section_preview">Live preview</string>
+    <string name="appearance_preview_meta">%1$s · %2$s realm</string>
+    <string name="appearance_preview_blurb">Everything picks up the accent: buttons, toggles, chips, progress, tab strips.</string>
+    <string name="appearance_preview_new_tab">New tab</string>
+    <string name="appearance_preview_shields">Shields</string>
+    <string name="appearance_preview_loading">Loading…</string>
+    <string name="appearance_section_mode">Mode</string>
+    <string name="appearance_section_accent">Accent theme</string>
+    <string name="appearance_presets_count">%1$d presets</string>
+    <string name="appearance_preset_selected">%1$s, selected</string>
+    <string name="appearance_section_realms">Realm accents</string>
+    <string name="appearance_realms_meta">Long-press menu to switch</string>
+    <string name="appearance_realm_status_theme">Theme</string>
+    <string name="appearance_realm_status_auto">Auto</string>
+    <string name="appearance_realm_status_custom">Custom</string>
+    <string name="appearance_realm_status_fixed">Fixed</string>
+    <string name="appearance_realm_follows">Follows %1$s</string>
+    <string name="appearance_realm_picked">Picked: %1$s</string>
+    <string name="appearance_realm_auto">%1$s (%2$s in use)</string>
+    <string name="appearance_realm_ghost">Always dim</string>
+    <string name="appearance_sheet_title">%1$s realm accent</string>
+    <string name="appearance_sheet_play_note">Play uses the theme. Changing it here changes the theme.</string>
+    <string name="appearance_sheet_work_auto">Use auto: Frost, or Ember while the theme is Frost</string>
+    <string name="appearance_wolf_title">Animated wolf</string>
+    <string name="appearance_wolf_summary">Glow pulse and loading ring on new tabs</string>
+    <string name="appearance_wolf_summary_system_off">Off while system animations are off</string>
 </resources>

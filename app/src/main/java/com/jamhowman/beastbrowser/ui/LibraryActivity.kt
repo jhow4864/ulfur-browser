@@ -171,7 +171,7 @@ class LibraryActivity : AppCompatActivity() {
                 else -> host
             }
             h.b.itemIcon.text = (host.firstOrNull() ?: '•').uppercase()
-            h.b.itemIcon.setTextColor((folder?.accent ?: Prefs.accent).color)
+            h.b.itemIcon.setTextColor(folder?.accent?.color ?: Prefs.accent.color)
             h.b.root.setOnClickListener {
                 setResult(RESULT_OK, Intent().putExtra(MainActivity.EXTRA_URL, e.url)); finish()
             }
