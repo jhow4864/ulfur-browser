@@ -2,12 +2,12 @@ package com.jamhowman.beastbrowser.ui
 
 import android.animation.ValueAnimator
 import android.content.Intent
-import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.drawToBitmap
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
@@ -70,7 +70,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
         if (screen.refresh()) accentLine(b.settingsAccentLine, screen.palette.color, 0x99)
         rebind()
         if (snapshot == null || !ValueAnimator.areAnimatorsEnabled()) return
-        val old = BitmapDrawable(resources, snapshot).apply { setBounds(0, 0, root.width, root.height) }
+        val old = snapshot.toDrawable(resources).apply { setBounds(0, 0, root.width, root.height) }
         root.overlay.add(old)
         ValueAnimator.ofInt(255, 0).apply {
             duration = 200

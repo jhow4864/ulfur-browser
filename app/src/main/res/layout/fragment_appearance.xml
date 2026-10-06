@@ -38,6 +38,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_card"
+                android:baselineAligned="false"
                 android:orientation="horizontal"
                 android:padding="12dp">
 
@@ -47,7 +48,9 @@
                     android:layout_width="124dp"
                     android:layout_height="218dp"
                     android:importantForAccessibility="noHideDescendants"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    tools:ignore="SmallSp,UseCompoundDrawables">
+                    <!-- A phone at roughly a third of its size (SPEC: 124×218), so the type is tiny on purpose. -->
 
                     <LinearLayout
                         android:id="@+id/miniAddress"
@@ -63,6 +66,7 @@
 
                         <ImageView
                             android:id="@+id/miniShield"
+                            android:importantForAccessibility="no"
                             android:layout_width="9dp"
                             android:layout_height="9dp"
                             android:src="@drawable/ic_shield" />
@@ -91,6 +95,7 @@
 
                         <ImageView
                             android:id="@+id/miniLogo"
+                            android:importantForAccessibility="no"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:layout_gravity="center"
@@ -132,6 +137,7 @@
 
                         <ImageView
                             android:id="@+id/miniSearchIcon"
+                            android:importantForAccessibility="no"
                             android:layout_width="8dp"
                             android:layout_height="8dp"
                             android:src="@drawable/ic_search" />
@@ -195,9 +201,9 @@
                         android:paddingStart="4dp"
                         android:paddingEnd="4dp">
 
-                        <ImageView style="@style/MiniBarIcon" android:src="@drawable/ic_back" />
-                        <ImageView style="@style/MiniBarIcon" android:src="@drawable/ic_forward" />
-                        <ImageView style="@style/MiniBarIcon" android:src="@drawable/ic_home" />
+                        <ImageView style="@style/MiniBarIcon" android:src="@drawable/ic_back" android:importantForAccessibility="no" />
+                        <ImageView style="@style/MiniBarIcon" android:src="@drawable/ic_forward" android:importantForAccessibility="no" />
+                        <ImageView style="@style/MiniBarIcon" android:src="@drawable/ic_home" android:importantForAccessibility="no" />
 
                         <FrameLayout
                             android:layout_width="0dp"
@@ -219,6 +225,7 @@
 
                         <ImageView
                             android:id="@+id/miniMenuWolf"
+                            android:importantForAccessibility="no"
                             style="@style/MiniBarIcon"
                             android:src="@drawable/ic_beast_logo" />
                     </LinearLayout>
@@ -230,7 +237,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="14dp"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    tools:ignore="SmallSp">
 
                     <TextView
                         android:layout_width="match_parent"
@@ -360,6 +368,7 @@
 
                             <ImageView
                                 android:id="@+id/previewTabIcon"
+                                android:importantForAccessibility="no"
                                 android:layout_width="12dp"
                                 android:layout_height="12dp"
                                 android:src="@drawable/ic_beast_logo" />
@@ -375,6 +384,7 @@
                                 android:textSize="11sp" />
 
                             <ImageView
+                                android:importantForAccessibility="no"
                                 android:layout_width="12dp"
                                 android:layout_height="12dp"
                                 android:src="@drawable/ic_close"

@@ -7,7 +7,6 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
-import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -19,6 +18,7 @@ import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.edit
 import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
@@ -153,7 +153,7 @@ class AppearanceFragment : Fragment() {
         // Filled button: the gradient carries dark ink (white on Void); Ghost's text-bearing fills stay solid.
         b.previewNewTabBox.background = fill(ctx, p, 18)
         b.previewNewTab.setTextColor(p.onColor)
-        ctx.getDrawable(R.drawable.ic_add)?.mutate()?.let { icon ->
+        AppCompatResources.getDrawable(ctx, R.drawable.ic_add)?.mutate()?.let { icon ->
             val s = dp(ctx, 16)
             icon.setBounds(0, 0, s, s)
             icon.setTint(p.onColor)
@@ -194,7 +194,7 @@ class AppearanceFragment : Fragment() {
                 setTextColor(if (selected) p.accentText else ctx.getColor(R.color.text_secondary))
                 gravity = Gravity.CENTER_VERTICAL
                 maxLines = 1
-                if (selected) ctx.getDrawable(R.drawable.ic_check)?.mutate()?.let { icon ->
+                if (selected) AppCompatResources.getDrawable(ctx, R.drawable.ic_check)?.mutate()?.let { icon ->
                     val s = dp(ctx, 16)
                     icon.setBounds(0, 0, s, s)
                     icon.setTint(p.accentText)
@@ -205,7 +205,7 @@ class AppearanceFragment : Fragment() {
             b.modeRow.addView(FrameLayout(ctx).apply {
                 background = if (selected) rounded(ctx, p.surfaceTint, 12, p.withAlpha(0x88), 1)
                 else rounded(ctx, ctx.getColor(R.color.surface), 12, ctx.getColor(R.color.stroke), 1)
-                foreground = ctx.getDrawable(selectableBackground(ctx))
+                foreground = AppCompatResources.getDrawable(ctx, selectableBackground(ctx))
                 addView(label, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
                 isSelected = selected
                 contentDescription = getString(R.string.appearance_mode_option, names[i])
@@ -288,7 +288,7 @@ class AppearanceFragment : Fragment() {
             if (!fixed) {
                 isClickable = true
                 isFocusable = true
-                foreground = ctx.getDrawable(selectableBackground(ctx))
+                foreground = AppCompatResources.getDrawable(ctx, selectableBackground(ctx))
                 setOnClickListener { showRealmSheet(realm) }
             }
         }
@@ -316,7 +316,7 @@ class AppearanceFragment : Fragment() {
             setTextColor(ink)
             background = rounded(ctx, 0, 8, if (fixed) ctx.getColor(R.color.stroke) else rp.withAlpha(0x88), 1)
             setPadding(dp(ctx, 5), dp(ctx, 1), dp(ctx, 5), dp(ctx, 1))
-            if (fixed) ctx.getDrawable(R.drawable.ic_lock)?.mutate()?.let { icon ->
+            if (fixed) AppCompatResources.getDrawable(ctx, R.drawable.ic_lock)?.mutate()?.let { icon ->
                 val s = dp(ctx, 9)
                 icon.setBounds(0, 0, s, s)
                 icon.setTint(ink)
@@ -439,7 +439,7 @@ class AppearanceFragment : Fragment() {
             setPadding(pad, pad, pad, pad)
             background = if (selected) selectedCardBackground(ctx, p, surface)
             else rounded(ctx, surface, 16, ctx.getColor(R.color.stroke), 1)
-            foreground = ctx.getDrawable(selectableBackground(ctx))
+            foreground = AppCompatResources.getDrawable(ctx, selectableBackground(ctx))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         }
         card.addView(FrameLayout(ctx).apply {
