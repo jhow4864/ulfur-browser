@@ -1,7 +1,11 @@
 package com.jamhowman.beastbrowser
 
 import com.jamhowman.beastbrowser.browser.ShieldLevel
+import com.jamhowman.beastbrowser.ui.ShieldBadge
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Roadmap 10: page shield level thresholds (0 = none, 1-9 = some, 10+ = many). */
@@ -23,5 +27,20 @@ class ShieldLevelTest {
     @Test fun boundaryFollowsTheConstant() {
         assertEquals(ShieldLevel.SOME, ShieldLevel.of(ShieldLevel.MANY_FROM - 1))
         assertEquals(ShieldLevel.MANY, ShieldLevel.of(ShieldLevel.MANY_FROM))
+    }
+
+    // Visual mapping (ShieldBadge) checked only structurally, so the designer can change the actual look.
+    @Test fun eachLevelLooksDifferentWhileShieldsAreUp() {
+        val styles = ShieldLevel.entries.map { ShieldBadge.style(it, shieldsUp = true) }
+        assertEquals(styles.size, styles.toSet().size)
+        assertFalse(styles[ShieldLevel.NONE.ordinal].showCount)
+        assertTrue(styles[ShieldLevel.SOME.ordinal].showCount && styles[ShieldLevel.MANY.ordinal].showCount)
+    }
+
+    @Test fun shieldsDownOverridesTheLevelLook() {
+        val up = ShieldBadge.style(ShieldLevel.MANY, shieldsUp = true)
+        val down = ShieldBadge.style(ShieldLevel.MANY, shieldsUp = false)
+        assertNotEquals(up.icon, down.icon)
+        assertEquals(ShieldBadge.style(ShieldLevel.NONE, false).description, down.description)
     }
 }

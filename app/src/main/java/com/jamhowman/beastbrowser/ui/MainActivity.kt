@@ -18,6 +18,7 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -67,6 +68,7 @@ import com.jamhowman.beastbrowser.browser.AutoplayPolicy
 import com.jamhowman.beastbrowser.browser.ForcedDark
 import com.jamhowman.beastbrowser.browser.BrowserHost
 import com.jamhowman.beastbrowser.browser.Engine
+import com.jamhowman.beastbrowser.browser.ShieldLevel
 import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
 import com.jamhowman.beastbrowser.browser.UrlUtils
@@ -90,6 +92,7 @@ import com.jamhowman.beastbrowser.databinding.ItemTabGroupPillBinding
 import com.jamhowman.beastbrowser.databinding.SheetBeastControlBinding
 import com.jamhowman.beastbrowser.databinding.SheetMenuBinding
 import com.jamhowman.beastbrowser.databinding.SheetShieldsBinding
+import com.jamhowman.beastbrowser.util.Contrast
 import com.jamhowman.beastbrowser.util.Domains
 import com.jamhowman.beastbrowser.downloads.DownloadCenter
 import com.jamhowman.beastbrowser.media.MediaSniffer
@@ -181,6 +184,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
     }
     private var lastBadge = -1
+    /** Badge colour role currently painted on shieldBadge (roadmap 10), so it is only rebuilt on change. */
+    private var shieldBadgeTint: ShieldBadge.Tint? = null
     /** Tracks UI_MODE_NIGHT_* so we recolour chrome when light/dark flips without recreate. */
     private var lastUiNightMask = Configuration.UI_MODE_NIGHT_UNDEFINED
     private var imeVisible = false
@@ -1020,14 +1025,33 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun updateShield() {
         val t = current ?: return
         val active = Prefs.blockAds && !t.siteShieldsDown
-        b.shieldIcon.setImageResource(if (active) R.drawable.ic_shield else R.drawable.ic_shield_outline)
-        b.shieldIcon.imageTintList = ColorStateList.valueOf(if (active) accent.color else getColor(R.color.text_hint))
         val n = if (t.showingHome) 0 else t.blockedOnPage
-        b.shieldBadge.isVisible = n > 0
+        // Roadmap 10: state (ShieldLevel) and look (ShieldBadge) are separate so the visuals can be swapped.
+        val style = ShieldBadge.style(ShieldLevel.of(n), active)
+        b.shieldIcon.setImageResource(style.icon)
+        b.shieldIcon.imageTintList = ColorStateList.valueOf(shieldColor(style.iconTint))
+        b.shieldButton.contentDescription = getString(style.description, fmt(n))
+        if (style.badgeTint != shieldBadgeTint) {
+            shieldBadgeTint = style.badgeTint
+            val c = shieldColor(style.badgeTint)
+            (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let { it.setColor(c); b.shieldBadge.background = it }
+            b.shieldBadge.setTextColor(if (style.badgeTint == ShieldBadge.Tint.ACCENT) accent.onColor else inkOn(c))
+        }
+        b.shieldBadge.isVisible = style.showCount
         b.shieldBadge.text = if (n > 99) "99+" else n.toString()
         if (n > lastBadge && lastBadge >= 0 && n > 0) bump(b.shieldBadge)
         lastBadge = n
     }
+
+    private fun shieldColor(tint: ShieldBadge.Tint): Int = when (tint) {
+        ShieldBadge.Tint.ACCENT -> accent.color
+        ShieldBadge.Tint.MUTED -> getColor(R.color.text_hint)
+        ShieldBadge.Tint.WARN -> getColor(R.color.warn)
+    }
+
+    /** Near-black or white, whichever reads better on [bg]. */
+    private fun inkOn(bg: Int): Int =
+        if (Contrast.ratio(bg, INK_DARK) >= Contrast.ratio(bg, Color.WHITE)) INK_DARK else Color.WHITE
 
     private fun bump(v: View) {
         v.animate().cancel()
@@ -1063,6 +1087,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.menuDownloadRing.setIndicatorColor(c)
         (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let { it.setColor(c); b.shieldBadge.background = it }
         b.shieldBadge.setTextColor(accent.onColor)
+        shieldBadgeTint = ShieldBadge.Tint.ACCENT
         (getDrawable(R.drawable.bg_tab_count)!!.mutate() as GradientDrawable).let {
             it.setStroke(dp(this, 2), c); b.tabCount.background = it
         }
@@ -2454,5 +2479,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         private const val PIP_PAUSE = "pause"
         private const val PIP_BACK = "back"
         private const val PIP_FORWARD = "forward"
+        /** Dark ink for badges on light colours (same as the red accent's onColor). */
+        private val INK_DARK = 0xFF0E0E12.toInt()
     }
 }
