@@ -3,6 +3,23 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## Unreleased
+
+**Media Radar and HLS downloads**
+* AES-128 HLS streams are no longer listed by Media Radar or saved by the downloader. Ulfur treats them like
+  SAMPLE-AES: it does not fetch the playlist key and does not decrypt anything. Plain MP4/WebM and unencrypted HLS
+  still work. Ulfur 2.6.0 and earlier still list and save AES-128 HLS; this change applies from this release on.
+
+**Corrections to earlier notes**
+* The 2.3.6 note below says HLS downloads included "AES-128-encrypted ones (DRM is never supported)". That was
+  inaccurate: AES-128 is encryption, and those builds decrypted it when saving. From this release AES-128 HLS is
+  refused.
+* The 2.3.7 note says Media Radar "shows every stream on the page". It never did: it skips SAMPLE-AES and EME
+  (Widevine, PlayReady, FairPlay) streams and the blocked streaming hosts, and from this release it also skips
+  AES-128 HLS.
+* Ulfur is an independent project. It embeds Mozilla's GeckoView library and is not affiliated with or endorsed by
+  Mozilla. Firefox is a trademark of the Mozilla Foundation.
+
 ## 2.6.0 (versionCode 17)
 
 **New features**

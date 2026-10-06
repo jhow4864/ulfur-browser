@@ -104,8 +104,8 @@ function onHlsPlaylist(d, s, text) {
   if (tabMedia.get(d.tabId) !== s) return;            // navigated away meanwhile
   const pl = parseM3U8(text, d.url);
   if (!pl.valid) return;
-  if (pl.drm) {
-    // DRM-protected stream: drop it and everything derived from it
+  if (pl.refuse) {
+    // Encrypted stream (AES-128, SAMPLE-AES or a DRM key format): drop it and everything derived from it
     s.items.delete(d.url);
     pl.variants.forEach(v => s.items.delete(v.url));
     pushToTab(d.tabId);
