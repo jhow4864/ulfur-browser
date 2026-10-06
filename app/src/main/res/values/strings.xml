@@ -246,6 +246,10 @@
         <item quantity="one">%1$d password was already saved.</item>
         <item quantity="other">%1$d passwords were already saved.</item>
     </plurals>
+    <plurals name="backup_n_passwords_kept_newer">
+        <item quantity="one">%1$d password on this phone was kept because it\'s newer than the one in the file, or the file has no date for it.</item>
+        <item quantity="other">%1$d passwords on this phone were kept because they\'re newer than the ones in the file, or the file has no dates for them.</item>
+    </plurals>
     <plurals name="backup_n_bookmarks">
         <item quantity="one">%1$d bookmark</item>
         <item quantity="other">%1$d bookmarks</item>

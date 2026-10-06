@@ -279,7 +279,7 @@ class BackupUi(private val fragment: Fragment) {
             val sum = when {
                 logins == null -> base
                 r == null -> base.copy(loginsLocked = true)
-                else -> base.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped)
+                else -> base.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped, loginsKeptNewer = r.keptNewer)
             }
             showSummary(sum, logins?.saved ?: true, fromCsv)
         }
@@ -295,9 +295,10 @@ class BackupUi(private val fragment: Fragment) {
             sum.settings.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_settings, it) },
         )
         val lines = buildList {
-            add(if (parts.isEmpty() && sum.loginsUpdated == 0) str(R.string.backup_imported_nothing) else if (parts.isEmpty()) "" else str(R.string.backup_imported, parts.joinToString(", ")))
+            add(if (parts.isEmpty() && sum.loginsUpdated == 0 && sum.loginsKeptNewer == 0) str(R.string.backup_imported_nothing) else if (parts.isEmpty()) "" else str(R.string.backup_imported, parts.joinToString(", ")))
             if (sum.loginsUpdated > 0) add(plural(R.plurals.backup_n_passwords_updated, sum.loginsUpdated))
             if (sum.loginsSkipped > 0) add(plural(R.plurals.backup_n_passwords_skipped, sum.loginsSkipped))
+            if (sum.loginsKeptNewer > 0) add(plural(R.plurals.backup_n_passwords_kept_newer, sum.loginsKeptNewer))
             if (sum.loginsLocked) add(str(R.string.backup_passwords_locked))
             if (!vaultSaved && sum.loginsAdded + sum.loginsUpdated > 0) add(str(R.string.backup_passwords_not_saved))
             if (fromCsv) add(str(R.string.backup_csv_warning))
