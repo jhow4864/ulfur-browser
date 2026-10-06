@@ -10,9 +10,33 @@
   const params = new URLSearchParams(location.hash.slice(1));
   const state = { prefs: { size: 100, font: "sans", theme: "dark" }, article: null, saved: false, savedId: params.get("saved") };
 
-  function native(msg) {
+  // Two routes to the app. Direct: our own sendNativeMessage("beast_tab"). Relay: the background script, over the
+  // beast_helper port. 2.6.0 sat on "Loading…" forever because the direct reply never came and nothing timed out;
+  // now a silent direct route falls back to the relay, and the relay is used for the rest of this page.
+  const DIRECT_TIMEOUT_MS = 2500;
+  const RELAY_TIMEOUT_MS = 9000;
+  let route = "direct";
+
+  function withTimeout(p, ms, what) {
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error(what + " timed out")), ms);
+      Promise.resolve(p).then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+    });
+  }
+  function direct(msg) {
     try { return browser.runtime.sendNativeMessage(NATIVE_APP, msg); }
     catch (e) { return Promise.reject(e); }
+  }
+  function relay(msg) {
+    try { return browser.runtime.sendMessage({ type: "readerRelay", msg }); }
+    catch (e) { return Promise.reject(e); }
+  }
+  function native(msg) {
+    if (route === "relay") return withTimeout(relay(msg), RELAY_TIMEOUT_MS, "relay");
+    return withTimeout(direct(msg), DIRECT_TIMEOUT_MS, "direct").catch(() => {
+      route = "relay";
+      return withTimeout(relay(msg), RELAY_TIMEOUT_MS, "relay");
+    });
   }
 
   // ------------------------------------------------------------ sanitising
@@ -110,9 +134,10 @@
     $("status").hidden = true;
   }
 
-  function showUnavailable(url) {
+  function showUnavailable(url, text) {
     const s = $("status");
-    s.textContent = "This Reader view is no longer available. ";
+    s.hidden = false;
+    s.textContent = (text || "This Reader view is no longer available.") + " ";
     const ok = safeUrl(params.get("url") || url);
     if (ok) {
       const a = document.createElement("a");
@@ -132,7 +157,8 @@
   document.querySelectorAll("#panel .font").forEach(b => b.addEventListener("click", () => setPrefs({ font: b.dataset.font })));
   document.querySelectorAll("#panel .swatch").forEach(b => b.addEventListener("click", () => setPrefs({ theme: b.dataset.theme })));
   $("close").addEventListener("click", () => {
-    native({ type: "readerClose", url: (state.article && state.article.url) || params.get("url") || "" }).catch(() => history.back());
+    native({ type: "readerClose", id: params.get("id"), url: (state.article && state.article.url) || params.get("url") || "" })
+      .then(r => { if (!r || r.ok === false) history.back(); }, () => history.back());
   });
   $("save").addEventListener("click", () => {
     if (state.saved) { toast("Already in your reading list"); return; }
@@ -151,5 +177,9 @@
     applyPrefs();
     if (r && r.ok && r.article) { render(r.article); setSaved(!!r.saved); }
     else showUnavailable(r && r.url);
-  }, () => showUnavailable());
+  }, () => showUnavailable(null, "Reader view couldn't reach Ulfur."))
+    .catch(e => {                                          // render threw: never leave "Loading…" up
+      console.error("reader render failed", e);
+      showUnavailable(null, "Reader view couldn't show this article.");
+    });
 })();

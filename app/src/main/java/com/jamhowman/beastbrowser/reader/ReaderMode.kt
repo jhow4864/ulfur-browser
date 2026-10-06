@@ -114,38 +114,69 @@ object ReaderMode {
 
     // ------------------------------------------------------------------ reader page messages
 
-    fun handlePageMessage(session: GeckoSession?, o: JSONObject): GeckoResult<Any>? = when (o.optString("type")) {
-        "getArticle" -> getArticle(session, o)
-        "readerPrefs" -> {
-            o.optJSONObject("prefs")?.let { p ->
-                prefs.edit().putInt("size", p.optInt("size", 100).coerceIn(70, 200))
-                    .putString("font", if (p.optString("font") == "serif") "serif" else "sans")
-                    .putString("theme", p.optString("theme").takeIf { it in THEMES } ?: "dark").apply()
+    /**
+     * A reader page request, from either route: the page's own `runtime.sendNativeMessage("beast_tab")`
+     * ([session] is the tab) or the background relay ([handleRelayed], [session] null). Without a session the
+     * tab is found through the live article id, when there is one.
+     */
+    fun handlePageMessage(session: GeckoSession?, o: JSONObject): GeckoResult<Any>? {
+        val l = live[o.optString("id")]
+        val s = session ?: l?.session?.get()
+        return when (o.optString("type")) {
+            "getArticle" -> getArticle(s, l, o)
+            "readerPrefs" -> {
+                o.optJSONObject("prefs")?.let { p ->
+                    prefs.edit().putInt("size", p.optInt("size", 100).coerceIn(70, 200))
+                        .putString("font", if (p.optString("font") == "serif") "serif" else "sans")
+                        .putString("theme", p.optString("theme").takeIf { it in THEMES } ?: "dark").apply()
+                }
+                GeckoResult.fromValue(JSONObject().put("ok", true))
             }
-            GeckoResult.fromValue(JSONObject().put("ok", true))
+            "saveArticle" -> saveArticle(o)
+            "readerClose" -> {
+                val url = o.optString("url").takeIf { it.startsWith("http") }
+                if (s == null) GeckoResult.fromValue(JSONObject().put("ok", false))   // page falls back to history.back()
+                else {
+                    main.post { host?.closeReader(s, url) }
+                    GeckoResult.fromValue(JSONObject().put("ok", true))
+                }
+            }
+            else -> null
         }
-        "saveArticle" -> saveArticle(o)
-        "readerClose" -> {
-            val url = o.optString("url").takeIf { it.startsWith("http") }
-            if (session != null) main.post { host?.closeReader(session, url) }
-            GeckoResult.fromValue(JSONObject().put("ok", true))
+    }
+
+    /**
+     * Reader page request relayed by Beast Helper's background script over the `beast_helper` port:
+     * `{type:"readerRelay", rid, msg, private}`. [send] gets `{type:"readerReply", rid, reply}` or
+     * `{type:"readerReply", rid, error}` exactly once, on the main thread.
+     */
+    fun handleRelayed(o: JSONObject, send: (JSONObject) -> Unit) {
+        val rid = o.optInt("rid", 0)
+        if (rid == 0) return
+        val msg = o.optJSONObject("msg") ?: JSONObject()
+        val out = { k: String, v: Any -> main.post { send(JSONObject().put("type", "readerReply").put("rid", rid).put(k, v)) } }
+        val result = try {
+            handlePageMessage(null, msg)
+        } catch (e: Exception) {
+            out("error", e.message ?: "Reader request failed"); return
         }
-        else -> null
+        if (result == null) { out("error", "unknown type ${msg.optString("type")}"); return }
+        result.accept({ v -> out("reply", v ?: JSONObject.NULL) }, { e -> out("error", e?.message ?: "Reader request failed") })
     }
 
     private val THEMES = setOf("dark", "sepia", "light")
 
-    private fun baseReply(session: GeckoSession?) = JSONObject()
+    private fun baseReply(session: GeckoSession?, live: Live? = null) = JSONObject()
         .put("prefs", JSONObject()
             .put("size", prefs.getInt("size", 100))
             .put("font", prefs.getString("font", "sans"))
             .put("theme", prefs.getString("theme", "dark")))
         .put("accent", "#%06X".format(Prefs.accent.color and 0xFFFFFF))
         .put("onAccent", "#%06X".format(Prefs.accent.onColor and 0xFFFFFF))
-        .put("private", HelperSessions.isPrivate(session))
+        .put("private", HelperSessions.isPrivate(session) || live?.isPrivate == true)
 
-    private fun getArticle(session: GeckoSession?, o: JSONObject): GeckoResult<Any> {
-        val reply = baseReply(session)
+    private fun getArticle(session: GeckoSession?, l: Live?, o: JSONObject): GeckoResult<Any> {
+        val reply = baseReply(session, l)
         val savedId = o.optString("saved").toLongOrNull()
         if (savedId != null) {
             val result = GeckoResult<Any>()
@@ -156,7 +187,7 @@ object ReaderMode {
             }
             return result
         }
-        val l = live[o.optString("id")] ?: return GeckoResult.fromValue(reply.put("ok", false))
+        if (l == null) return GeckoResult.fromValue(reply.put("ok", false))
         val alreadySaved = l.savedId != null || (!l.isPrivate && runCatching { db().idForUrl(l.article.optString("url")) }.getOrNull() != null)
         return GeckoResult.fromValue(reply.put("ok", true).put("saved", alreadySaved).put("article", l.article))
     }
