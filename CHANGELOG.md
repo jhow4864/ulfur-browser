@@ -12,6 +12,9 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   copy is removed, and any file that can't be copied safely stays in the vault and is named in the result notice.
   Multi-select also lets you share or delete several vault files at once.
 
+**Fixes**
+* The private vault no longer asks for your fingerprint twice when you first open it.
+
 ## 2.5.0 (versionCode 16)
 
 **New features**

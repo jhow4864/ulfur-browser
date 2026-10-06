@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
  * with a `.nomedia` marker so Gallery and Files never index them.
  */
 class PrivateDownloadsActivity : AppCompatActivity() {
+    private companion object { const val KEY_PROMPTING = "prompting" }
     private lateinit var b: ActivityPrivateDownloadsBinding
     private lateinit var adapter: DownloadAdapter
     private lateinit var prompt: BiometricPrompt
@@ -54,6 +55,13 @@ class PrivateDownloadsActivity : AppCompatActivity() {
     /** Ids waiting for the Android 8-9 storage permission before the confirm dialog. */
     private var pendingMove: Set<Long> = emptySet()
     private var moving = false
+    /**
+     * True while the fingerprint/screen-lock prompt is up (bug 7). onCreate and onStart both used to call
+     * showLocked(), so the first open asked twice; the screen-lock fallback on Android 9-10 is its own activity,
+     * so its onStop/onStart round trip could ask again too. Kept across rotation because the prompt's fragment
+     * re-shows itself.
+     */
+    private var prompting = false
 
     private val storagePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         val ids = pendingMove; pendingMove = emptySet()
@@ -69,6 +77,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         val accent = Prefs.accent
         theme.applyStyle(accent.overlay, true)
         super.onCreate(savedInstanceState)
+        prompting = savedInstanceState?.getBoolean(KEY_PROMPTING) ?: false
         DownloadCenter.init(this)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -102,8 +111,9 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         (b.list.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
 
         prompt = PrivateAuth.create(this,
-            onUnlocked = { showUnlocked() },
+            onUnlocked = { prompting = false; showUnlocked() },
             onFailed = { noLock, msg ->
+                prompting = false
                 if (noLock) {
                     Toast.makeText(this, "Set a screen lock in Settings to use private downloads", Toast.LENGTH_LONG).show()
                     finish()
@@ -111,14 +121,21 @@ class PrivateDownloadsActivity : AppCompatActivity() {
                     Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
                 }
             })
-        b.unlockBtn.setOnClickListener { PrivateAuth.prompt(prompt) }
+        // The button always asks, even if a prompt was lost (e.g. not restored after rotation).
+        b.unlockBtn.setOnClickListener { prompting = false; askToUnlock() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 DownloadCenter.privateItems.collect { render(it) }
             }
         }
-        if (PrivateLock.isUnlocked()) showUnlocked() else showLocked()
+        // Locked: onStart (which always follows) shows the locked screen and asks once.
+        if (PrivateLock.isUnlocked()) showUnlocked()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_PROMPTING, prompting)
     }
 
     override fun onStart() {
@@ -139,7 +156,13 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         b.storageLine.isVisible = false
         clearItem?.isVisible = false
         setSelection(emptySet())
-        if (PrivateAuth.isAvailable(this)) PrivateAuth.prompt(prompt)
+        if (PrivateAuth.isAvailable(this)) askToUnlock()
+    }
+
+    private fun askToUnlock() {
+        if (prompting || PrivateLock.isUnlocked()) return
+        prompting = true
+        PrivateAuth.prompt(prompt)
     }
 
     private fun showUnlocked() {
