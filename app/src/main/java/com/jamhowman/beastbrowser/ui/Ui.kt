@@ -27,3 +27,7 @@ fun glow(view: View, accent: Int) {
         gradientRadius = view.resources.displayMetrics.density * 75
     }
 }
+
+/** Snackbar action text in [accent], lightened/darkened until it reaches 4.5:1 on the snackbar's surface3 (SPEC.md "snackAction"). */
+fun snackActionColor(ctx: Context, accent: Int): Int =
+    com.jamhowman.beastbrowser.util.Contrast.readableOn(accent, ctx.getColor(com.jamhowman.beastbrowser.R.color.surface3))

@@ -86,7 +86,7 @@ class ReadingListActivity : AppCompatActivity() {
         reload()
         Snackbar.make(b.root, "Removed from reading list", Snackbar.LENGTH_LONG)
             .setBackgroundTint(getColor(R.color.surface3)).setTextColor(getColor(R.color.text_primary))
-            .setActionTextColor(Prefs.accent.color)
+            .setActionTextColor(snackActionColor(this, Prefs.accent.color))
             .setAction("Undo") { full?.let { db.save(it); reload() } }.show()
     }
 }

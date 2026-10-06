@@ -2430,7 +2430,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val s = Snackbar.make(b.root, msg, duration)
         if (b.bottomBar.isVisible) s.anchorView = b.bottomBar
         s.setBackgroundTint(getColor(R.color.surface3)).setTextColor(getColor(R.color.text_primary))
-        if (action != null) s.setAction(actionLabel) { action() }.setActionTextColor(accent.color)
+        if (action != null) s.setAction(actionLabel) { action() }.setActionTextColor(snackActionColor(this, accent.color))
         s.show()
     }
 

@@ -116,7 +116,7 @@ class DownloadsActivity : AppCompatActivity() {
     private fun missing(d: DownloadItem) {
         Snackbar.make(b.root, "File was moved or deleted", Snackbar.LENGTH_LONG)
             .setBackgroundTint(getColor(R.color.surface3)).setTextColor(getColor(R.color.text_primary))
-            .setActionTextColor(Prefs.accent.color)
+            .setActionTextColor(snackActionColor(this, Prefs.accent.color))
             .setAction("Remove") { DownloadCenter.remove(d.id) }.show()
     }
 
