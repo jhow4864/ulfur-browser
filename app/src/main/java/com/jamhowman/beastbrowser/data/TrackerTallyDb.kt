@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import androidx.core.database.sqlite.transaction
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -70,23 +71,19 @@ class TrackerTallyDb private constructor(context: Context) : SQLiteOpenHelper(co
         }
         if (batch.isEmpty()) return
         val db = writableDatabase
-        db.beginTransaction()
-        try {
-            db.compileStatement("UPDATE tally SET count = count + ? WHERE day = ? AND site = ? AND category = ?").use { update ->
+        db.transaction {
+            compileStatement("UPDATE tally SET count = count + ? WHERE day = ? AND site = ? AND category = ?").use { update ->
                 for ((k, n) in batch) {
                     update.clearBindings()
                     update.bindLong(1, n); update.bindLong(2, k.day); update.bindString(3, k.site); update.bindString(4, k.category.key)
                     // SQLite on API 26-29 predates UPSERT, so update first and insert when the row is new.
                     if (update.executeUpdateDelete() == 0) {
-                        db.insert("tally", null, ContentValues().apply {
+                        insert("tally", null, ContentValues().apply {
                             put("day", k.day); put("site", k.site); put("category", k.category.key); put("count", n)
                         })
                     }
                 }
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
