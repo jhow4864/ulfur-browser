@@ -26,6 +26,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.Editable
+import android.text.TextUtils
 import android.text.TextWatcher
 import android.util.Base64
 import android.util.Rational
@@ -39,11 +40,15 @@ import android.webkit.MimeTypeMap
 import android.webkit.URLUtil
 import android.widget.FrameLayout
 import android.widget.GridLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
+import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -59,6 +64,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.AutoplayPolicy
+import com.jamhowman.beastbrowser.browser.ForcedDark
 import com.jamhowman.beastbrowser.browser.BrowserHost
 import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.browser.Tab
@@ -224,6 +230,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         PasswordVault.init(this)
         Engine.attachPasswordVault({ this }, { current?.session })
         Engine.syncZoomMap(db.allZoomPrefs())
+        syncForceDark()
         DownloadCenter.init(this)
         ReaderMode.init(this)
         ReaderMode.host = readerHost
@@ -274,6 +281,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     override fun onResume() {
         super.onResume()
         Engine.applySettings()
+        syncForceDark() // Settings may have switched forced dark or edited "Never force dark on"
         if (Prefs.accent != accent) {
             accent = Prefs.accent
             theme.applyStyle(accent.overlay, true)
@@ -1326,6 +1334,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         m.menuHeader.setOnClickListener { dialog.dismiss(); showShields() }
         val bookmarked = onPage && db.isBookmarked(t.url)
         val pipOffered = onPage && PipPolicy.canEnterManually(Prefs.pipEnabled, pipSupported, mediaState(t))
+        val darkSite = if (ForcedDark.menuTileShown(Prefs.forceDarkActive, t.url, onPage)) db.siteKey(t.url) else ""
+        val darkOn = darkSite.isNotEmpty() && !forceDarkOff(t, darkSite)
         val items = listOfNotNull(
             MenuItem(R.drawable.ic_add, "New tab") { newTab() },
             MenuItem(R.drawable.ic_incognito, if (realm == Realm.GHOST) "Ghost tab" else "Private tab") { newTab(private = true) },
@@ -1343,6 +1353,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             },
             if (pipOffered) MenuItem(R.drawable.ic_pip, getString(R.string.menu_pip)) {
                 if (!enterPip()) toast(getString(R.string.pip_unavailable))
+            } else null,
+            if (darkSite.isNotEmpty()) MenuItem(R.drawable.ic_force_dark, getString(R.string.menu_dark_page), darkOn) {
+                setForceDarkOff(t, darkSite, darkOn)
             } else null,
             MenuItem(R.drawable.ic_reader, "Reading list") { startActivity(Intent(this, ReadingListActivity::class.java)) },
             MenuItem(R.drawable.ic_dashboard, getString(R.string.beast_control)) { showBeastControl() },
@@ -1373,6 +1386,22 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             ib.root.minimumWidth = cell - dp(this, 12)
             ib.root.setOnClickListener { dialog.dismiss(); item.action() }
             m.menuGrid.addView(ib.root)
+        }
+        if (darkSite.isNotEmpty() && !Prefs.forceDarkTipShown) {
+            // Designer SPEC: first time only, a tip under the grid explaining the Dark page tile.
+            Prefs.forceDarkTipShown = true
+            m.root.addView(TextView(this).apply {
+                text = HtmlCompat.fromHtml(getString(R.string.menu_dark_page_tip, TextUtils.htmlEncode(darkSite)), HtmlCompat.FROM_HTML_MODE_LEGACY)
+                textSize = 12.5f
+                setTextColor(getColor(R.color.text_primary))
+                setPadding(dp(this@MainActivity, 14), dp(this@MainActivity, 12), dp(this@MainActivity, 14), dp(this@MainActivity, 12))
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(this@MainActivity, 14).toFloat()
+                    setColor(ColorUtils.blendARGB(getColor(R.color.surface), accent.color, 0.18f))
+                }
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = dp(this@MainActivity, 12)
+            })
         }
         dialog.setContentView(m.root)
         dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
@@ -1672,6 +1701,26 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             setSiteAutoplay(t, site, if (on) AutoplayPolicy.Mode.ALLOW_ALL else null)
             snack(getString(if (on) R.string.autoplay_site_allowed else R.string.autoplay_site_blocked, site))
         }
+    }
+
+    // ------------------------------------------------------------------ 2.5 forced dark (beast-siteprefs)
+
+    private val sessionDarkOff get() = Engine.sessionDarkOff // Private/Ghost choices: session only, never in the DB
+
+    private fun syncForceDark() = Engine.syncForceDark(Prefs.forceDarkActive, db.forceDarkOffSites())
+
+    private fun forceDarkOff(t: Tab, site: String): Boolean =
+        (t.isPrivate && site in sessionDarkOff) || db.getSitePrefs(site).forceDarkOff
+
+    /** Menu "Dark page" tile: add/remove [site] in the exception list; the extension re-applies without a reload. */
+    private fun setForceDarkOff(t: Tab, site: String, off: Boolean) {
+        if (t.isPrivate && (off || site in sessionDarkOff)) {
+            if (off) sessionDarkOff += site else sessionDarkOff -= site
+        } else {
+            db.setForceDarkOff(site, off)
+        }
+        syncForceDark()
+        snack(getString(if (off) R.string.force_dark_site_off else R.string.force_dark_site_on, site))
     }
 
     /** Autoplay choices made in private / Ghost tabs: kept for this session only, never written to the DB. */

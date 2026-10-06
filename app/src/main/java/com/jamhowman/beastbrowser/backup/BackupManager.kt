@@ -47,7 +47,7 @@ object BackupManager {
         "dnt_gpc" to Boolean::class.java, "fingerprinting" to Boolean::class.java, "safe_browsing" to Boolean::class.java,
         "clear_on_exit" to Boolean::class.java, "search_suggestions" to Boolean::class.java,
         "dark_pages" to Boolean::class.java, "restore_tabs" to Boolean::class.java,
-        "pip" to Boolean::class.java,
+        "pip" to Boolean::class.java, "force_dark" to Boolean::class.java,
         "autoplay" to String::class.java,
         "doh_provider" to String::class.java, "doh_mode" to String::class.java, "doh_custom_url" to String::class.java,
         "doh_nextdns_id" to String::class.java,

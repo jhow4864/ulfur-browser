@@ -47,7 +47,7 @@ class SiteAutoplayDbTest {
     }
 
     @Test fun upgradeFromV3KeepsRowsAndAddsAColumn() {
-        assertEquals(4, BrowserDb.VERSION)
+        assertTrue(BrowserDb.VERSION >= 4)
         val raw = SQLiteDatabase.create(null)
         raw.execSQL("CREATE TABLE site_prefs(host TEXT PRIMARY KEY NOT NULL, desktop INTEGER NOT NULL DEFAULT 0, zoom INTEGER NOT NULL DEFAULT 100)")
         raw.execSQL("CREATE TABLE bookmarks(id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT NOT NULL UNIQUE, title TEXT, created INTEGER NOT NULL, folder_id TEXT)")

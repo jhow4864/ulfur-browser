@@ -103,11 +103,33 @@
     <!-- 2.5: autoplay blocker -->
     <string name="pref_category_browsing">Browsing</string>
     <string name="pref_site_content_title">Site content</string>
-    <string name="pref_site_content_summary">Autoplay: %1$s · Picture-in-picture: %2$s</string>
+    <string name="pref_site_content_summary">Autoplay: %1$s · Forced dark mode: %2$s · Picture-in-picture: %3$s</string>
     <string name="pref_on">On</string>
     <string name="pref_off">Off</string>
     <string name="site_content_section_autoplay">Autoplay</string>
     <string name="site_content_section_video">Video</string>
+    <!-- 2.5: forced dark mode (BETA); wording from Designer's mockups-2.5/SPEC.md (b) -->
+    <string name="site_content_section_dark">Dark mode</string>
+    <string name="pref_dark_pages_title">Prefer dark websites</string>
+    <string name="pref_dark_pages_summary">Asks sites for their own dark theme first</string>
+    <string name="pref_force_dark_title">Forced dark mode</string>
+    <string name="pref_force_dark_beta">BETA</string>
+    <string name="pref_force_dark_summary">Makes light sites dark when they have no dark theme. Photos and videos keep their colours</string>
+    <string name="force_dark_off_sites">Never force dark on</string>
+    <string name="force_dark_off_sites_none">No sites yet. Tap Dark page in the menu on a site, or add one here.</string>
+    <plurals name="force_dark_off_sites_count">
+        <item quantity="one">%d site</item>
+        <item quantity="other">%d sites</item>
+    </plurals>
+    <string name="force_dark_add_site">+ Add site</string>
+    <string name="force_dark_add_site_hint" translatable="false">example.com</string>
+    <string name="force_dark_add_site_error">Enter a site name like example.com</string>
+    <string name="force_dark_remove_site">Force dark on %1$s again?</string>
+    <string name="add">Add</string>
+    <string name="menu_dark_page">Dark page</string>
+    <string name="menu_dark_page_tip">&lt;b&gt;Dark page&lt;/b&gt; is on because Forced dark mode is on. Tap it to stop forcing dark on %1$s.</string>
+    <string name="force_dark_site_off">Forced dark off on %1$s</string>
+    <string name="force_dark_site_on">Forced dark on for %1$s</string>
     <string name="pref_autoplay_title">Autoplay</string>
     <string name="autoplay_block_all">Block audio and video</string>
     <string name="autoplay_block_audible">Block audio only</string>

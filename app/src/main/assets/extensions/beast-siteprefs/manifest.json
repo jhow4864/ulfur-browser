@@ -1,17 +1,38 @@
 {
   "manifest_version": 2,
   "name": "Ulfur Site Prefs",
-  "version": "1.0.0",
-  "description": "Applies per-host page zoom remembered by Ulfur.",
+  "version": "1.1.0",
+  "description": "Applies per-host page zoom and forced dark remembered by Ulfur.",
   "browser_specific_settings": {
-    "gecko": { "id": "beast-siteprefs@jamhowman.com" }
+    "gecko": {
+      "id": "beast-siteprefs@jamhowman.com"
+    }
   },
-  "background": { "scripts": ["background.js"] },
-  "content_scripts": [{
-    "matches": ["http://*/*", "https://*/*"],
-    "js": ["content.js"],
-    "run_at": "document_start",
-    "all_frames": false
-  }],
-  "permissions": ["nativeMessaging", "geckoViewAddons", "<all_urls>", "tabs"]
+  "background": {
+    "scripts": [
+      "dark-core.js",
+      "background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "dark-core.js",
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "permissions": [
+    "nativeMessaging",
+    "geckoViewAddons",
+    "<all_urls>",
+    "tabs",
+    "storage"
+  ]
 }

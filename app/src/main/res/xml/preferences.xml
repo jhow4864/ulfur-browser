@@ -52,8 +52,6 @@
             app:entries="@array/ui_theme_names" app:entryValues="@array/ui_theme_keys" />
         <com.jamhowman.beastbrowser.ui.AccentPreference app:key="accent" app:defaultValue="red"
             app:title="Accent colour" app:iconSpaceReserved="false" />
-        <SwitchPreferenceCompat app:key="dark_pages" app:defaultValue="true" app:iconSpaceReserved="false"
-            app:title="Prefer dark websites" app:summary="Asks sites for their dark theme (prefers-color-scheme: dark)" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/pref_category_browsing" app:iconSpaceReserved="false">

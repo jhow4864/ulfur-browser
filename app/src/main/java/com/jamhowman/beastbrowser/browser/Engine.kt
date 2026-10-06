@@ -12,6 +12,7 @@ import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
 import org.mozilla.geckoview.StorageController
 import org.mozilla.geckoview.WebExtension
 import org.mozilla.geckoview.WebExtensionController
+import org.json.JSONArray
 import org.json.JSONObject
 import com.jamhowman.beastbrowser.BuildConfig
 import com.jamhowman.beastbrowser.passwords.VaultStorageDelegate
@@ -275,11 +276,41 @@ object Engine {
         }, { e -> Log.e(TAG, "Beast site prefs install failed", e) })
     }
 
+    private var lastZoomMap: Map<String, Int>? = null
+    private var lastDark: JSONObject? = null
+    /** Forced dark exceptions chosen in Private/Ghost tabs: this process only, never written to disk. */
+    val sessionDarkOff = HashSet<String>()
+
+    init {
+        // The extension says hello whenever its native port (re)connects, e.g. when Gecko started it after our
+        // queued syncs had timed out: push the latest state again.
+        sitePrefsBridge.events += { ev ->
+            if (ev.optString("type") == "hello") {
+                lastZoomMap?.let { syncZoomMap(it) }
+                lastDark?.let { sitePrefsBridge.request(JSONObject(it.toString()), 3000) {} }
+            }
+        }
+    }
+
     /** Push the full per-host zoom map into the extension (call after DB load / edits). */
     fun syncZoomMap(map: Map<String, Int>) {
+        lastZoomMap = map
         val o = JSONObject()
         for ((k, v) in map) o.put(k, v)
         sitePrefsBridge.request(JSONObject().put("type", "sync").put("map", o), 3000) {}
+    }
+
+    /**
+     * 2.5 forced dark: tell beast-siteprefs whether to darken light pages, and where not to. [off] are the saved
+     * exceptions (site_prefs.force_dark_off, kept by the extension across restarts); [sessionDarkOff] holds choices
+     * made in Private/Ghost tabs, which the extension only keeps in memory. Open tabs update without a reload.
+     */
+    fun syncForceDark(enabled: Boolean, off: Collection<String>) {
+        val msg = JSONObject().put("type", "darkSync").put("enabled", enabled)
+            .put("off", JSONArray(off.toList())).put("sessionOff", JSONArray(sessionDarkOff.sorted()))
+        if (msg.toString() == lastDark?.toString()) return
+        lastDark = msg
+        sitePrefsBridge.request(JSONObject(msg.toString()), 3000) {}
     }
 
     /** Tell the extension to apply [zoom] percent on tabs for [host] (registrable domain). */

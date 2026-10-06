@@ -8,6 +8,15 @@
         <Preference app:key="autoplay_allowed_sites" app:iconSpaceReserved="false" app:title="@string/autoplay_allowed_sites" />
     </PreferenceCategory>
 
+    <!-- dark_pages moved here from Appearance in 2.5 (same key, so no migration). -->
+    <PreferenceCategory app:key="sc_dark" app:title="@string/site_content_section_dark" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat app:key="dark_pages" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="@string/pref_dark_pages_title" app:summary="@string/pref_dark_pages_summary" />
+        <SwitchPreferenceCompat app:key="force_dark" app:defaultValue="false" app:dependency="dark_pages" app:iconSpaceReserved="false"
+            app:title="@string/pref_force_dark_title" app:summary="@string/pref_force_dark_summary" />
+        <Preference app:key="force_dark_off_sites" app:iconSpaceReserved="false" app:title="@string/force_dark_off_sites" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:key="sc_video" app:title="@string/site_content_section_video" app:iconSpaceReserved="false">
         <SwitchPreferenceCompat app:key="pip" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="@string/pref_pip_title" app:summary="@string/pref_pip_summary" />

@@ -25,6 +25,14 @@ object Prefs {
     val safeBrowsing get() = sp.getBoolean("safe_browsing", true)
     val clearOnExit get() = sp.getBoolean("clear_on_exit", false)
     val darkPages get() = sp.getBoolean("dark_pages", true)
+    /** 2.5 (BETA): darken light sites with no dark theme (CSS filter in beast-siteprefs). Needs [darkPages]. */
+    val forceDark get() = sp.getBoolean("force_dark", false)
+    /** What the extension should do: forced dark only runs on top of "Prefer dark websites". */
+    val forceDarkActive get() = darkPages && forceDark
+    /** The one-time "Dark page" tip under the menu grid has been shown. */
+    var forceDarkTipShown: Boolean
+        get() = sp.getBoolean("force_dark_tip", false)
+        set(v) = sp.edit { putBoolean("force_dark_tip", v) }
     /** dark | light | system — chrome theme (default dark). */
     val uiTheme get() = sp.getString("ui_theme", "dark") ?: "dark"
     val restoreTabs get() = sp.getBoolean("restore_tabs", true)

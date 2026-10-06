@@ -12,10 +12,17 @@ data class Entry(val id: Long, val url: String, val title: String, val time: Lon
 
 /**
  * Per-host browsing prefs: desktop site + page zoom (percent, 100 = default).
- * 2.5: [autoplay] = per-site autoplay override ([com.jamhowman.beastbrowser.browser.AutoplayPolicy.Mode] key), null = global.
+ * 2.5: [autoplay] = per-site autoplay override ([com.jamhowman.beastbrowser.browser.AutoplayPolicy.Mode] key), null = global;
+ * [forceDarkOff] = never force dark on this site ("Never force dark on" list).
  */
-data class SitePrefs(val host: String, val desktop: Boolean = false, val zoom: Int = 100, val autoplay: String? = null) {
-    val isDefault: Boolean get() = !desktop && zoom == 100 && autoplay == null
+data class SitePrefs(
+    val host: String,
+    val desktop: Boolean = false,
+    val zoom: Int = 100,
+    val autoplay: String? = null,
+    val forceDarkOff: Boolean = false,
+) {
+    val isDefault: Boolean get() = !desktop && zoom == 100 && autoplay == null && !forceDarkOff
 }
 
 /** History + bookmarks + per-host site prefs. Private tabs never write history/bookmarks. */
@@ -29,7 +36,8 @@ class BrowserDb private constructor(context: Context) :
         db.execSQL("CREATE INDEX history_visited ON history(visited)")
         db.execSQL("CREATE TABLE bookmarks(id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT NOT NULL UNIQUE, title TEXT, created INTEGER NOT NULL, folder_id TEXT)")
         db.execSQL(
-            "CREATE TABLE site_prefs(host TEXT PRIMARY KEY NOT NULL, desktop INTEGER NOT NULL DEFAULT 0, zoom INTEGER NOT NULL DEFAULT 100, autoplay TEXT)"
+            "CREATE TABLE site_prefs(host TEXT PRIMARY KEY NOT NULL, desktop INTEGER NOT NULL DEFAULT 0, zoom INTEGER NOT NULL DEFAULT 100, autoplay TEXT, " +
+                "force_dark_off INTEGER NOT NULL DEFAULT 0)"
         )
     }
 
@@ -46,6 +54,10 @@ class BrowserDb private constructor(context: Context) :
         if (oldVersion < 4) {
             // 2.5: per-site autoplay override (nullable: existing rows keep the global setting). Additive only.
             try { db.execSQL("ALTER TABLE site_prefs ADD COLUMN autoplay TEXT") } catch (_: Exception) {}
+        }
+        if (oldVersion < 5) {
+            // 2.5: forced dark exceptions (0 = follow the global switch). Additive only.
+            try { db.execSQL("ALTER TABLE site_prefs ADD COLUMN force_dark_off INTEGER NOT NULL DEFAULT 0") } catch (_: Exception) {}
         }
     }
 
@@ -144,10 +156,10 @@ class BrowserDb private constructor(context: Context) :
         val host = siteKey(hostOrUrl)
         if (host.isEmpty()) return SitePrefs("")
         readableDatabase.rawQuery(
-            "SELECT host, desktop, zoom, autoplay FROM site_prefs WHERE host = ? LIMIT 1", arrayOf(host)
+            "SELECT host, desktop, zoom, autoplay, force_dark_off FROM site_prefs WHERE host = ? LIMIT 1", arrayOf(host)
         ).use { c ->
             if (!c.moveToFirst()) return SitePrefs(host)
-            return SitePrefs(c.getString(0), c.getInt(1) != 0, c.getInt(2).coerceIn(50, 300), if (c.isNull(3)) null else c.getString(3))
+            return SitePrefs(c.getString(0), c.getInt(1) != 0, c.getInt(2).coerceIn(50, 300), if (c.isNull(3)) null else c.getString(3), c.getInt(4) != 0)
         }
     }
 
@@ -185,6 +197,22 @@ class BrowserDb private constructor(context: Context) :
         return out
     }
 
+    /** 2.5: add or remove [hostOrUrl] (registrable domain) in the "Never force dark on" list. */
+    fun setForceDarkOff(hostOrUrl: String?, off: Boolean) {
+        val host = siteKey(hostOrUrl)
+        if (host.isEmpty()) return
+        upsert(host, desktop = null, zoom = null, forceDarkOff = off)
+    }
+
+    /** Sites where forced dark is switched off, sorted (Settings list + extension sync). */
+    fun forceDarkOffSites(): List<String> {
+        val out = ArrayList<String>()
+        readableDatabase.rawQuery("SELECT host FROM site_prefs WHERE force_dark_off != 0 ORDER BY host", null).use { c ->
+            while (c.moveToNext()) out += c.getString(0)
+        }
+        return out
+    }
+
     /** All non-default zoom entries, for syncing into the siteprefs extension. */
     fun allZoomPrefs(): Map<String, Int> {
         val out = LinkedHashMap<String, Int>()
@@ -195,12 +223,13 @@ class BrowserDb private constructor(context: Context) :
     }
 
     /** null = keep the current value; for [autoplay], [CLEAR] removes the override. */
-    private fun upsert(host: String, desktop: Boolean?, zoom: Int?, autoplay: String? = null) {
+    private fun upsert(host: String, desktop: Boolean?, zoom: Int?, autoplay: String? = null, forceDarkOff: Boolean? = null) {
         val current = getSitePrefs(host)
         val next = current.copy(
             desktop = desktop ?: current.desktop,
             zoom = zoom ?: current.zoom,
             autoplay = when (autoplay) { null -> current.autoplay; CLEAR -> null; else -> autoplay },
+            forceDarkOff = forceDarkOff ?: current.forceDarkOff,
         )
         if (next.isDefault) {
             writableDatabase.delete("site_prefs", "host = ?", arrayOf(host))
@@ -211,6 +240,7 @@ class BrowserDb private constructor(context: Context) :
             put("desktop", if (next.desktop) 1 else 0)
             put("zoom", next.zoom)
             if (next.autoplay == null) putNull("autoplay") else put("autoplay", next.autoplay)
+            put("force_dark_off", if (next.forceDarkOff) 1 else 0)
         }, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
@@ -233,8 +263,8 @@ class BrowserDb private constructor(context: Context) :
         }
 
     companion object {
-        /** 3 = 2.3.4 bookmark folders; 4 = 2.5 site_prefs.autoplay. Upgrades are additive only. */
-        const val VERSION = 4
+        /** 3 = 2.3.4 bookmark folders; 4 = 2.5 site_prefs.autoplay; 5 = 2.5 site_prefs.force_dark_off. Additive only. */
+        const val VERSION = 5
         private const val CLEAR = "\u0000clear"
         @Volatile private var instance: BrowserDb? = null
         fun get(context: Context): BrowserDb = instance ?: synchronized(this) {
