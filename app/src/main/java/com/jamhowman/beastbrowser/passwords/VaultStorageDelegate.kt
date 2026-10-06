@@ -2,9 +2,11 @@ package com.jamhowman.beastbrowser.passwords
 
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
+import com.jamhowman.beastbrowser.browser.HelperSessions
 import com.jamhowman.beastbrowser.ui.UnlockToFill
 import org.mozilla.geckoview.Autocomplete
 import org.mozilla.geckoview.GeckoResult
+import org.mozilla.geckoview.GeckoSession
 
 /**
  * Sole Gecko autocomplete store: every save/fetch/used callback goes through [PasswordVault].
@@ -14,10 +16,12 @@ import org.mozilla.geckoview.GeckoResult
  * calls [onLoginSave] here after that prompt is confirmed.
  *
  * While locked: returns empty to Gecko (no biometric spam on focus). If meta lists logins for
- * the origin, posts a one-shot "Unlock to fill" sheet; after unlock the user taps the field again.
+ * the origin, posts a one-shot "Unlock to fill" sheet; after unlock the login field of the current
+ * tab ([sessionProvider]) is soft re-focused through Beast Helper so Gecko fetches logins again.
  */
 class VaultStorageDelegate(
     private val activityProvider: () -> FragmentActivity?,
+    private val sessionProvider: () -> GeckoSession? = { null },
 ) : Autocomplete.StorageDelegate {
 
     override fun onLoginFetch(domain: String): GeckoResult<Array<Autocomplete.LoginEntry>> {
@@ -58,7 +62,9 @@ class VaultStorageDelegate(
             if (PasswordVault.isUnlocked() || UnlockToFill.isShowing()) return@runOnUiThread
             val again = PasswordVault.metaForOrigin(domain)
             if (again.isEmpty()) return@runOnUiThread
-            UnlockToFill.show(activity, domain, again) { /* toast handled inside */ }
+            UnlockToFill.show(activity, domain, again) { unlocked ->
+                if (unlocked) sessionProvider()?.let { HelperSessions.softFocusLoginField(it) }
+            }
         }
     }
 

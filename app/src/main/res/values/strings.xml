@@ -21,4 +21,25 @@
     <string name="unlock_to_fill_title">Saved password</string>
     <string name="unlock_to_fill">Unlock to fill</string>
     <string name="unlock_to_fill_toast">Unlocked — tap the password field again</string>
+
+    <!-- 2.3.4: translation chip, password generator, bookmark folders, empty states -->
+    <string name="close">Close</string>
+    <string name="empty_history_body">Pages you visit will show up here.</string>
+    <string name="empty_history_title">No history yet</string>
+    <string name="empty_library_body">Save pages from the menu to build your library.</string>
+    <string name="empty_library_title">No bookmarks yet</string>
+    <string name="empty_tabs_body">Open a page or tap + to start a new tab.</string>
+    <string name="empty_tabs_title">No open tabs</string>
+    <string name="empty_vault_body">When you sign in, Beast will offer to save it.</string>
+    <string name="empty_vault_title">No saved passwords</string>
+    <string name="folder_all">All</string>
+    <string name="folder_other">Other</string>
+    <string name="folder_personal">Personal</string>
+    <string name="folder_reading">Reading</string>
+    <string name="folder_shopping">Shopping</string>
+    <string name="folder_work">Work</string>
+    <string name="password_generator">Password generator</string>
+    <string name="translate_page">Translate page · %1$s</string>
+    <string name="translate_show_original">Show original</string>
+    <string name="use_this">Use this</string>
 </resources>

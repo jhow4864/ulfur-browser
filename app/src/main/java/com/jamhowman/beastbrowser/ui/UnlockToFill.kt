@@ -82,7 +82,7 @@ object UnlockToFill {
                 dialog.dismiss()
                 PasswordVault.unlock(activity) { ok, err ->
                     if (ok) {
-                        Toast.makeText(activity, R.string.unlock_to_fill_toast, Toast.LENGTH_SHORT).show()
+                        // 2.3.4: no "tap the field again" toast — the caller soft re-focuses the field.
                         finish(true)
                     } else {
                         if (!err.isNullOrBlank()) {

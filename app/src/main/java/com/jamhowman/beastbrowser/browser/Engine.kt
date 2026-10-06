@@ -6,6 +6,7 @@ import com.jamhowman.beastbrowser.data.Prefs
 import org.mozilla.geckoview.ContentBlocking
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
+import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.StorageController
 import org.mozilla.geckoview.WebExtension
 import org.mozilla.geckoview.WebExtensionController
@@ -73,9 +74,12 @@ object Engine {
      * Attach the vault-backed autocomplete store. Call from MainActivity once the activity exists.
      * [loginAutofillEnabled] is on; this delegate is the only credential store.
      */
-    fun attachPasswordVault(activityProvider: () -> FragmentActivity?) {
+    fun attachPasswordVault(
+        activityProvider: () -> FragmentActivity?,
+        sessionProvider: () -> GeckoSession? = { null },
+    ) {
         val r = runtime ?: return
-        r.setAutocompleteStorageDelegate(VaultStorageDelegate(activityProvider))
+        r.setAutocompleteStorageDelegate(VaultStorageDelegate(activityProvider, sessionProvider))
     }
 
 

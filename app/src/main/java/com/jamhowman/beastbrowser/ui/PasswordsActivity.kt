@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser.ui
 
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -96,7 +97,15 @@ class PasswordsActivity : AppCompatActivity() {
         val open = PasswordVault.isUnlocked()
         b.unlockBtn.isVisible = !open
         b.list.isVisible = open && PasswordVault.fetchAll().isNotEmpty()
-        b.empty.isVisible = open && PasswordVault.fetchAll().isEmpty()
+        val empty = open && PasswordVault.fetchAll().isEmpty()
+        b.empty.root.isVisible = empty
+        if (empty) {
+            b.empty.emptyArt.setImageResource(R.drawable.img_empty_vault)
+            b.empty.emptyArt.imageTintList = ColorStateList.valueOf(Prefs.accent.color)
+            b.empty.emptyTitle.setText(R.string.empty_vault_title)
+            b.empty.emptyBody.setText(R.string.empty_vault_body)
+            b.empty.emptyCta.isVisible = false
+        }
         b.status.text = when {
             !open && PasswordVault.hasPasswords() -> "Vault locked · ${PasswordVault.count()} saved ${if (PasswordVault.count() == 1) "login" else "logins"}"
             !open -> "Vault locked · nothing saved yet"

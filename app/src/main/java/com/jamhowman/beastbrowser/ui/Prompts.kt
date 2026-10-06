@@ -4,11 +4,16 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.net.Uri
 import android.text.InputType
+import android.view.LayoutInflater
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.HelperSessions
+import com.jamhowman.beastbrowser.databinding.RowPasswordGeneratorBinding
+import com.jamhowman.beastbrowser.passwords.PasswordGenerator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.Autocomplete
@@ -159,12 +164,32 @@ class Prompts(
             ?: login.origin
         val updating = !login.guid.isNullOrBlank()
         val o = Once()
-        builder(if (updating) "Update password?" else "Save password?")
-            .setMessage("$user\n$host\n\nStored encrypted in Beast's vault.")
+        val box = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+        val pad = dp(activity, 22)
+        box.addView(TextView(activity).apply {
+            text = "$user\n$host\n\nStored encrypted in Beast's vault."
+            setTextColor(activity.getColor(R.color.text_secondary))
+            textSize = 14f
+            setPadding(pad, dp(activity, 8), pad, 0)
+        })
+        // 2.3.4: offer a strong generated password instead of the one typed into the page.
+        val gen = RowPasswordGeneratorBinding.inflate(LayoutInflater.from(activity), box, true)
+        gen.root.setPadding(pad, 0, pad, 0)
+        wireGenerator(gen)
+        val dialog = builder(if (updating) "Update password?" else "Save password?")
+            .setView(box)
             .setPositiveButton(if (updating) "Update" else "Save") { _, _ -> o.complete(prompt.confirm(option)) }
             .setNegativeButton("Not now") { _, _ -> o.complete(prompt.dismiss()) }
             .setOnDismissListener { o.complete(prompt.dismiss()) }
-            .show()
+            .create()
+        gen.useGenerated.setOnClickListener {
+            val pw = gen.generatedPassword.text?.toString().orEmpty()
+            if (pw.isBlank()) return@setOnClickListener
+            HelperSessions.fillPassword(session, pw)       // put it into the page's password field too
+            o.complete(prompt.confirm(Autocomplete.LoginSaveOption(withPassword(login, pw))))
+            dialog.dismiss()
+        }
+        dialog.show()
         return o.result
     }
 
@@ -180,17 +205,82 @@ class Prompts(
         if (options.isEmpty()) return GeckoResult.fromValue(prompt.dismiss())
         if (options.size == 1 && options[0].hint and generated == 0) return GeckoResult.fromValue(prompt.confirm(options[0]))
         val o = Once()
-        val labels = options.map { opt ->
-            if (opt.hint and generated != 0) "Use a securely generated password"
-            else opt.value.username.takeIf { it.isNotBlank() } ?: "(no username)"
-        }.toTypedArray()
-        builder("Choose a login")
-            .setItems(labels) { d, i -> o.complete(prompt.confirm(options[i])); d.dismiss() }
+        val generatedOptions = options.filter { it.hint and generated != 0 }
+        val logins = options.filter { it.hint and generated == 0 }
+        fun label(opt: Autocomplete.LoginSelectOption) = opt.value.username.takeIf { it.isNotBlank() } ?: "(no username)"
+        if (generatedOptions.isEmpty()) {
+            builder("Choose a login")
+                .setItems(options.map { label(it) }.toTypedArray()) { d, i -> o.complete(prompt.confirm(options[i])); d.dismiss() }
+                .setNegativeButton(android.R.string.cancel) { _, _ -> o.complete(prompt.dismiss()) }
+                .setOnDismissListener { o.complete(prompt.dismiss()) }
+                .show()
+            return o.result
+        }
+        // 2.3.4: Gecko offers a generated password → show the saved logins plus Beast's generator row.
+        val box = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
+        val pad = dp(activity, 22)
+        var dialog: androidx.appcompat.app.AlertDialog? = null
+        logins.forEach { opt ->
+            box.addView(TextView(activity).apply {
+                text = label(opt)
+                textSize = 16f
+                setTextColor(activity.getColor(R.color.text_primary))
+                setPadding(pad, dp(activity, 14), pad, dp(activity, 14))
+                setOnClickListener { o.complete(prompt.confirm(opt)); dialog?.dismiss() }
+            })
+        }
+        val gen = RowPasswordGeneratorBinding.inflate(LayoutInflater.from(activity), box, true)
+        gen.root.setPadding(pad, 0, pad, 0)
+        wireGenerator(gen)
+        generatedOptions.first().value.password?.takeIf { it.length in 8..32 }?.let { pw ->
+            gen.lengthSlider.value = pw.length.toFloat()   // first: the slider listener regenerates
+            gen.generatedPassword.text = pw
+            gen.lengthLabel.text = pw.length.toString()
+        }
+        val d = builder("Choose a login")
+            .setView(box)
             .setNegativeButton(android.R.string.cancel) { _, _ -> o.complete(prompt.dismiss()) }
             .setOnDismissListener { o.complete(prompt.dismiss()) }
-            .show()
+            .create()
+        dialog = d
+        gen.useGenerated.setOnClickListener {
+            val pw = gen.generatedPassword.text?.toString().orEmpty()
+            if (pw.isBlank()) return@setOnClickListener
+            val base = generatedOptions.first().value
+            o.complete(prompt.confirm(Autocomplete.LoginSelectOption(withPassword(base, pw), generated)))
+            d.dismiss()
+        }
+        d.show()
         return o.result
     }
+
+    /** Length slider (8–32) regenerates; tapping the password regenerates at the same length. */
+    private fun wireGenerator(row: RowPasswordGeneratorBinding) {
+        fun refresh() {
+            val n = row.lengthSlider.value.toInt().coerceIn(8, 32)
+            row.lengthLabel.text = n.toString()
+            row.generatedPassword.text = PasswordGenerator.generate(n)
+        }
+        row.lengthSlider.addOnChangeListener { _, value, _ ->
+            row.lengthLabel.text = value.toInt().toString()
+            row.generatedPassword.text = PasswordGenerator.generate(value.toInt())
+        }
+        refresh()
+        row.generatedPassword.setOnClickListener { refresh() }
+    }
+
+    /** Copy of [login] with [password] swapped in (keeps guid / form origin / realm). */
+    private fun withPassword(login: Autocomplete.LoginEntry, password: String): Autocomplete.LoginEntry =
+        Autocomplete.LoginEntry.Builder()
+            .origin(login.origin)
+            .username(login.username)
+            .password(password)
+            .apply {
+                login.guid?.let { guid(it) }
+                login.formActionOrigin?.let { formActionOrigin(it) }
+                login.httpRealm?.let { httpRealm(it) }
+            }
+            .build()
 
     override fun onPopupPrompt(session: GeckoSession, prompt: PromptDelegate.PopupPrompt): GeckoResult<PromptResponse> {
         onPopupBlocked()

@@ -74,16 +74,13 @@
             android:paddingEnd="10dp"
             android:paddingBottom="96dp" />
 
-        <TextView
+        <!-- 2.3.4: illustrated empty state (img_empty_tabs / empty_tabs_*) -->
+        <include
             android:id="@+id/switcherEmpty"
-            android:layout_width="wrap_content"
+            layout="@layout/view_empty_state"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:text="No private tabs open.\nPrivate tabs keep no history, cookies or cache."
-            android:textColor="@color/text_hint"
-            android:textSize="14sp"
-            android:visibility="gone" />
+            android:layout_gravity="center" />
 
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/newTabFab"

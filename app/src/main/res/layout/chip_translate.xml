@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/translateChip"
+    android:visibility="gone"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    app:cardBackgroundColor="@color/surface2"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/stroke"
+    app:strokeWidth="1dp">
+    <LinearLayout
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="14dp"
+        android:paddingEnd="4dp">
+        <TextView
+            android:textSize="13sp"
+            android:textColor="?attr/colorPrimary"
+            android:ellipsize="end"
+            android:id="@+id/translateLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:singleLine="true"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium" />
+        <ImageButton
+            android:id="@+id/translateClose"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_close"
+            android:contentDescription="@string/close"
+            app:tint="@color/text_secondary"
+            style="@style/BeastIconButton" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

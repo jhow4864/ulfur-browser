@@ -26,6 +26,16 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession) {
     /** Restore HTTPS-only mode once a user-approved http:// page finishes. */
     var restoreHttpsOnly = false
 
+    // 2.3.4: page translation (GeckoView TranslationsController)
+    /** Gecko offered / expects a translation for the current page. */
+    var translateOffered = false
+    /** User closed the translate chip on this tab (remembered for the tab's lifetime). */
+    var translateDismissed = false
+    /** The page is currently shown translated. */
+    var translated = false
+    var docLangTag: String? = null
+    var userLangTag: String? = null
+
     /** Gecko's tracking-protection permission for the current page; VALUE_ALLOW == shields down (ETP exception). */
     var trackingPermission: ContentPermission? = null
 

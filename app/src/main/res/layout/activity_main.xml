@@ -217,6 +217,11 @@
                 app:trackThickness="2dp" />
         </FrameLayout>
 
+        <!-- 2.3.4: page-translation chip -->
+        <include
+            android:id="@+id/translateBar"
+            layout="@layout/chip_translate" />
+
         <View
             android:id="@+id/accentLineTop"
             android:layout_width="match_parent"

@@ -21,6 +21,26 @@
         android:background="@color/bg"
         app:tabTextColor="@color/text_secondary" />
 
+    <!-- 2.3.4: bookmark folder filter pills -->
+    <HorizontalScrollView
+        android:id="@+id/folderStripScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/folderStrip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -34,12 +54,12 @@
             android:paddingTop="6dp"
             android:paddingBottom="24dp" />
 
-        <TextView
+        <!-- 2.3.4: illustrated empty state -->
+        <include
             android:id="@+id/libraryEmpty"
-            android:layout_width="wrap_content"
+            layout="@layout/view_empty_state"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:textColor="@color/text_hint"
-            android:visibility="gone" />
+            android:layout_gravity="center" />
     </FrameLayout>
 </LinearLayout>

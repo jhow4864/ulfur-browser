@@ -1,6 +1,7 @@
 package com.jamhowman.beastbrowser.ui
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.format.DateUtils
 import android.view.LayoutInflater
@@ -14,19 +15,24 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
+import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.UrlUtils
+import com.jamhowman.beastbrowser.data.BookmarkFolder
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Entry
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.databinding.ActivityLibraryBinding
+import com.jamhowman.beastbrowser.databinding.ItemFolderPillBinding
 import com.jamhowman.beastbrowser.databinding.ItemLibraryBinding
 import com.jamhowman.beastbrowser.util.Domains
 
-/** Bookmarks + history. */
+/** Bookmarks (with folder filter pills, 2.3.4) + history. */
 class LibraryActivity : AppCompatActivity() {
     private lateinit var b: ActivityLibraryBinding
     private lateinit var db: BrowserDb
     private var page = 0
+    /** [BookmarkFolder.id] shown on the Bookmarks page; null = All. */
+    private var selectedFolder: String? = null
     private val adapter = Adapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +51,7 @@ class LibraryActivity : AppCompatActivity() {
         b.toolbar.menu.add("Clear").setOnMenuItemClickListener { confirmClear(); true }
         val accent = Prefs.accent.color
         b.libraryTabs.setSelectedTabIndicatorColor(accent)
-        b.libraryTabs.setTabTextColors(getColor(com.jamhowman.beastbrowser.R.color.text_secondary), accent)
+        b.libraryTabs.setTabTextColors(getColor(R.color.text_secondary), accent)
         b.libraryTabs.addTab(b.libraryTabs.newTab().setText("Bookmarks"))
         b.libraryTabs.addTab(b.libraryTabs.newTab().setText("History"))
         b.libraryTabs.getTabAt(page)?.select()
@@ -56,16 +62,60 @@ class LibraryActivity : AppCompatActivity() {
         })
         b.libraryList.layoutManager = LinearLayoutManager(this)
         b.libraryList.adapter = adapter
+        buildFolderPills()
+        b.libraryEmpty.emptyCta.isVisible = false
         reload()
     }
 
     private fun reload() {
         b.toolbar.title = if (page == 0) "Bookmarks" else "History"
         b.toolbar.menu.getItem(0).isVisible = page == 1
-        adapter.items = if (page == 0) db.bookmarks() else db.history()
+        b.folderStripScroll.isVisible = page == 0
+        adapter.items = if (page == 0) db.bookmarks(selectedFolder) else db.history()
         adapter.notifyDataSetChanged()
-        b.libraryEmpty.isVisible = adapter.items.isEmpty()
-        b.libraryEmpty.text = if (page == 0) "No bookmarks yet.\nUse Menu → Bookmark on any page." else "No history yet."
+        val empty = adapter.items.isEmpty()
+        b.libraryEmpty.root.isVisible = empty
+        if (empty) {
+            val e = b.libraryEmpty
+            e.emptyArt.setImageResource(R.drawable.img_empty_library)
+            e.emptyTitle.setText(if (page == 0) R.string.empty_library_title else R.string.empty_history_title)
+            e.emptyBody.setText(if (page == 0) R.string.empty_library_body else R.string.empty_history_body)
+            e.emptyArt.imageTintList = ColorStateList.valueOf(Prefs.accent.color)
+        }
+    }
+
+    /** "All" + one pill per [BookmarkFolder], each in its folder accent; the selected one is filled. */
+    private fun buildFolderPills() {
+        b.folderStrip.removeAllViews()
+        fun addPill(id: String?, label: String, color: Int) {
+            val pill = ItemFolderPillBinding.inflate(layoutInflater, b.folderStrip, false)
+            pill.folderName.text = label
+            pill.folderName.setTextColor(color)
+            pill.folderPill.strokeColor = color
+            pill.folderPill.setCardBackgroundColor(
+                if (selectedFolder == id) ColorStateList.valueOf((color and 0x00FFFFFF) or 0x33000000)
+                else ColorStateList.valueOf(getColor(R.color.surface2))
+            )
+            pill.root.setOnClickListener { selectedFolder = id; buildFolderPills(); reload() }
+            b.folderStrip.addView(pill.root)
+        }
+        addPill(null, getString(R.string.folder_all), Prefs.accent.color)
+        BookmarkFolder.entries.forEach { addPill(it.id, getString(it.labelRes), it.accent.color) }
+    }
+
+    /** Long-press a bookmark → "Move to folder" ("All" clears the folder). */
+    private fun pickFolder(entry: Entry) {
+        val choices: List<Pair<String?, String>> =
+            listOf<Pair<String?, String>>(null to getString(R.string.folder_all)) +
+                BookmarkFolder.entries.map { it.id to getString(it.labelRes) }
+        val checked = choices.indexOfFirst { it.first == entry.folderId }.coerceAtLeast(0)
+        MaterialAlertDialogBuilder(this).setTitle("Move to folder")
+            .setSingleChoiceItems(choices.map { it.second }.toTypedArray(), checked) { d, which ->
+                db.setBookmarkFolder(entry.id, choices[which].first)
+                d.dismiss()
+                reload()
+            }
+            .setNegativeButton(android.R.string.cancel, null).show()
     }
 
     private fun confirmClear() {
@@ -84,12 +134,20 @@ class LibraryActivity : AppCompatActivity() {
             val e = items[position]
             val host = Domains.display(UrlUtils.host(e.url))
             h.b.itemTitle.text = e.title.ifBlank { host.ifBlank { e.url } }
-            h.b.itemSubtitle.text = if (page == 1)
-                "$host · ${DateUtils.getRelativeTimeSpanString(e.time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)}" else host
+            val folder = BookmarkFolder.from(e.folderId)
+            h.b.itemSubtitle.text = when {
+                page == 1 -> "$host · ${DateUtils.getRelativeTimeSpanString(e.time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)}"
+                folder != null -> "$host · ${getString(folder.labelRes)}"
+                else -> host
+            }
             h.b.itemIcon.text = (host.firstOrNull() ?: '•').uppercase()
-            h.b.itemIcon.setTextColor(Prefs.accent.color)
+            h.b.itemIcon.setTextColor((folder?.accent ?: Prefs.accent).color)
             h.b.root.setOnClickListener {
                 setResult(RESULT_OK, Intent().putExtra(MainActivity.EXTRA_URL, e.url)); finish()
+            }
+            h.b.root.setOnLongClickListener {
+                if (page != 0) return@setOnLongClickListener false
+                pickFolder(e); true
             }
             h.b.itemDelete.setOnClickListener {
                 if (page == 0) db.deleteBookmark(e.id) else db.deleteHistory(e.id)

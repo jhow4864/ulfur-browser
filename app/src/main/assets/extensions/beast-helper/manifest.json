@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Beast Helper",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Built-in helper for Beast Browser: per-site HTTPS-Only exceptions, Reader view, media detection.",
   "browser_specific_settings": {
     "gecko": {

@@ -7,7 +7,8 @@ import android.database.sqlite.SQLiteOpenHelper
 import com.jamhowman.beastbrowser.util.Domains
 import java.util.concurrent.Executors
 
-data class Entry(val id: Long, val url: String, val title: String, val time: Long)
+/** A history or bookmark row. [folderId] is a [BookmarkFolder] id (bookmarks only; null = no folder). */
+data class Entry(val id: Long, val url: String, val title: String, val time: Long, val folderId: String? = null)
 
 /** Per-host browsing prefs: desktop site + page zoom (percent, 100 = default). */
 data class SitePrefs(val host: String, val desktop: Boolean = false, val zoom: Int = 100) {
@@ -16,14 +17,14 @@ data class SitePrefs(val host: String, val desktop: Boolean = false, val zoom: I
 
 /** History + bookmarks + per-host site prefs. Private tabs never write history/bookmarks. */
 class BrowserDb private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "beast.db", null, 2) {
+    SQLiteOpenHelper(context.applicationContext, "beast.db", null, 3) {
 
     private val io = Executors.newSingleThreadExecutor()
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("CREATE TABLE history(id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT NOT NULL, title TEXT, visited INTEGER NOT NULL)")
         db.execSQL("CREATE INDEX history_visited ON history(visited)")
-        db.execSQL("CREATE TABLE bookmarks(id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT NOT NULL UNIQUE, title TEXT, created INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE bookmarks(id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT NOT NULL UNIQUE, title TEXT, created INTEGER NOT NULL, folder_id TEXT)")
         db.execSQL(
             "CREATE TABLE site_prefs(host TEXT PRIMARY KEY NOT NULL, desktop INTEGER NOT NULL DEFAULT 0, zoom INTEGER NOT NULL DEFAULT 100)"
         )
@@ -34,6 +35,10 @@ class BrowserDb private constructor(context: Context) :
             db.execSQL(
                 "CREATE TABLE IF NOT EXISTS site_prefs(host TEXT PRIMARY KEY NOT NULL, desktop INTEGER NOT NULL DEFAULT 0, zoom INTEGER NOT NULL DEFAULT 100)"
             )
+        }
+        if (oldVersion < 3) {
+            // 2.3.4: bookmark folders. Guarded so a half-applied upgrade can't brick the DB.
+            try { db.execSQL("ALTER TABLE bookmarks ADD COLUMN folder_id TEXT") } catch (_: Exception) {}
         }
     }
 
@@ -88,13 +93,25 @@ class BrowserDb private constructor(context: Context) :
     fun deleteHistory(id: Long) { writableDatabase.delete("history", "id = ?", arrayOf(id.toString())) }
     fun clearHistory() { writableDatabase.delete("history", null, null) }
 
-    fun bookmarks(): List<Entry> = query("SELECT id, url, title, created FROM bookmarks ORDER BY created DESC")
+    /** All bookmarks, or only those in [folderId] when given. */
+    fun bookmarks(folderId: String? = null): List<Entry> =
+        if (folderId == null) queryBookmarks("SELECT id, url, title, created, folder_id FROM bookmarks ORDER BY created DESC")
+        else queryBookmarks(
+            "SELECT id, url, title, created, folder_id FROM bookmarks WHERE folder_id = ? ORDER BY created DESC",
+            arrayOf(folderId),
+        )
     fun isBookmarked(url: String): Boolean =
         readableDatabase.rawQuery("SELECT 1 FROM bookmarks WHERE url = ?", arrayOf(url)).use { it.moveToFirst() }
-    fun addBookmark(url: String, title: String) {
+    fun addBookmark(url: String, title: String, folderId: String? = null) {
         writableDatabase.insertWithOnConflict("bookmarks", null, ContentValues().apply {
             put("url", url); put("title", title); put("created", System.currentTimeMillis())
+            if (folderId != null) put("folder_id", folderId) else putNull("folder_id")
         }, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+    fun setBookmarkFolder(id: Long, folderId: String?) {
+        writableDatabase.update("bookmarks", ContentValues().apply {
+            if (folderId != null) put("folder_id", folderId) else putNull("folder_id")
+        }, "id = ?", arrayOf(id.toString()))
     }
     fun removeBookmark(url: String) { writableDatabase.delete("bookmarks", "url = ?", arrayOf(url)) }
     fun deleteBookmark(id: Long) { writableDatabase.delete("bookmarks", "id = ?", arrayOf(id.toString())) }
@@ -168,6 +185,18 @@ class BrowserDb private constructor(context: Context) :
         while (c.moveToNext()) out += Entry(c.getLong(0), c.getString(1), c.getString(2) ?: "", c.getLong(3))
         out
     }
+
+    private fun queryBookmarks(sql: String, args: Array<String>? = null): List<Entry> =
+        readableDatabase.rawQuery(sql, args).use { c ->
+            val out = ArrayList<Entry>(c.count)
+            while (c.moveToNext()) {
+                out += Entry(
+                    c.getLong(0), c.getString(1), c.getString(2) ?: "", c.getLong(3),
+                    if (c.isNull(4)) null else c.getString(4),
+                )
+            }
+            out
+        }
 
     companion object {
         @Volatile private var instance: BrowserDb? = null

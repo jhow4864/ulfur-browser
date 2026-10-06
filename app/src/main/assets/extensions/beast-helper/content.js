@@ -77,6 +77,48 @@
     };
   }
 
+  function isLoginField(el) {
+    if (!el || el.disabled || el.readOnly) return false;
+    if (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA") return false;
+    const t = (el.type || "").toLowerCase();
+    if (t === "password") return true;
+    if (t === "hidden" || t === "submit" || t === "button" || t === "checkbox" || t === "radio" || t === "file") return false;
+    const ac = (el.autocomplete || "").toLowerCase();
+    const name = ((el.name || "") + " " + (el.id || "")).toLowerCase();
+    return /user|email|login|account|identifier/.test(ac + " " + name);
+  }
+
+  function findLoginField() {
+    const active = document.activeElement;
+    if (isLoginField(active)) return active;
+    return document.querySelector("input[type=password]")
+      || document.querySelector("input[autocomplete*=username i],input[autocomplete=email i],input[type=email]");
+  }
+
+  /** Blur then re-focus so Gecko re-fetches logins after vault unlock (no second tap). */
+  function softFocusField() {
+    const el = findLoginField();
+    if (!el) return false;
+    try {
+      el.blur();
+      setTimeout(() => {
+        try { el.focus({ preventScroll: false }); } catch (e) { try { el.focus(); } catch (e2) { } }
+      }, 40);
+    } catch (e) { return false; }
+    return true;
+  }
+
+  function fillPassword(pw) {
+    if (typeof pw !== "string" || !pw) return false;
+    const pwd = document.querySelector("input[type=password]");
+    if (!pwd) return false;
+    const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+    if (desc && desc.set) desc.set.call(pwd, pw); else pwd.value = pw;
+    pwd.dispatchEvent(new Event("input", { bubbles: true }));
+    pwd.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
   async function onAppMessage(msg) {
     if (!msg || typeof msg !== "object") return;
     if (msg.type === "extract") {
@@ -84,6 +126,10 @@
       catch (e) { post({ id: msg.id, ok: false, error: String(e && e.message || e) }); }
     } else if (msg.type === "ping") {
       post({ id: msg.id, ok: true });
+    } else if (msg.type === "softFocus") {
+      post({ id: msg.id, ok: softFocusField() });
+    } else if (msg.type === "fillPassword") {
+      post({ id: msg.id, ok: fillPassword(msg.password || "") });
     }
   }
 

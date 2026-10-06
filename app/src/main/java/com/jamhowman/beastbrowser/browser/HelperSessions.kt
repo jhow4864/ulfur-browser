@@ -23,7 +23,8 @@ import java.util.WeakHashMap
  *  - `{type:"media", items:[{url,mime,quality,w,h,bytes,kind,bandwidth?,codecs?,master?}], pageUrl, title}`
  *     → [MediaSniffer.publish] (full list each time; ignored after DRM was seen on the page)
  *  - `{type:"drm"}` → [markDrm]
- * App → content script: [request] `{id, type:"extract"}` → `{id, ok, article}`.
+ * App → content script: [request] `{id, type:"extract"}` → `{id, ok, article}`,
+ *  `{id, type:"fillPassword", password}` → `{id, ok}` and `{id, type:"softFocus"}` (beast-helper 1.2.0).
  * Reader page → app (one-off `runtime.sendNativeMessage`): handled by [ReaderMode.handlePageMessage].
  * Everything runs on the main thread.
  */
@@ -126,6 +127,20 @@ object HelperSessions : WebExtension.MessageDelegate {
     }
 
     fun hasPage(session: GeckoSession) = ports[session] != null
+
+    /** Types [password] into the page's visible `input[type=password]` field(s). [cb] gets true if one was filled. */
+    fun fillPassword(session: GeckoSession, password: String, cb: (Boolean) -> Unit = {}) {
+        val msg = JSONObject().put("type", "fillPassword").put("password", password)
+        request(session, msg, 2_000) { cb(it?.optBoolean("ok") == true) }
+    }
+
+    /**
+     * Blurs and re-focuses the page's login field so Gecko asks the (now unlocked) vault for logins
+     * again — unlock-to-fill without a second tap.
+     */
+    fun softFocusLoginField(session: GeckoSession) {
+        request(session, JSONObject().put("type", "softFocus"), 2_000) { }
+    }
 
     // ------------------------------------------------------------------ media JSON -> DetectedMedia
 

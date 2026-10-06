@@ -87,11 +87,13 @@ import org.mozilla.geckoview.GeckoSession.ContentDelegate.ContextElement
 import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
 import org.mozilla.geckoview.GeckoSessionSettings
 import org.mozilla.geckoview.GeckoView
+import org.mozilla.geckoview.TranslationsController
 import org.mozilla.geckoview.WebExtension
 import org.mozilla.geckoview.WebRequestError
 import org.mozilla.geckoview.WebResponse
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 import kotlin.concurrent.thread
 import kotlin.math.max
 
@@ -164,7 +166,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         db = BrowserDb.get(this)
         runtime = Engine.runtime(this)
         PasswordVault.init(this)
-        Engine.attachPasswordVault { this }
+        Engine.attachPasswordVault({ this }, { current?.session })
         Engine.syncZoomMap(db.allZoomPrefs())
         DownloadCenter.init(this)
         ReaderMode.init(this)
@@ -186,6 +188,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         setupHome()
         setupSwitcher()
         setupFindBar()
+        setupTranslateChip()
         setupSwipe()
         setupBack()
         applyAccent()
@@ -375,6 +378,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         tab.session.promptDelegate = prompts
         attachUbo(tab)
         HelperSessions.register(tab.session, tab.isPrivate)
+        wireTranslations(tab)
     }
 
     fun newTab(
@@ -547,6 +551,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val fs = fullscreenTab != null
         b.topBar.isVisible = !fs
         b.accentLineTop.isVisible = !fs
+        if (fs) b.translateBar.root.isVisible = false else updateTranslateChip()
         b.accentLineBottom.isVisible = !fs && !imeVisible
         b.bottomBar.isVisible = !fs && !imeVisible
     }
@@ -754,6 +759,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         updateShield()
         updateMediaBadge()
         updateReaderButton()
+        updateTranslateChip()
         updateTabCount()
     }
 
@@ -921,7 +927,17 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         tabAdapter.items = items
         tabAdapter.currentId = current?.id ?: -1
         tabAdapter.notifyDataSetChanged()
-        b.switcher.switcherEmpty.isVisible = items.isEmpty()
+        val empty = b.switcher.switcherEmpty
+        empty.root.isVisible = items.isEmpty()
+        if (items.isEmpty()) {
+            empty.emptyArt.setImageResource(R.drawable.img_empty_tabs)
+            empty.emptyArt.imageTintList = ColorStateList.valueOf(accent.color)
+            empty.emptyTitle.setText(R.string.empty_tabs_title)
+            empty.emptyBody.setText(R.string.empty_tabs_body)
+            empty.emptyCta.isVisible = true
+            empty.emptyCta.text = getString(if (switcherPrivate) R.string.new_private_tab else R.string.new_tab)
+            empty.emptyCta.setOnClickListener { newTab(private = switcherPrivate); hideSwitcher() }
+        }
         b.switcher.newTabFab.text = getString(if (switcherPrivate) R.string.new_private_tab else R.string.new_tab)
         b.switcher.newTabFab.setIconResource(if (switcherPrivate) R.drawable.ic_incognito else R.drawable.ic_add)
         b.switcher.newTabFab.iconTint = ColorStateList.valueOf(accent.onColor)
@@ -977,6 +993,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (t.showingHome) { toast("Open a page first"); return }
         b.addressRow.isInvisible = true
         b.findBar.isVisible = true
+        updateTranslateChip()
         b.findInput.requestFocus()
         showKeyboard(b.findInput)
     }
@@ -986,6 +1003,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.findInput.text = null
         b.findBar.isVisible = false
         b.addressRow.isInvisible = false
+        updateTranslateChip()
         hideKeyboard()
     }
 
@@ -1045,6 +1063,103 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         dialog.show()
     }
 
+
+    // ======================================================================= page translation (2.3.4)
+
+    private fun setupTranslateChip() {
+        b.translateBar.translateLabel.setOnClickListener { translateCurrentPage() }
+        b.translateBar.translateClose.setOnClickListener { dismissTranslateChip() }
+    }
+
+    /** Gecko's on-device translation offers for [tab]'s session (callbacks may arrive off the main thread). */
+    private fun wireTranslations(tab: Tab) {
+        tab.session.translationsSessionDelegate = object : TranslationsController.SessionTranslation.Delegate {
+            override fun onOfferTranslate(session: GeckoSession) = runOnUiThread {
+                if (tab.session !== session) return@runOnUiThread
+                tab.translateOffered = true
+                if (current === tab) updateTranslateChip()
+            }
+
+            override fun onExpectedTranslate(session: GeckoSession) = runOnUiThread {
+                if (tab.session !== session) return@runOnUiThread
+                tab.translateOffered = true
+                if (current === tab) updateTranslateChip()
+            }
+
+            override fun onTranslationStateChange(
+                session: GeckoSession,
+                state: TranslationsController.SessionTranslation.TranslationState?,
+            ) = runOnUiThread {
+                if (tab.session !== session || state == null) return@runOnUiThread
+                state.detectedLanguages?.let {
+                    tab.docLangTag = it.docLangTag
+                    tab.userLangTag = it.userLangTag
+                }
+                tab.translated = state.hasVisibleChange == true || state.requestedTranslationPair != null
+                if (current === tab) updateTranslateChip()
+            }
+        }
+    }
+
+    /**
+     * "Translate page · <lang>" / "Show original" chip under the address bar. Shown when Gecko offers
+     * or expects a translation, or the page language differs from the user's, unless dismissed on this tab.
+     */
+    private fun updateTranslateChip() {
+        val chip = b.translateBar.root
+        val t = current
+        if (t == null || t.showingHome || b.findBar.isVisible || t.translateDismissed || fullscreenTab != null) {
+            chip.isVisible = false
+            return
+        }
+        val doc = t.docLangTag?.lowercase(Locale.ROOT)?.substringBefore('-').orEmpty()
+        val userTag = t.userLangTag ?: Locale.getDefault().language
+        val user = userTag.lowercase(Locale.ROOT).substringBefore('-')
+        val differs = doc.isNotEmpty() && user.isNotEmpty() && doc != user
+        if (!t.translateOffered && !differs && !t.translated) {
+            chip.isVisible = false
+            return
+        }
+        val target = userTag.uppercase(Locale.ROOT).substringBefore('-').ifBlank { "EN" }
+        b.translateBar.translateLabel.text =
+            if (t.translated) getString(R.string.translate_show_original) else getString(R.string.translate_page, target)
+        chip.isVisible = true
+    }
+
+    private fun translateCurrentPage() {
+        val t = current ?: return
+        val st = t.session.sessionTranslation ?: return
+        if (t.translated) {
+            st.restoreOriginalPage().accept(
+                { runOnUiThread { t.translated = false; updateTranslateChip() } },
+                { runOnUiThread { snack("Couldn't restore original page") } },
+            )
+            return
+        }
+        val from = t.docLangTag ?: return
+        val to = t.userLangTag ?: Locale.getDefault().language
+        val options = TranslationsController.SessionTranslation.TranslationOptions.Builder()
+            .downloadModel(true)    // fetch the on-device model on demand
+            .build()
+        st.translate(from, to, options).accept(
+            { runOnUiThread { t.translated = true; updateTranslateChip() } },
+            { e -> runOnUiThread { snack(e?.message?.takeIf { it.isNotBlank() } ?: "Translation unavailable") } },
+        )
+    }
+
+    /** Close: restores the original first if translated; either way the chip stays hidden on this tab. */
+    private fun dismissTranslateChip() {
+        val t = current ?: return
+        if (!t.translated) {
+            t.translateDismissed = true
+            updateTranslateChip()
+            return
+        }
+        t.session.sessionTranslation?.restoreOriginalPage()?.accept(
+            { runOnUiThread { t.translated = false; t.translateDismissed = true; updateTranslateChip() } },
+            { runOnUiThread { t.translateDismissed = true; updateTranslateChip() } },
+        )
+    }
 
     // ======================================================================= Reader view
 
@@ -1432,6 +1547,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     override fun onPageStarted(tab: Tab, url: String) {
         // Link clicks / redirects: pick up remembered desktop + zoom for the new host
         if (url.startsWith("http")) applySitePrefs(tab, url, reloadIfDesktopChanged = false)
+        // A new page: Gecko re-offers translation per document (the per-tab dismissal is kept).
+        tab.translateOffered = false
         if (tab === current) { lastBadge = 0; refreshUi() }
     }
 
