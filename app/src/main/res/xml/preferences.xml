@@ -59,6 +59,7 @@
             app:summary="Active and finished downloads (saved to Downloads/Beast)" />
         <SwitchPreferenceCompat app:key="restore_tabs" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="Restore tabs on start" app:summary="Normal tabs only. Private tabs are never saved" />
+        <Preference app:key="check_updates" app:iconSpaceReserved="false" app:title="Check for updates" />
         <Preference app:key="about" app:iconSpaceReserved="false" app:title="About Beast Browser" />
     </PreferenceCategory>
 </PreferenceScreen>

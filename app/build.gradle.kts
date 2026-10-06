@@ -110,3 +110,15 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("androidx.test:core:1.6.1")
 }
+
+// In-app updater (com.jamhowman.beastbrowser.update): the GitHub repo to check, from GITHUB_REPO in
+// gradle.properties (or -PGITHUB_REPO=owner/name). Blank / OWNER/REPO disables the updater.
+val updateRepo = ((findProperty("GITHUB_REPO") as String?) ?: "").trim()
+require(updateRepo.isEmpty() || updateRepo.matches(Regex("[A-Za-z0-9-]+/[A-Za-z0-9._-]+"))) {
+    "GITHUB_REPO must look like owner/name, got '$updateRepo'"
+}
+android {
+    defaultConfig {
+        buildConfigField("String", "UPDATE_REPO", "\"$updateRepo\"")
+    }
+}

@@ -224,6 +224,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         restoreTabs(realm)
         if (!handleIntent(intent) && tabs.isEmpty()) newTab()
         if (current == null) tabs.lastOrNull()?.let { selectTab(it) }
+        com.jamhowman.beastbrowser.update.Updater.onLaunch(this) // GitHub release check, at most daily
     }
 
     override fun onNewIntent(intent: Intent) {
