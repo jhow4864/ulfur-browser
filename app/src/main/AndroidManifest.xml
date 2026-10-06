@@ -97,6 +97,11 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- In-app updater: PackageInstaller session results -->
+        <receiver
+            android:name=".update.InstallResultReceiver"
+            android:exported="false" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"
@@ -106,10 +111,5 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <!-- In-app updater: PackageInstaller session results -->
-        <receiver
-            android:name=".update.InstallResultReceiver"
-            android:exported="false" />
     </application>
 </manifest>
