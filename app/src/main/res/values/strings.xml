@@ -87,6 +87,31 @@
         <item quantity="other">Removes %1$d finished, failed or cancelled entries from this list. Downloaded files stay in Downloads/&brand;.</item>
     </plurals>
     <string name="private_downloads_note">Private downloads stay inside &brand; only. They never appear in Gallery or Files. Uninstalling the app or clearing its storage permanently deletes them.</string>
+    <!-- 2.5.1 Move to Downloads (branding/ulfur/mockups-2.5.1/SPEC.md) -->
+    <string name="vault_move">Move to Downloads</string>
+    <string name="vault_selected">%d selected</string>
+    <string name="vault_select_all">Select all</string>
+    <plurals name="vault_move_title">
+        <item quantity="one">Move %d file to Downloads?</item>
+        <item quantity="other">Move %d files to Downloads?</item>
+    </plurals>
+    <string name="vault_move_body">They\'ll be saved to Downloads/&brand; and removed from the vault.</string>
+    <string name="vault_move_warning">Once moved, anyone with your phone can see them in Gallery, Files and other apps. No fingerprint needed.</string>
+    <string name="vault_move_confirm">Move</string>
+    <plurals name="vault_moving">
+        <item quantity="one">Moving %d file · checking copies…</item>
+        <item quantity="other">Moving %d files · checking copies…</item>
+    </plurals>
+    <plurals name="vault_moved">
+        <item quantity="one">Moved %d file to Downloads/&brand;</item>
+        <item quantity="other">Moved %d files to Downloads/&brand;</item>
+    </plurals>
+    <plurals name="vault_move_partial">
+        <item quantity="one">Moved %1$d file to Downloads/&brand;. %2$s couldn\'t be moved, so it\'s still safe in the vault.</item>
+        <item quantity="other">Moved %1$d files to Downloads/&brand;. %2$s couldn\'t be moved, so it\'s still safe in the vault.</item>
+    </plurals>
+    <string name="vault_move_open">Open</string>
+    <string name="vault_move_needs_storage">Allow storage access to move files to Downloads</string>
     <string name="vault_stored_note">Stored encrypted in &brand;\'s vault.</string>
     <string name="realm_note_play">Play uses &brand;\'s original cookie jar (your existing logins). Shared across realms: uBlock filters, bookmarks, history (not Ghost), saved passwords, downloads.</string>
     <string name="error_https_only">&brand;\'s HTTPS-Only mode couldn\'t find a secure version of %1$s. Your connection would be unencrypted.</string>
@@ -194,6 +219,36 @@
     <string name="doh_error_no_host">That address doesn\'t have a valid server name.</string>
     <string name="doh_error_malformed">That isn\'t a valid web address. Check for spaces or typos.</string>
     <string name="doh_error_too_long">That address is too long.</string>
+    <!-- 2.5.1: opt-in crash reports (crash/CrashReporter.kt). Reports stay on the device; nothing is sent automatically. -->
+    <string name="pref_category_crash">Crash reports</string>
+    <string name="pref_crash_reports_title">Save crash reports</string>
+    <string name="pref_crash_reports_summary">If &brand; crashes, keep a report on this phone so you can choose to share it on GitHub. Nothing is sent automatically, and reports never include web addresses, page titles or history</string>
+    <string name="pref_crash_saved_title">Saved crash reports</string>
+    <string name="crash_saved_none">None</string>
+    <plurals name="crash_saved_count">
+        <item quantity="one">%1$d report</item>
+        <item quantity="other">%1$d reports</item>
+    </plurals>
+    <string name="crash_prompt">&brand; crashed last time. A crash report was saved on this phone.</string>
+    <string name="crash_prompt_view">View</string>
+    <string name="crash_report_title">Crash report</string>
+    <string name="crash_report_note">This report stays on your phone. Nothing is sent unless you tap Report on GitHub and then submit the issue there, where you can edit it first.</string>
+    <string name="crash_report_github">Report on GitHub</string>
+    <string name="crash_report_delete">Delete</string>
+    <string name="crash_report_deleted">Crash report deleted</string>
+    <string name="crash_report_unreadable">This crash report can\'t be read. It may have been deleted.</string>
+    <string name="crash_kind_app">App crash</string>
+    <string name="crash_kind_content">Web page process crash</string>
+    <string name="crash_list_item">%1$s · %2$s</string>
+    <string name="crash_reports_delete_all">Delete all</string>
+    <string name="crash_reports_delete_all_title">Delete all saved crash reports?</string>
+    <string name="crash_reports_deleted_all">Crash reports deleted</string>
+    <string name="crash_reports_off_title">Delete saved crash reports too?</string>
+    <plurals name="crash_reports_off_body">
+        <item quantity="one">%1$d report is still saved on this phone. New crashes won\'t be recorded.</item>
+        <item quantity="other">%1$d reports are still saved on this phone. New crashes won\'t be recorded.</item>
+    </plurals>
+    <string name="crash_reports_keep">Keep</string>
     <!-- Backup & restore (Settings) -->
     <string name="pref_category_backup">Backup &amp; restore</string>
     <string name="pref_backup_export_title">Export encrypted backup</string>
@@ -245,6 +300,10 @@
     <plurals name="backup_n_passwords_skipped">
         <item quantity="one">%1$d password was already saved.</item>
         <item quantity="other">%1$d passwords were already saved.</item>
+    </plurals>
+    <plurals name="backup_n_passwords_kept_newer">
+        <item quantity="one">%1$d password on this phone was kept because it\'s newer than the one in the file, or the file has no date for it.</item>
+        <item quantity="other">%1$d passwords on this phone were kept because they\'re newer than the ones in the file, or the file has no dates for them.</item>
     </plurals>
     <plurals name="backup_n_bookmarks">
         <item quantity="one">%1$d bookmark</item>

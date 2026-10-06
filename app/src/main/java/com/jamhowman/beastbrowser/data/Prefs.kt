@@ -55,6 +55,15 @@ object Prefs {
     var autoplayApplied: String?
         get() = sp.getString("autoplay_applied", null)
         set(v) = sp.edit { putString("autoplay_applied", v) }
+    /**
+     * 2.5.1: opt-in crash reports ([com.jamhowman.beastbrowser.crash.CrashReporter]), off by default. Deliberately
+     * not in BackupManager.SETTINGS: consent is given on each device, never restored from a backup.
+     */
+    val crashReports get() = sp.getBoolean("crash_reports", false)
+    /** Time of the newest crash report the launch prompt already offered (so each crash is offered once). */
+    var crashReportsSeen: Long
+        get() = sp.getLong("crash_reports_seen", 0)
+        set(v) = sp.edit { putLong("crash_reports_seen", v) }
     val searchSuggestions get() = sp.getBoolean("search_suggestions", true)
     val searchEngine get() = SearchEngine.from(sp.getString("search_engine", null))
     /** Accent theme of the current [realm] (2.3.8: per-realm accents; 2.8: [ThemePreset]s). */

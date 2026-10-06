@@ -69,6 +69,7 @@ import com.jamhowman.beastbrowser.browser.BrowserHost
 import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
+import com.jamhowman.beastbrowser.browser.UboBadge
 import com.jamhowman.beastbrowser.browser.UrlUtils
 import com.jamhowman.beastbrowser.data.AppTheme
 import com.jamhowman.beastbrowser.data.BeastControl
@@ -269,6 +270,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (!handleIntent(intent) && tabs.isEmpty()) newTab()
         if (current == null) tabs.lastOrNull()?.let { selectTab(it) }
         com.jamhowman.beastbrowser.update.Updater.onLaunch(this) // GitHub release check, at most daily
+        if (savedInstanceState == null) CrashReportUi.promptOnLaunch(this) // 2.5.1: opt-in, after a crash only
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -1948,8 +1950,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             override fun onBrowserAction(extension: WebExtension, session: GeckoSession?, action: WebExtension.Action) {
                 uboActions[tab.id] = action
                 val n = parseBadge(action.badgeText)
-                if (n > tab.uboCount) Stats.total.addAndGet((n - tab.uboCount).toLong())
-                tab.uboCount = n
+                Stats.total.addAndGet(UboBadge.newBlocks(tab.uboCounted, n).toLong())
+                tab.uboCount = UboBadge.pageCount(tab.uboCount, tab.uboCounted, n)
+                tab.uboCounted = n
                 onBlockedChanged(tab)
             }
             override fun onTogglePopup(extension: WebExtension, action: WebExtension.Action) = showExtensionPopup()

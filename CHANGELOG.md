@@ -16,6 +16,29 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 * Accent-coloured text (home stats, download types, reading-list sites) is now readable in light mode.
 * Android 8.0: the navigation bar stays black in light mode, so its buttons stay visible.
 
+## Unreleased (2.5.1)
+
+**New features**
+* **Crash reports (opt-in, off by default).** Turn on Settings › Crash reports › Save crash reports and, if Ulfur
+  crashes, a short report is kept on your phone: Ulfur and Android versions, phone model, GeckoView version, time,
+  thread and the stack trace. Reports never include web addresses, page titles, history or anything from private
+  tabs, and web addresses in error messages are blanked out. Only the newest 5 are kept.
+* Nothing is ever sent automatically. After a crash, the next start shows a notice where you can view the report,
+  delete it, or tap **Report on GitHub** to open a pre-filled bug report that you can edit before submitting.
+  Saved reports can also be viewed and deleted in Settings.
+* Crashes of a web page's content process are noted too (without any details about the page). GeckoView's own
+  crash reporter, which sends reports to Mozilla, stays off.
+* **Move to Downloads from the private vault.** Use a file's ⋯ menu, or long-press to pick several and tap
+  **Move to Downloads**. Files go to Downloads/Ulfur. Ulfur always asks first and warns that moved files show up in
+  Gallery, Files and other apps without a fingerprint. Each copy is checked against the original before the vault
+  copy is removed, and any file that can't be copied safely stays in the vault and is named in the result notice.
+  Multi-select also lets you share or delete several vault files at once.
+
+**Fixes**
+* The private vault no longer asks for your fingerprint twice when you first open it.
+* The all-time "blocked" counter no longer counts uBlock Origin's blocks twice when you move to another page, and
+  the shield badge no longer shows the previous page's uBlock Origin number on the new page.
+
 ## 2.5.0 (versionCode 16)
 
 **New features**

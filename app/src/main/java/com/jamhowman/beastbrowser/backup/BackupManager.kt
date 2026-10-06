@@ -29,6 +29,7 @@ object BackupManager {
         val loginsAdded: Int = 0,
         val loginsUpdated: Int = 0,
         val loginsSkipped: Int = 0,
+        val loginsKeptNewer: Int = 0,
         /** Logins were selected but the vault couldn't be unlocked. */
         val loginsLocked: Boolean = false,
         val bookmarks: Int = 0,
@@ -46,7 +47,10 @@ object BackupManager {
     private val B: Class<*> = Boolean::class.javaObjectType
     private val S: Class<*> = String::class.java
 
-    /** User settings that travel in a backup (pref key → type). Session, realm and counter state never do. */
+    /**
+     * User settings that travel in a backup (pref key → type). Session, realm and counter state never do, and
+     * neither does the 2.5.1 crash-report opt-in (`crash_reports`): that consent is given per device.
+     */
     val SETTINGS: Map<String, Class<*>> = mapOf(
         "block_ads" to B, "ublock" to B, "cosmetic" to B,
         "dnt_gpc" to B, "fingerprinting" to B, "safe_browsing" to B,
@@ -86,7 +90,7 @@ object BackupManager {
         if (s.logins && !p.logins.isNullOrEmpty()) {
             val r = PasswordVault.importLogins(p.logins)
             sum = if (r == null) sum.copy(loginsLocked = true)
-            else sum.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped)
+            else sum.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped, loginsKeptNewer = r.keptNewer)
         }
         if (s.bookmarks && !p.bookmarks.isNullOrEmpty()) {
             val db = BrowserDb.get(context)
