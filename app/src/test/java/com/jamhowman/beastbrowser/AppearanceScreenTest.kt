@@ -42,7 +42,7 @@ class AppearanceScreenTest {
     private fun grid(f: AppearanceFragment) = f.requireView().findViewById<GridLayout>(R.id.presetGrid)
 
     private fun render(activity: SettingsActivity, name: String) {
-        val root = activity.window.decorView
+        val root = activity.findViewById<ViewGroup>(android.R.id.content)
         val w = 1080; val h = 2900 // a little taller than a phone so the realm tiles show too
         root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY))
         root.layout(0, 0, w, h)
@@ -73,5 +73,21 @@ class AppearanceScreenTest {
         assertTrue(realms.getChildAt(1).contentDescription.contains("Ember"))
         assertTrue(!realms.getChildAt(2).isClickable)
         assertSame(ThemePreset.EMBER, Prefs.accentFor(Realm.WORK))
+    }
+
+    @Test fun lightModeUsesTheLightTokens() {
+        Prefs.init(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+        Prefs.sp.edit(commit = true) { clear(); putString("ui_theme", "light"); putString("accent", "cyan") }
+        // Light for this activity only: the app-wide default night mode is static and would leak into other tests.
+        val controller = Robolectric.buildActivity(SettingsActivity::class.java)
+        controller.get().delegate.localNightMode = androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
+        val activity = controller.setup().get()
+        val f = AppearanceFragment()
+        activity.supportFragmentManager.beginTransaction().replace(R.id.settingsContainer, f).commitNow()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(!com.jamhowman.beastbrowser.data.AppTheme.isNight(activity))
+        val mode = f.requireView().findViewById<ViewGroup>(R.id.modeRow)
+        assertTrue("Light is the selected segment", mode.getChildAt(1).isSelected)
+        render(activity, "appearance_frost_light.png")
     }
 }
