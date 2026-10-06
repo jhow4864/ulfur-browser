@@ -21,6 +21,15 @@ object Prefs {
     val cookieMode get() = sp.getString("cookie_mode", "tcp") ?: "tcp"
     val fingerprinting get() = sp.getBoolean("fingerprinting", true)
     val ublockEnabled get() = sp.getBoolean("ublock", true)
+    /** 2.7: hide cookie banners with uBO's cookie-notice lists (EasyList/uBO – Cookie Notices). Default on. */
+    val cookieBanners get() = sp.getBoolean("cookie_banners", true)
+    /**
+     * The [cookieBanners] value last applied to uBO (null = never, e.g. fresh install or upgrade from 2.6). Only a
+     * change is pushed, so lists picked by hand in uBO's dashboard aren't undone on every resume.
+     */
+    var cookieBannersApplied: Boolean?
+        get() = if (sp.contains("cookie_banners_applied")) sp.getBoolean("cookie_banners_applied", true) else null
+        set(v) = sp.edit { if (v == null) remove("cookie_banners_applied") else putBoolean("cookie_banners_applied", v) }
     val sendDntGpc get() = sp.getBoolean("dnt_gpc", true)
     val safeBrowsing get() = sp.getBoolean("safe_browsing", true)
     val clearOnExit get() = sp.getBoolean("clear_on_exit", false)

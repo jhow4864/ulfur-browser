@@ -5,6 +5,15 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 
 ## Unreleased
 
+**Shields**
+* Cookie banners are now hidden by default, using uBlock Origin's own "EasyList/uBO – Cookie Notices" lists
+  (switched off in stock uBO). It hides the banner rather than clicking accept, so sites treat you as never having
+  agreed. A few sites lock scrolling or hold back videos, maps or comments until you answer the banner.
+* New "Hide cookie banners on this site" switch in the Shields sheet lets banners through on one site while the rest
+  of Shields stays up. It uses uBlock Origin's per-site cosmetic filtering switch, so uBO also stops hiding other page
+  clutter on that site; ads and trackers are still blocked. Switch it off everywhere in Settings > Shields > Hide
+  cookie banners.
+
 **Save as PDF**
 * New "Save as PDF" item in the menu saves the page as it looks now into Downloads/Ulfur, using GeckoView's built-in
   printer. In Reader view it saves the clean article. Private and Ghost tabs save into the private downloads vault

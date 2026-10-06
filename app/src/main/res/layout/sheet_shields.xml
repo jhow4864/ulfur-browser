@@ -131,6 +131,26 @@
         android:textSize="12sp"
         tools:text="Blocking ads, trackers and cosmetic clutter" />
 
+    <!-- 2.7: per-site cookie-banner hiding (uBO's no-cosmetic-filtering switch); shown once uBO answers -->
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/cookieSwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/shields_cookies_site"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/cookieState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:visibility="gone"
+        tools:text="Cookie pop-ups are hidden here" />
+
     <!-- 2.5: per-site autoplay exception (hidden when autoplay is allowed everywhere) -->
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/autoplaySwitch"

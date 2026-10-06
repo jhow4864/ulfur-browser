@@ -8,6 +8,10 @@
         <SwitchPreferenceCompat app:key="ublock" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="uBlock Origin (built in)"
             app:summary="Full uBO content blocker with its default filter lists, incl. YouTube ad blocking" />
+        <SwitchPreferenceCompat app:key="cookie_banners" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:dependency="ublock"
+            app:title="@string/pref_cookie_banners_title"
+            app:summary="@string/pref_cookie_banners_summary" />
         <Preference app:key="ublock_dashboard" app:iconSpaceReserved="false"
             app:title="uBlock Origin dashboard" app:summary="Filter lists, my filters, trusted sites" />
         <Preference app:key="reset_counter" app:iconSpaceReserved="false" app:title="Reset blocked counter" />

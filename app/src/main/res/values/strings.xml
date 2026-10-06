@@ -90,6 +90,8 @@
     <string name="shield_level_many">Shields: %1$s blocked on this page, a tracker-heavy site</string>
     <string name="shield_level_down">Shields down on this site</string>
     <string name="pref_tally_title">Weekly tracker tally</string>
+    <string name="pref_cookie_banners_title">Hide cookie banners</string>
+    <string name="pref_cookie_banners_summary">Uses uBlock Origin\'s cookie notice lists. If a site stays frozen or a video or map won\'t load, switch off Hide cookie banners on this site in its Shields sheet</string>
     <string name="pref_tally_summary_empty">Nothing blocked in the last 7 days</string>
     <string name="pref_tally_summary">%1$s blocked in the last 7 days</string>
     <string name="tally_section_week">Last 7 days</string>
@@ -212,6 +214,11 @@
     <string name="remove">Remove</string>
     <string name="autoplay_blocked_on">Autoplay blocked on %1$s</string>
     <string name="autoplay_allow">Allow</string>
+    <string name="shields_cookies_site">Hide cookie banners on this site</string>
+    <string name="shields_cookies_on">Cookie pop-ups are hidden here</string>
+    <string name="shields_cookies_off">Cookie pop-ups show here. uBlock Origin also stops hiding other page clutter on this site; ads and trackers are still blocked.</string>
+    <string name="shields_cookies_shown">Cookie banners shown on %1$s</string>
+    <string name="shields_cookies_hidden">Cookie banners hidden on %1$s</string>
     <string name="shields_autoplay_site">Allow autoplay on this site</string>
     <string name="shields_autoplay_allowed">Videos here can start on their own, with sound</string>
     <string name="shields_autoplay_blocked_audible">Videos with sound wait until you tap play</string>

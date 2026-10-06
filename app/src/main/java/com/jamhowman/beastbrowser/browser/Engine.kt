@@ -29,8 +29,10 @@ object Engine {
     const val SITEPREFS_ID = "beast-siteprefs@jamhowman.com"
     const val SITEPREFS_LOCATION = "resource://android/assets/extensions/beast-siteprefs/"
 
-    /** Port to the Beast bridge module inside uBO (per-site trusted switch). */
-    val uboBridge = NativeBridge("beast_ubo")
+    /** Port to the Beast bridge module inside uBO (per-site trusted switch, cookie-notice lists). */
+    val uboBridge = NativeBridge("beast_ubo").also { b ->
+        b.events += { o -> if (o.optString("type") == "hello") syncCookieBanners() }
+    }
     /**
      * Port to the Beast Helper extension (per-host HTTPS-Only exceptions). Also carries Reader view requests the
      * background script relays for the reader page when its own native message gets no answer.
@@ -163,6 +165,22 @@ object Engine {
             if (Prefs.ublockEnabled && !enabled) ctl.enable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
             if (!Prefs.ublockEnabled && enabled) ctl.disable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
         }
+        syncCookieBanners()
+    }
+
+    /**
+     * 2.7: Settings > Shields > Hide cookie banners. Pushes [Prefs.cookieBanners] to uBO's cookie-notice lists when it
+     * differs from what was last applied (first run after install or upgrade: on). Called on resume and whenever the
+     * uBO bridge (re)connects; recorded only once uBO confirms, so a failed attempt is retried next time.
+     */
+    fun syncCookieBanners() {
+        if (!Prefs.ublockEnabled || !uboBridge.isConnected) return
+        val want = Prefs.cookieBanners
+        if (Prefs.cookieBannersApplied == want) return
+        uboBridge.request(JSONObject().put("type", "setCookieLists").put("enabled", want), 30_000) { r ->
+            if (r?.optBoolean("ok") == true && r.optBoolean("enabled") == want) Prefs.cookieBannersApplied = want
+            else Log.w(TAG, "cookie lists not applied: ${r?.optString("error")}")
+        }
     }
 
     /** 2.5: DNS over HTTPS via GeckoRuntimeSettings.setTrustedRecursiveResolverUri / setTrustedRecursiveResolverMode. */
@@ -232,6 +250,25 @@ object Engine {
         if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
         uboBridge.request(JSONObject().put("type", "setSite").put("url", url).put("enabled", enabled), 2500) {
             cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", enabled) else null)
+        }
+    }
+
+    /**
+     * Shields sheet "Hide cookie banners on this site": uBO's per-site no-cosmetic-filtering switch for [url]
+     * (true = banners hidden, i.e. cosmetic filtering on). Turning it off also stops uBO's other cosmetic
+     * cleanup on that site; network blocking stays on. null if uBO/bridge isn't available.
+     */
+    fun uboCookieHidingOn(url: String, cb: (Boolean?) -> Unit) {
+        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        uboBridge.request(JSONObject().put("type", "getCosmetic").put("url", url), 2500) {
+            cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", true) else null)
+        }
+    }
+
+    fun setUboCookieHiding(url: String, on: Boolean, cb: (Boolean?) -> Unit = {}) {
+        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        uboBridge.request(JSONObject().put("type", "setCosmetic").put("url", url).put("enabled", on), 2500) {
+            cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", on) else null)
         }
     }
 
