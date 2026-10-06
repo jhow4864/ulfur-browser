@@ -11,6 +11,9 @@
     <color name="text_hint">#8E8E9A</color>
     <color name="private_bg">#F3EDFA</color>
     <color name="private_stroke">#C9B6E4</color>
+    <!-- Roadmap 11: private-mode chip and wolf-eye ink, and NOT SECURE on plain http -->
+    <color name="private_ink">#5B3FA8</color>
+    <color name="private_warn">#A15C00</color>
     <color name="warn">#FFB020</color>
     <color name="gx_red">#FA1E4E</color>
     <color name="gx_purple">#A63BFF</color>

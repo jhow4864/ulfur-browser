@@ -46,8 +46,8 @@ data class ThemePalette(
 }
 
 /**
- * A palette layered on top of the chosen preset. Roadmap item 11 (darker private-mode palette) plugs in here by
- * setting [AppTheme.privateOverride]; nothing in item 18 provides one, so private tabs keep the realm's theme.
+ * A palette layered on top of the chosen preset. Roadmap item 11 (darker private-mode palette) plugs in here:
+ * [AppTheme.privateOverride] defaults to [PrivateLook].
  */
 interface ThemeOverride {
     /**
@@ -62,8 +62,8 @@ interface ThemeOverride {
 }
 
 object AppTheme {
-    /** Private-mode override (item 11). null = none. Read on every [palette] call, so it can change at runtime. */
-    @Volatile var privateOverride: ThemeOverride? = null
+    /** Private-mode override (item 11), [PrivateLook] by default. null = none. Read on every [palette] call. */
+    @Volatile var privateOverride: ThemeOverride? = PrivateLook
 
     fun isNight(context: Context): Boolean =
         (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES

@@ -91,6 +91,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         }
         b.toolbar.setNavigationOnClickListener { if (adapter.selecting) setSelection(emptySet()) else finish() }
         onBackPressedDispatcher.addCallback(this, exitSelection)
+        accent.systemBars?.let { b.toolbar.setBackgroundColor(it) } // item 11: the vault's bars are private violet
         accentLine(b.accentLine, accent.color, 0x99)
         b.emptyArt.imageTintList = android.content.res.ColorStateList.valueOf(accent.color)
         clearItem = b.toolbar.menu.add("Clear all").apply {
