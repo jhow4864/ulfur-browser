@@ -4,6 +4,7 @@ import android.content.Context
 import com.jamhowman.beastbrowser.BuildConfig
 import com.jamhowman.beastbrowser.data.BookmarkFolder
 import com.jamhowman.beastbrowser.data.BrowserDb
+import com.jamhowman.beastbrowser.data.CustomFolders
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.passwords.PasswordVault
 import com.jamhowman.beastbrowser.reader.ReadingListDb
@@ -31,6 +32,8 @@ object BackupManager {
         /** Logins were selected but the vault couldn't be unlocked. */
         val loginsLocked: Boolean = false,
         val bookmarks: Int = 0,
+        /** Custom bookmark folders created because they didn't exist on this device. */
+        val folders: Int = 0,
         val speedDial: Int = 0,
         val articles: Int = 0,
         val settings: Int = 0,
@@ -56,6 +59,7 @@ object BackupManager {
             appVersion = BuildConfig.VERSION_NAME,
             logins = if (s.logins && PasswordVault.isUnlocked()) PasswordVault.fetchAll() else null,
             bookmarks = if (s.bookmarks) db.bookmarks().map { BackupBookmark(it.url, it.title, it.time, it.folderId) } else null,
+            folders = if (s.bookmarks) CustomFolders.load() else null,
             speedDial = if (s.speedDial) SpeedDialStore.load().map { BackupTile(it.title, it.url) } else null,
             readingList = if (s.readingList) reading.list().mapNotNull { reading.get(it.id) }.map { a ->
                 BackupArticle(a.url, a.title, a.byline, a.site, a.excerpt, a.html, a.lang, a.dir, a.published, a.savedAt, a.words, a.read)
@@ -77,9 +81,19 @@ object BackupManager {
         }
         if (s.bookmarks && !p.bookmarks.isNullOrEmpty()) {
             val db = BrowserDb.get(context)
-            val add = BackupMerge.newBookmarks(db.bookmarks().mapTo(HashSet()) { it.url }, p.bookmarks) { BookmarkFolder.from(it) != null }
+            val fresh = BackupMerge.newBookmarks(db.bookmarks().mapTo(HashSet()) { it.url }, p.bookmarks) { it }
+            // Folders missing on this device are created (with their nesting) instead of dropping to "All".
+            val plan = BackupMerge.planFolders(
+                existing = CustomFolders.load(),
+                backupFolders = p.folders.orEmpty(),
+                bookmarks = fresh,
+                isBuiltIn = { BookmarkFolder.from(it) != null },
+                newId = CustomFolders::newId,
+            )
+            CustomFolders.add(plan.create)
+            val add = fresh.map { b -> b.folder?.let { b.copy(folder = plan.resolve(it)) } ?: b }
             add.forEach { db.addBookmark(it.url, it.title, it.folder, it.created.takeIf { c -> c > 0 } ?: System.currentTimeMillis()) }
-            sum = sum.copy(bookmarks = add.size)
+            sum = sum.copy(bookmarks = add.size, folders = plan.create.size)
         }
         if (s.speedDial && !p.speedDial.isNullOrEmpty()) {
             val (merged, added) = BackupMerge.mergeSpeedDial(SpeedDialStore.load().map { BackupTile(it.title, it.url) }, p.speedDial)

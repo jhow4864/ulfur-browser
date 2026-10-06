@@ -278,6 +278,7 @@ class BackupUi(private val fragment: Fragment) {
         val parts = listOfNotNull(
             sum.loginsAdded.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_passwords, it) },
             sum.bookmarks.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_bookmarks, it) },
+            sum.folders.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_folders, it) },
             sum.speedDial.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_tiles, it) },
             sum.articles.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_articles, it) },
             sum.settings.takeIf { it > 0 }?.let { plural(R.plurals.backup_n_settings, it) },

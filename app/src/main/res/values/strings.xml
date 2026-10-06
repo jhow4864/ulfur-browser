@@ -46,6 +46,9 @@
     <string name="folder_reading">Reading</string>
     <string name="folder_shopping">Shopping</string>
     <string name="folder_work">Work</string>
+    <string name="folder_delete_title">Delete folder “%1$s”?</string>
+    <string name="folder_delete_body">Its bookmarks and sub-folders move up a level. No bookmarks are deleted.</string>
+    <string name="folder_delete">Delete folder</string>
     <string name="password_generator">Password generator</string>
     <string name="translate_page">Translate page · %1$s</string>
     <string name="translate_show_original">Show original</string>
@@ -143,6 +146,10 @@
     <plurals name="backup_n_bookmarks">
         <item quantity="one">%1$d bookmark</item>
         <item quantity="other">%1$d bookmarks</item>
+    </plurals>
+    <plurals name="backup_n_folders">
+        <item quantity="one">%1$d new bookmark folder</item>
+        <item quantity="other">%1$d new bookmark folders</item>
     </plurals>
     <plurals name="backup_n_tiles">
         <item quantity="one">%1$d speed-dial tile</item>

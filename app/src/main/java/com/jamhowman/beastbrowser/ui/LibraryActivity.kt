@@ -18,6 +18,8 @@ import com.google.android.material.tabs.TabLayout
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.UrlUtils
 import com.jamhowman.beastbrowser.data.BookmarkFolder
+import com.jamhowman.beastbrowser.data.CustomFolder
+import com.jamhowman.beastbrowser.data.CustomFolders
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Entry
 import com.jamhowman.beastbrowser.data.Prefs
@@ -31,8 +33,10 @@ class LibraryActivity : AppCompatActivity() {
     private lateinit var b: ActivityLibraryBinding
     private lateinit var db: BrowserDb
     private var page = 0
-    /** [BookmarkFolder.id] shown on the Bookmarks page; null = All. */
+    /** [BookmarkFolder.id] or [CustomFolder.id] shown on the Bookmarks page; null = All. */
     private var selectedFolder: String? = null
+    /** Custom folders (2.4.1, created by backup import), reloaded with the pills. */
+    private var customFolders: List<CustomFolder> = emptyList()
     private val adapter = Adapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,10 +88,17 @@ class LibraryActivity : AppCompatActivity() {
         }
     }
 
-    /** "All" + one pill per [BookmarkFolder], each in its folder accent; the selected one is filled. */
+    /**
+     * "All" + one pill per [BookmarkFolder], each in its folder accent, then the custom folders ("Parent / Child")
+     * in the realm accent; the selected one is filled. Long-press a custom folder to delete it.
+     */
     private fun buildFolderPills() {
+        customFolders = CustomFolders.ordered(CustomFolders.load())
+        if (selectedFolder != null && BookmarkFolder.from(selectedFolder) == null && customFolders.none { it.id == selectedFolder }) {
+            selectedFolder = null
+        }
         b.folderStrip.removeAllViews()
-        fun addPill(id: String?, label: String, color: Int) {
+        fun addPill(id: String?, label: String, color: Int, onLong: (() -> Unit)? = null) {
             val pill = ItemFolderPillBinding.inflate(layoutInflater, b.folderStrip, false)
             pill.folderName.text = label
             pill.folderName.setTextColor(color)
@@ -97,17 +108,35 @@ class LibraryActivity : AppCompatActivity() {
                 else ColorStateList.valueOf(getColor(R.color.surface2))
             )
             pill.root.setOnClickListener { selectedFolder = id; buildFolderPills(); reload() }
+            if (onLong != null) pill.root.setOnLongClickListener { onLong(); true }
             b.folderStrip.addView(pill.root)
         }
         addPill(null, getString(R.string.folder_all), Prefs.accent.color)
         BookmarkFolder.entries.forEach { addPill(it.id, getString(it.labelRes), it.accent.color) }
+        customFolders.forEach { f -> addPill(f.id, folderLabel(f.id) ?: f.name, Prefs.accent.color) { confirmDeleteFolder(f) } }
+    }
+
+    private fun folderLabel(id: String?): String? = CustomFolders.label(this, id, customFolders)
+
+    /** Deleting a custom folder never deletes bookmarks: they (and sub-folders) move to its parent. */
+    private fun confirmDeleteFolder(f: CustomFolder) {
+        MaterialAlertDialogBuilder(this).setTitle(getString(R.string.folder_delete_title, folderLabel(f.id) ?: f.name))
+            .setMessage(R.string.folder_delete_body)
+            .setPositiveButton(R.string.folder_delete) { _, _ ->
+                CustomFolders.delete(f.id)
+                db.moveFolderBookmarks(f.id, f.parentId?.takeIf { p -> BookmarkFolder.from(p) != null || customFolders.any { it.id == p } })
+                if (selectedFolder == f.id) selectedFolder = null
+                buildFolderPills(); reload()
+            }
+            .setNegativeButton(android.R.string.cancel, null).show()
     }
 
     /** Long-press a bookmark → "Move to folder" ("All" clears the folder). */
     private fun pickFolder(entry: Entry) {
         val choices: List<Pair<String?, String>> =
             listOf<Pair<String?, String>>(null to getString(R.string.folder_all)) +
-                BookmarkFolder.entries.map { it.id to getString(it.labelRes) }
+                BookmarkFolder.entries.map { it.id to getString(it.labelRes) } +
+                customFolders.map { it.id to (folderLabel(it.id) ?: it.name) }
         val checked = choices.indexOfFirst { it.first == entry.folderId }.coerceAtLeast(0)
         MaterialAlertDialogBuilder(this).setTitle("Move to folder")
             .setSingleChoiceItems(choices.map { it.second }.toTypedArray(), checked) { d, which ->
@@ -135,9 +164,10 @@ class LibraryActivity : AppCompatActivity() {
             val host = Domains.display(UrlUtils.host(e.url))
             h.b.itemTitle.text = e.title.ifBlank { host.ifBlank { e.url } }
             val folder = BookmarkFolder.from(e.folderId)
+            val folderName = if (page == 0) folderLabel(e.folderId) else null
             h.b.itemSubtitle.text = when {
                 page == 1 -> "$host · ${DateUtils.getRelativeTimeSpanString(e.time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)}"
-                folder != null -> "$host · ${getString(folder.labelRes)}"
+                folderName != null -> "$host · $folderName"
                 else -> host
             }
             h.b.itemIcon.text = (host.firstOrNull() ?: '•').uppercase()

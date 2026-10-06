@@ -113,6 +113,12 @@ class BrowserDb private constructor(context: Context) :
             if (folderId != null) put("folder_id", folderId) else putNull("folder_id")
         }, "id = ?", arrayOf(id.toString()))
     }
+    /** Moves every bookmark in folder [from] to [to] (null = no folder). Used when a custom folder is deleted. */
+    fun moveFolderBookmarks(from: String, to: String?) {
+        writableDatabase.update("bookmarks", ContentValues().apply {
+            if (to != null) put("folder_id", to) else putNull("folder_id")
+        }, "folder_id = ?", arrayOf(from))
+    }
     fun removeBookmark(url: String) { writableDatabase.delete("bookmarks", "url = ?", arrayOf(url)) }
     fun deleteBookmark(id: Long) { writableDatabase.delete("bookmarks", "id = ?", arrayOf(id.toString())) }
 

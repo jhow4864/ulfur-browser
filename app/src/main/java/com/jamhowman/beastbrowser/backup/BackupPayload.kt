@@ -1,10 +1,14 @@
 package com.jamhowman.beastbrowser.backup
 
+import com.jamhowman.beastbrowser.data.CustomFolder
 import com.jamhowman.beastbrowser.passwords.SavedLogin
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** A bookmark as stored in a backup. [folder] is a [com.jamhowman.beastbrowser.data.BookmarkFolder] id. */
+/**
+ * A bookmark as stored in a backup. [folder] is a [com.jamhowman.beastbrowser.data.BookmarkFolder] id or the id
+ * of one of the backup's [BackupPayload.folders].
+ */
 data class BackupBookmark(val url: String, val title: String, val created: Long, val folder: String?)
 
 data class BackupTile(val title: String, val url: String)
@@ -21,7 +25,8 @@ typealias BackupSettings = Map<String, Any>
  * Decrypted backup contents. A null section was not included in the backup (distinct from an empty one).
  * JSON (inside the encrypted envelope, see [BackupCrypto]):
  * `{"app":"Ulfur","appVersion":"2.4.0","createdAt":…,"logins":[…],"bookmarks":[…],"speedDial":[…],
- *   "readingList":[…],"settings":{"key":value}}`
+ *   "readingList":[…],"settings":{"key":value},"bookmarkFolders":[{"id":…,"name":…,"parent":…}]}`
+ * `bookmarkFolders` (2.4.1+) lists the custom folders bookmarks may refer to; older backups don't have it.
  */
 data class BackupPayload(
     val appVersion: String = "",
@@ -31,10 +36,12 @@ data class BackupPayload(
     val speedDial: List<BackupTile>? = null,
     val readingList: List<BackupArticle>? = null,
     val settings: BackupSettings? = null,
+    /** Custom bookmark folders (2.4.1+); null in older backups. Built-in folders are never listed. */
+    val folders: List<CustomFolder>? = null,
 ) {
     /** Redacted: never print logins. */
     override fun toString() = "BackupPayload(logins=${logins?.size}, bookmarks=${bookmarks?.size}, " +
-        "speedDial=${speedDial?.size}, readingList=${readingList?.size}, settings=${settings?.size})"
+        "speedDial=${speedDial?.size}, readingList=${readingList?.size}, settings=${settings?.size}, folders=${folders?.size})"
 
     fun toJson(): String {
         val o = JSONObject().put("app", "Ulfur").put("appVersion", appVersion).put("createdAt", createdAt)
@@ -59,6 +66,11 @@ data class BackupPayload(
             }))
         }
         settings?.let { s -> o.put("settings", JSONObject().apply { s.forEach { (k, v) -> put(k, v) } }) }
+        folders?.let { list ->
+            o.put("bookmarkFolders", JSONArray(list.map {
+                JSONObject().put("id", it.id).put("name", it.name).put("parent", it.parentId)
+            }))
+        }
         return o.toString()
     }
 
@@ -93,6 +105,10 @@ data class BackupPayload(
                     s.keys().asSequence().mapNotNull { k ->
                         when (val v = s.opt(k)) { is Boolean -> k to v; is String -> k to v; else -> null }
                     }.toMap()
+                },
+                folders = arr("bookmarkFolders")?.mapNotNull { f ->
+                    val id = f.str("id") ?: return@mapNotNull null
+                    CustomFolder(id, f.optString("name").trim().ifEmpty { id }, f.str("parent")?.takeIf { it != id })
                 },
             )
         }
