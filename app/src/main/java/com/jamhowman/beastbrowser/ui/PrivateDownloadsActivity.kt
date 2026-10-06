@@ -31,7 +31,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.jamhowman.beastbrowser.R
-import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.databinding.ActivityPrivateDownloadsBinding
 import com.jamhowman.beastbrowser.downloads.DlFormat
 import com.jamhowman.beastbrowser.downloads.DlStatus
@@ -52,6 +52,8 @@ class PrivateDownloadsActivity : AppCompatActivity() {
     private lateinit var prompt: BiometricPrompt
     private var clearItem: MenuItem? = null
     private var selectAllItem: MenuItem? = null
+    /** The vault's palette (private override, if any), for tint code outside onCreate. */
+    private lateinit var palette: ThemePalette
     /** Ids waiting for the Android 8-9 storage permission before the confirm dialog. */
     private var pendingMove: Set<Long> = emptySet()
     private var moving = false
@@ -74,8 +76,8 @@ class PrivateDownloadsActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
+        val accent = ThemedScreen(this, private = true).palette // the vault: private-mode override (item 11), if any
+        palette = accent
         super.onCreate(savedInstanceState)
         prompting = savedInstanceState?.getBoolean(KEY_PROMPTING) ?: false
         DownloadCenter.init(this)
@@ -288,7 +290,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
             val bar = Snackbar.make(b.root, msg, if (failed.isEmpty()) Snackbar.LENGTH_LONG else Snackbar.LENGTH_INDEFINITE)
             if (moved.isNotEmpty()) bar.setAction(R.string.vault_move_open) { openDownloadsFolder() }
             else bar.setAction(android.R.string.ok) { }
-            bar.setActionTextColor(snackActionColor(this, Prefs.accent.color))
+            bar.setActionTextColor(snackActionColor(this, palette.color))
             bar.show()
         }
     }

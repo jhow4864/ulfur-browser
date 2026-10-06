@@ -11,8 +11,9 @@ import android.widget.GridLayout
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.test.core.app.ApplicationProvider
-import com.jamhowman.beastbrowser.data.Accent
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.ThemePalette
+import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.databinding.ActivityMainBinding
 import com.jamhowman.beastbrowser.databinding.ActivityDownloadsBinding
 import com.jamhowman.beastbrowser.downloads.DlStatus
@@ -46,8 +47,11 @@ import java.io.File
 class UiPreviewTest {
     private val out = File(System.getProperty("preview.dir") ?: "build/previews").apply { mkdirs() }
 
-    private fun ctx(accent: Accent) = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_Beast).apply {
-        theme.applyStyle(accent.overlay, true)
+    /** 2.8 presets, resolved like the app does (the preview qualifiers are light mode). */
+    private fun pal(preset: ThemePreset) = ThemePalette.of(preset, night = false)
+
+    private fun ctx(accent: ThemePalette) = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_Beast).apply {
+        theme.applyStyle(accent.preset.overlay, true)
         Prefs.init(this)
     }
 
@@ -59,7 +63,7 @@ class UiPreviewTest {
         File(out, name).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
-    private fun home(accent: Accent, file: String) {
+    private fun home(accent: ThemePalette, file: String) {
         val c = ctx(accent)
         val b = ActivityMainBinding.inflate(LayoutInflater.from(c))
         val col = accent.color
@@ -85,13 +89,13 @@ class UiPreviewTest {
     }
 
     @Test fun renderHomeScreens() {
-        home(Accent.RED, "home_gx_red.png")
-        home(Accent.CYAN, "home_cyber_cyan.png")
-        home(Accent.PURPLE, "home_ultraviolet.png")
+        home(pal(ThemePreset.BLOOD_MOON), "home_blood_moon.png")
+        home(pal(ThemePreset.FROST), "home_frost.png")
+        home(pal(ThemePreset.VOID), "home_void.png")
     }
 
     @Test fun renderMenuAndShields() {
-        val accent = Accent.RED
+        val accent = pal(ThemePreset.BLOOD_MOON)
         val c = ctx(accent)
         val m = SheetMenuBinding.inflate(LayoutInflater.from(c))
         m.menuShield.imageTintList = ColorStateList.valueOf(accent.color)
@@ -137,7 +141,7 @@ class UiPreviewTest {
 
     /** SAMPLE DATA ONLY - illustrates the Downloads screen; nothing here was really downloaded. */
     @Test fun renderDownloads() {
-        val accent = Accent.RED
+        val accent = pal(ThemePreset.BLOOD_MOON)
         val c = ctx(accent)
         val mb = 1024L * 1024
         val now = System.currentTimeMillis()

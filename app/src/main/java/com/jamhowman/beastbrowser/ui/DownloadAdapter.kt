@@ -4,12 +4,13 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.jamhowman.beastbrowser.R
-import com.jamhowman.beastbrowser.data.Accent
+import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.databinding.ItemDownloadBinding
 import com.jamhowman.beastbrowser.downloads.DlFormat
 import com.jamhowman.beastbrowser.downloads.DlStatus
@@ -19,7 +20,7 @@ enum class DlAction { PAUSE, RESUME, CANCEL, RETRY, OPEN, SHARE, DELETE, MORE }
 
 /** Download cards. Progress-only changes rebind in place (no flicker) via a payload. */
 class DownloadAdapter(
-    private val accent: Accent,
+    private val accent: ThemePalette,
     /** Private vault only (2.5.1): long-press enters selection mode. Null keeps the old behaviour. */
     private val onLongPress: ((DownloadItem) -> Unit)? = null,
     private val onAction: (DownloadItem, DlAction, android.view.View) -> Unit,
@@ -45,7 +46,7 @@ class DownloadAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val b = ItemDownloadBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         b.dlProgress.setIndicatorColor(accent.color)
-        b.dlType.setTextColor(accent.color)
+        b.dlType.setTextColor(accent.accentText)
         return VH(b)
     }
 
@@ -89,7 +90,10 @@ class DownloadAdapter(
         bindSelection(holder, d)
     }
 
-    /** Selected rows: surfaceTintDark (#371924) fill with a 60% accent border (mockups-2.5.1 move-2-select). */
+    /**
+     * Selected rows: the palette's selected-container fill (surfaceTint; Blood Moon dark = #371924, as in mockups-2.5.1
+     * move-2-select) with a 60% accent border, so it follows the theme and light/dark mode.
+     */
     private fun bindSelection(holder: VH, d: DownloadItem) {
         val b = holder.b
         val on = d.id in selected
@@ -99,9 +103,9 @@ class DownloadAdapter(
         b.root.background = if (on) GradientDrawable().apply {
             val dp = b.root.resources.displayMetrics.density
             cornerRadius = 18f * dp
-            setColor(0xFF371924.toInt())
+            setColor(accent.surfaceTint)
             setStroke((1.5f * dp).toInt(), accent.withAlpha(0x99))
-        } else b.root.context.getDrawable(R.drawable.bg_download_card)
+        } else AppCompatResources.getDrawable(b.root.context, R.drawable.bg_download_card)
     }
 
     private fun bindButton(btn: android.widget.ImageButton, action: DlAction?, d: DownloadItem, highlight: Boolean) {
@@ -144,10 +148,10 @@ class DownloadAdapter(
         p.setIndicatorColor(barColor)
 
         b.dlStatus.text = d.status.label.uppercase()
-        val chip = (ctx.getDrawable(R.drawable.bg_chip)!!.mutate() as GradientDrawable)
+        val chip = (AppCompatResources.getDrawable(ctx, R.drawable.bg_chip)!!.mutate() as GradientDrawable)
         val (chipBg, chipFg) = when (d.status) {
             DlStatus.DOWNLOADING -> accent.color to accent.onColor
-            DlStatus.DONE -> accent.withAlpha(0x33) to accent.color
+            DlStatus.DONE -> accent.withAlpha(0x33) to accent.accentText
             DlStatus.FAILED -> 0x33FFB020 to ctx.getColor(R.color.warn)
             else -> ctx.getColor(R.color.surface3) to ctx.getColor(R.color.text_secondary)
         }

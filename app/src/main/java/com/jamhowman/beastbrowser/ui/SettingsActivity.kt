@@ -1,11 +1,14 @@
 package com.jamhowman.beastbrowser.ui
 
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.drawToBitmap
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
@@ -16,16 +19,16 @@ import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.crash.CrashReporter
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
-import com.jamhowman.beastbrowser.data.UiTheme
 import com.jamhowman.beastbrowser.data.Stats
 import com.jamhowman.beastbrowser.data.TrackerTallyDb
 import com.jamhowman.beastbrowser.databinding.ActivitySettingsBinding
 
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     private lateinit var b: ActivitySettingsBinding
+    private lateinit var screen: ThemedScreen
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        theme.applyStyle(Prefs.accent.overlay, true)
+        screen = ThemedScreen(this)
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         b = ActivitySettingsBinding.inflate(layoutInflater)
@@ -40,7 +43,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             if (supportFragmentManager.backStackEntryCount == 0) b.toolbar.setTitle(R.string.settings)
         }
         savedInstanceState?.getCharSequence(STATE_TITLE)?.let { b.toolbar.title = it }
-        accentLine(b.settingsAccentLine, Prefs.accent.color, 0x99)
+        accentLine(b.settingsAccentLine, screen.palette.color, 0x99)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().replace(R.id.settingsContainer, SettingsFragment()).commit()
         }
@@ -55,8 +58,33 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
         val name = pref.fragment ?: return false
         val f = supportFragmentManager.fragmentFactory.instantiate(classLoader, name).apply { arguments = pref.extras }
         supportFragmentManager.beginTransaction().replace(R.id.settingsContainer, f).addToBackStack(pref.key).commit()
-        b.toolbar.title = pref.title
+        b.toolbar.title = if (f is AppearanceFragment) getString(R.string.appearance_title) else pref.title
         return true
+    }
+
+    /**
+     * 2.8 Settings > Appearance picked a preset: re-apply this screen's overlay in place (the realm's palette may not
+     * have changed, e.g. a Work pick while browsing Play), let [rebind] recolour the views, and crossfade from a
+     * snapshot of the old look for 200 ms (SPEC "Theme picker"). No-op animation when system animations are off.
+     */
+    fun onThemeChanged(rebind: () -> Unit) {
+        val root = b.root
+        val snapshot = if (root.isLaidOut && root.width > 0 && root.height > 0) root.drawToBitmap() else null
+        if (screen.refresh()) accentLine(b.settingsAccentLine, screen.palette.color, 0x99)
+        rebind()
+        if (snapshot == null || !ValueAnimator.areAnimatorsEnabled()) return
+        val old = snapshot.toDrawable(resources).apply { setBounds(0, 0, root.width, root.height) }
+        root.overlay.add(old)
+        ValueAnimator.ofInt(255, 0).apply {
+            duration = 200
+            addUpdateListener { old.alpha = it.animatedValue as Int }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    root.overlay.remove(old)
+                    snapshot.recycle()
+                }
+            })
+        }.start()
     }
 
     class SettingsFragment : PreferenceFragmentCompat() {
@@ -66,6 +94,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             findPreference<Preference>("secure_dns")?.summary = SecureDnsFragment.rowSummary(this)
             findPreference<Preference>("site_content")?.summary = SiteContentFragment.rowSummary(this)
             findPreference<Preference>("tracker_tally")?.summary = TrackerTallyFragment.rowSummary(this)
+            findPreference<Preference>("appearance")?.summary = AppearanceFragment.rowSummary(this)
             refreshCrashReports()
         }
 
@@ -75,24 +104,6 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             preferenceManager.sharedPreferencesName = Prefs.FILE
             setPreferencesFromResource(R.xml.preferences, rootKey)
 
-            findPreference<androidx.preference.ListPreference>("ui_theme")?.setOnPreferenceChangeListener { _, value ->
-                UiTheme.apply(value as String)
-                true
-            }
-            // 2.3.8: the accent row edits the current realm's accent (`accent` / `accent_work`; Ghost is fixed).
-            findPreference<AccentPreference>("accent")?.apply {
-                val realm = Prefs.realm
-                title = "Accent · ${realm.label} realm"
-                fallback = Prefs.defaultAccent(realm)
-                val key = Prefs.accentKey(realm)
-                if (key == null) {
-                    isEnabled = false
-                    summary = "Ghost is always Ultraviolet"
-                } else {
-                    this.key = key
-                }
-                setOnPreferenceChangeListener { _, _ -> view?.post { activity?.recreate() }; true }
-            }
             findPreference<Preference>("reset_counter")?.apply {
                 summary = "${fmt(Stats.total.get())} blocked so far"
                 setOnPreferenceClickListener { Stats.reset(); summary = "0 blocked so far"; true }
