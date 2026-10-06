@@ -12,7 +12,7 @@ class names, pref keys, `beast.db`, the realm context ids, the built-in extensio
 logins, settings and downloads carry over. The brand string lives in one place: the `brand` entity at the top of
 `app/src/main/res/values/strings.xml`.
 
-* Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.4.0 (versionCode 14)
+* Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.4.1 (versionCode 15)
 * Engine: `org.mozilla.geckoview:geckoview-<abi>:157.0.20260924084938` from https://maven.mozilla.org/maven2/
 * Ad blocking: uBlock Origin 1.75.0 (official AMO XPI, unpacked into `app/src/main/assets/extensions/ublock/`),
   installed as a built-in extension. Also uses GeckoView Enhanced Tracking Protection (Strict),
