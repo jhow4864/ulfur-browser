@@ -3,6 +3,12 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## Unreleased (2.5.1)
+
+**Fixes**
+* The all-time "blocked" counter no longer counts uBlock Origin's blocks twice when you move to another page, and
+  the shield badge no longer shows the previous page's uBlock Origin number on the new page.
+
 ## 2.5.0 (versionCode 16)
 
 **New features**
