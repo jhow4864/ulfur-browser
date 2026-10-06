@@ -34,7 +34,7 @@ class BackupMergeTest {
         )
         val incoming = listOf(
             login("https://www.example.org/", "ann", "same"),      // same origin after normalising → exact duplicate
-            login("https://shop.test", "bob", "new"),              // same origin+user, different password → update
+            login("https://shop.test", "bob", "new").copy(updatedAt = 30), // same origin+user, newer password → update
             login("https://shop.test", "carol", "pw"),             // new user → add
             login("https://shop.test", "carol", "pw"),             // duplicate within the import → skip
             login("https://empty.test", "x", ""),                  // no password → skip
@@ -47,6 +47,30 @@ class BackupMergeTest {
         assertEquals("g2", bob.guid)            // identity, created and usage kept
         assertEquals(10, bob.createdAt); assertEquals(3, bob.timesUsed); assertEquals(999, bob.updatedAt)
         assertEquals("same", r.merged.single { it.username == "ann" }.password)
+    }
+
+    @Test fun olderOrUndatedImportNeverRollsBackAPassword() {
+        val existing = listOf(
+            login("https://a.test", "u", "current", guid = "g1").copy(updatedAt = 500),
+            login("https://b.test", "u", "current", guid = "g2").copy(updatedAt = 500),
+            login("https://c.test", "u", "current", guid = "g3").copy(updatedAt = 500),
+            login("https://d.test", "u", "old", guid = "g4").copy(updatedAt = 500),
+        )
+        val incoming = listOf(
+            login("https://a.test", "u", "stale").copy(updatedAt = 100),   // older backup → keep device copy
+            login("https://b.test", "u", "same-age").copy(updatedAt = 500), // tie → keep device copy
+            login("https://c.test", "u", "csv").copy(updatedAt = 0),        // Chrome CSV, no date → keep device copy
+            login("https://d.test", "u", "newer").copy(updatedAt = 900),    // genuinely newer → update
+        )
+        val r = BackupMerge.mergeLogins(existing, incoming, norm, now = 999)
+        assertEquals(0, r.added); assertEquals(1, r.updated); assertEquals(0, r.skipped); assertEquals(3, r.keptNewer)
+        val byOrigin = r.merged.associateBy { it.origin }
+        assertEquals("current", byOrigin.getValue("https://a.test").password)
+        assertEquals("current", byOrigin.getValue("https://b.test").password)
+        assertEquals("current", byOrigin.getValue("https://c.test").password)
+        assertEquals(500, byOrigin.getValue("https://a.test").updatedAt)
+        assertEquals("newer", byOrigin.getValue("https://d.test").password)
+        assertEquals("g4", byOrigin.getValue("https://d.test").guid)
     }
 
     @Test fun importedGuidCollisionGetsNewGuid() {
