@@ -1,0 +1,11 @@
+name: Feature idea
+description: Suggest something for Ulfur
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What would you like Ulfur to do, and why?
+    validations:
+      required: true

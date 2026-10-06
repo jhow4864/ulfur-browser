@@ -1,16 +1,73 @@
 ![Ulfur](docs/readme-header.png)
 
-# Ulfur (formerly Beast Browser)
+# Ulfur
 
-Ulfur is an Android browser with an Opera GX-style UI, built on Mozilla GeckoView, with uBlock Origin bundled as a
-built-in extension. Highlights: Realms (separate Play / Work / Ghost cookie jars and tab lists), Tab DNA (parent/child
-tab lineage), Ulfur Shields, Reader view, a password vault, and a download manager with HLS support.
+**Fast. Private. Feral.** Ulfur is a privacy-first Android browser with a gaming-style look. It runs on Mozilla's
+GeckoView engine (the same engine as Firefox) and has uBlock Origin built in, so ads and trackers are blocked from the
+first page you open.
 
-The app was called **Beast Browser** up to 2.3.8. Version 2.4.0 renamed what users see (app name, icons, in-app text).
-It upgrades 2.3.x in place: the internal identifiers stay "beast", namely the package `com.jamhowman.beastbrowser`,
-class names, pref keys, `beast.db`, the realm context ids, the built-in extension ids and native port names, so tabs,
-logins, settings and downloads carry over. The brand string lives in one place: the `brand` entity at the top of
-`app/src/main/res/values/strings.xml`.
+Ulfur was called **Beast Browser** up to version 2.3.8.
+
+## Features
+
+**Privacy and blocking**
+* uBlock Origin built in, plus Firefox's Enhanced Tracking Protection (Strict), Total Cookie Protection,
+  HTTPS-Only mode, Global Privacy Control and fingerprinting protection
+* **Shields**: one switch per site that turns blocking on or off
+* **Realms**: three separate browsing identities, each with its own cookies and tabs
+  * **Play**, the everyday realm
+  * **Work**, with its own logins and a one-tap wipe
+  * **Ghost**, always private and burned when the last Ghost tab closes
+
+**Tabs**
+* Tab groups, tab search and **Tab DNA**, which links tabs to the tab they were opened from and lets you close a whole branch at once
+* A Speed Dial home-screen widget
+
+**Passwords**
+* A fingerprint-locked password vault with autofill and a password generator
+* **Encrypted backup and restore** of passwords, bookmarks, Speed Dial, the reading list and settings, protected by
+  your own passphrase. It also imports password exports from Chrome and Firefox.
+
+**Reading and media**
+* Reader view with an offline reading list
+* On-device page translation, so pages aren't sent to a translation server
+* A download manager with pause and resume, plus downloads of HLS video streams
+* **Media Radar**, which shows every video and audio stream on a page. DRM-protected media is never offered.
+
+**Look and feel**
+* Dark-first design, a choice of accent colours (each realm can have its own) and an icon that follows your
+  wallpaper colours on Android 13 and later
+* **Beast Control**, which shows the app's live CPU, memory and data use
+
+## Install
+
+1. Download the newest `Ulfur-<version>-arm64.apk` from [Releases](../../releases/latest).
+2. Open it on your phone and allow installs from your browser or file manager if Android asks.
+
+Ulfur needs Android 8.0 or later on a 64-bit ARM phone, which covers almost every phone from the last several years.
+
+**Coming from Beast Browser?**
+* **2.3.3 or earlier**: install Ulfur straight over it. Your tabs, logins and settings carry over.
+* **2.3.4 to 2.3.8, or the "1-3" build**: these were signed with a temporary key by mistake, so Android won't install
+  Ulfur over them. Uninstall Beast Browser first, then install Ulfur. Uninstalling deletes the old app's data, so
+  write down any saved passwords you'll need first. (Those versions have no export option.)
+
+## Updates
+
+Ulfur checks this repo's releases about once a day and offers to download and install new versions. You can also tap
+**Settings → Check for updates**. Before installing, it checks that the download is intact, is a newer version and is
+signed with the same release key as the app you already have.
+
+## Privacy
+
+Ulfur has no accounts, analytics or telemetry. Your history, passwords, bookmarks and reading list stay on your phone.
+Apart from the pages you visit, the only background connections are:
+* the daily update check against this repo's GitHub releases
+* uBlock Origin's filter-list updates
+* Safe Browsing list updates, which warn about dangerous sites (you can turn this off in Settings)
+* translation model downloads, the first time you translate a language
+
+## For developers
 
 * Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.5.0 (versionCode 16)
 * Engine: `org.mozilla.geckoview:geckoview-<abi>:157.0.20260924084938` from https://maven.mozilla.org/maven2/
@@ -18,7 +75,7 @@ logins, settings and downloads carry over. The brand string lives in one place: 
   installed as a built-in extension. Also uses GeckoView Enhanced Tracking Protection (Strict),
   Total Cookie Protection, HTTPS-Only mode, Global Privacy Control and fingerprinting protection.
 
-## Additions to the built-in extensions
+### Additions to the built-in extensions
 * `assets/extensions/ublock/js/beast-bridge.js` (GPLv3, loaded from uBO's `background.html`, plus the
   `nativeMessaging`/`geckoViewAddons` permissions in uBO's manifest). It exposes uBO's per-site switch
   (`µb.toggleNetFilteringSwitch`, the trusted-site list) to the app over the native port `beast_ubo`, and
@@ -42,13 +99,9 @@ logins, settings and downloads carry over. The brand string lives in one place: 
   * SAMPLE-AES / Widevine / PlayReady / FairPlay HLS
   * any page using EME
   See `docs/media-sniffer.md`. JS tests: `node --test app/src/test/js/` (also run by `ExtensionJsTest`).
-* `assets/extensions/beast-siteprefs/` (2.5, v1.1.0) also does **Forced dark mode** (BETA; GeckoView has no
-  algorithmic darkening): `dark-core.js` holds the CSS filter and the "already dark?" check (node-tested), the
-  content script applies it at `document_start`, and the app pushes the switch and the per-site exceptions
-  (`site_prefs.force_dark_off`, beast.db v5) with `Engine.syncForceDark()`, like the zoom map.
 * Built-in extensions are reinstalled in place once after each app update (`installBuiltIn`) so these changes apply.
 
-## Downloads
+### Downloads
 Ulfur's own download manager (`downloads/DownloadCenter.kt`) handles page downloads and context-menu downloads:
 * live progress (StateFlow), speed and ETA
 * pause/resume via HTTP Range requests through GeckoWebExecutor; restarts if the server ignores Range
@@ -60,7 +113,7 @@ Ulfur's own download manager (`downloads/DownloadCenter.kt`) handles page downlo
 New files are saved to Downloads/Ulfur. Files downloaded before the rename stay in Downloads/Beast, and their
 records keep working: each record stores its MediaStore URI or absolute path.
 
-## Build
+### Build
 Needs JDK 17+ and Android SDK platform 37.1. Point Gradle at the SDK with `ANDROID_HOME` or a `local.properties`
 containing `sdk.dir=...`. That file is git-ignored and must not be committed.
 
@@ -100,7 +153,7 @@ forced a one-time reinstall.)
 
 A release-signed APK cannot be installed over a debug-signed one (or the reverse); uninstall first.
 
-## Licences
+### Licences
 Full list and source locations: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 * uBlock Origin is GPL-3.0 (c) Raymond Hill and contributors (https://github.com/gorhill/uBlock). Ulfur's

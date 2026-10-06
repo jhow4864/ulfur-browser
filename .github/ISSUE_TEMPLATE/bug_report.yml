@@ -1,0 +1,51 @@
+name: Bug report
+description: Something in Ulfur isn't working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open ...\n2. Tap ...\n3. See ..."
+  - type: input
+    id: version
+    attributes:
+      label: Ulfur version
+      description: Settings › About
+      placeholder: "2.5.0"
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Phone model
+      placeholder: "Pixel 8, Galaxy S23, ..."
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: "14"
+    validations:
+      required: true
+  - type: dropdown
+    id: realm
+    attributes:
+      label: Which Realm were you in?
+      options: [Play, Work, Ghost, Not sure]
+  - type: input
+    id: site
+    attributes:
+      label: Website (if it's about a specific site)
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or anything else
