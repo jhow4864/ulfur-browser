@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser.downloads
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,6 +8,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
@@ -80,10 +82,18 @@ class DownloadService : Service() {
             stopSelf()
             return
         }
+        // Android 13+: the foreground notification shows regardless, but later updates need POST_NOTIFICATIONS.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         runCatching { NotificationManagerCompat.from(this).notify(NOTIF_PROGRESS, progressNotification(this, active)) }
     }
 
     private fun notifyDone(item: DownloadItem, ok: Boolean) {
+        // Android 13+: skip quietly if the user said no to notifications (the download itself is unaffected).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         val title = when {
             item.isPrivate && ok -> "Private download complete"
             item.isPrivate -> "Private download failed"
