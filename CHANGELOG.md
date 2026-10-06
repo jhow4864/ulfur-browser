@@ -5,7 +5,15 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 
 ## Unreleased (2.5.1)
 
+**New features**
+* **Move to Downloads from the private vault.** Use a file's ⋯ menu, or long-press to pick several and tap
+  **Move to Downloads**. Files go to Downloads/Ulfur. Ulfur always asks first and warns that moved files show up in
+  Gallery, Files and other apps without a fingerprint. Each copy is checked against the original before the vault
+  copy is removed, and any file that can't be copied safely stays in the vault and is named in the result notice.
+  Multi-select also lets you share or delete several vault files at once.
+
 **Fixes**
+* The private vault no longer asks for your fingerprint twice when you first open it.
 * The all-time "blocked" counter no longer counts uBlock Origin's blocks twice when you move to another page, and
   the shield badge no longer shows the previous page's uBlock Origin number on the new page.
 
