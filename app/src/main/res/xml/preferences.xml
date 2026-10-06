@@ -66,6 +66,13 @@
             app:summary="@string/pref_backup_import_summary" />
     </PreferenceCategory>
 
+    <!-- 2.5.1: opt-in crash reports (crash/CrashReporter.kt, ui/CrashReportUi.kt). Off by default. -->
+    <PreferenceCategory app:title="@string/pref_category_crash" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat app:key="crash_reports" app:defaultValue="false" app:iconSpaceReserved="false"
+            app:title="@string/pref_crash_reports_title" app:summary="@string/pref_crash_reports_summary" />
+        <Preference app:key="crash_reports_saved" app:iconSpaceReserved="false" app:title="@string/pref_crash_saved_title" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="General" app:iconSpaceReserved="false">
         <Preference app:key="downloads" app:iconSpaceReserved="false" app:title="Downloads"
             app:summary="@string/pref_downloads_summary" />
