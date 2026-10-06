@@ -186,7 +186,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
     private var lastBadge = -1
     /** Badge colour role currently painted on shieldBadge (roadmap 10), so it is only rebuilt on change. */
-    private var shieldBadgeTint: ShieldBadge.Tint? = null
+    private var shieldBadgeKey: Pair<ShieldBadge.Tint, Boolean>? = null
     /** Tracks UI_MODE_NIGHT_* so we recolour chrome when light/dark flips without recreate. */
     private var lastUiNightMask = Configuration.UI_MODE_NIGHT_UNDEFINED
     private var imeVisible = false
@@ -1032,10 +1032,17 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.shieldIcon.setImageResource(style.icon)
         b.shieldIcon.imageTintList = ColorStateList.valueOf(shieldColor(style.iconTint))
         b.shieldButton.contentDescription = getString(style.description, fmt(n))
-        if (style.badgeTint != shieldBadgeTint) {
-            shieldBadgeTint = style.badgeTint
+        val badgeKey = style.badgeTint to style.badgeGradient
+        if (badgeKey != shieldBadgeKey) {
+            shieldBadgeKey = badgeKey
             val c = shieldColor(style.badgeTint)
-            (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let { it.setColor(c); b.shieldBadge.background = it }
+            (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let {
+                if (style.badgeGradient) {
+                    it.orientation = GradientDrawable.Orientation.TL_BR
+                    it.colors = intArrayOf(c, ShieldBadge.gradientEnd(accent))
+                } else it.setColor(c)
+                b.shieldBadge.background = it
+            }
             b.shieldBadge.setTextColor(if (style.badgeTint == ShieldBadge.Tint.ACCENT) accent.onColor else inkOn(c))
         }
         b.shieldBadge.isVisible = style.showCount
@@ -1088,7 +1095,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.menuDownloadRing.setIndicatorColor(c)
         (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let { it.setColor(c); b.shieldBadge.background = it }
         b.shieldBadge.setTextColor(accent.onColor)
-        shieldBadgeTint = ShieldBadge.Tint.ACCENT
+        shieldBadgeKey = ShieldBadge.Tint.ACCENT to false
         (getDrawable(R.drawable.bg_tab_count)!!.mutate() as GradientDrawable).let {
             it.setStroke(dp(this, 2), c); b.tabCount.background = it
         }
