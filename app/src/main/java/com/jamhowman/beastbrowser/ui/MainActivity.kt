@@ -18,6 +18,7 @@ import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -67,6 +68,7 @@ import com.jamhowman.beastbrowser.browser.AutoplayPolicy
 import com.jamhowman.beastbrowser.browser.ForcedDark
 import com.jamhowman.beastbrowser.browser.BrowserHost
 import com.jamhowman.beastbrowser.browser.Engine
+import com.jamhowman.beastbrowser.browser.ShieldLevel
 import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
 import com.jamhowman.beastbrowser.browser.UboBadge
@@ -79,6 +81,9 @@ import com.jamhowman.beastbrowser.data.Realm
 import com.jamhowman.beastbrowser.data.TabGroup
 import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.data.ThemePreset
+import com.jamhowman.beastbrowser.data.TrackerCategory
+import com.jamhowman.beastbrowser.data.TrackerTally
+import com.jamhowman.beastbrowser.data.TrackerTallyDb
 import com.jamhowman.beastbrowser.search.SearchSuggest
 import com.jamhowman.beastbrowser.search.SuggestItem
 import com.jamhowman.beastbrowser.search.SuggestKind
@@ -91,6 +96,7 @@ import com.jamhowman.beastbrowser.databinding.ItemTabGroupPillBinding
 import com.jamhowman.beastbrowser.databinding.SheetBeastControlBinding
 import com.jamhowman.beastbrowser.databinding.SheetMenuBinding
 import com.jamhowman.beastbrowser.databinding.SheetShieldsBinding
+import com.jamhowman.beastbrowser.util.Contrast
 import com.jamhowman.beastbrowser.util.Domains
 import com.jamhowman.beastbrowser.downloads.DownloadCenter
 import com.jamhowman.beastbrowser.media.MediaSniffer
@@ -130,6 +136,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private lateinit var runtime: GeckoRuntime
     private lateinit var geckoView: GeckoView
     private lateinit var db: BrowserDb
+    /** Roadmap 10: weekly tracker tally, on this phone only. */
+    private val tally by lazy { TrackerTallyDb.get(this) }
     private lateinit var prompts: Prompts
     private lateinit var tileAdapter: SpeedDialAdapter
     private lateinit var tabAdapter: TabCardAdapter
@@ -187,6 +195,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
     }
     private var lastBadge = -1
+    /**
+     * What shieldBadge is currently painted with (roadmap 10), so it is only rebuilt on change: colour role, gradient,
+     * and the palette it was resolved from (a theme, realm, private or light/dark change repaints it). null = repaint.
+     */
+    private var shieldBadgeKey: Triple<ShieldBadge.Tint, Boolean, ThemePalette>? = null
     /** Tracks UI_MODE_NIGHT_* so we recolour chrome when light/dark flips without recreate. */
     private var lastUiNightMask = Configuration.UI_MODE_NIGHT_UNDEFINED
     private var imeVisible = false
@@ -395,6 +408,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         super.onPause()
         wolf.onHomeHidden()
         Stats.save()
+        tally.flushAsync()
         saveTabs()
     }
 
@@ -1024,14 +1038,43 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun updateShield() {
         val t = current ?: return
         val active = Prefs.blockAds && !t.siteShieldsDown
-        b.shieldIcon.setImageResource(if (active) R.drawable.ic_shield else R.drawable.ic_shield_outline)
-        b.shieldIcon.imageTintList = ColorStateList.valueOf(if (active) accent.color else getColor(R.color.text_hint))
         val n = if (t.showingHome) 0 else t.blockedOnPage
-        b.shieldBadge.isVisible = n > 0
+        // Roadmap 10: state (ShieldLevel) and look (ShieldBadge) are separate so the visuals can be swapped.
+        val style = ShieldBadge.style(ShieldLevel.of(n), active)
+        b.shieldIcon.setImageResource(style.icon)
+        b.shieldIcon.imageTintList = ColorStateList.valueOf(shieldColor(style.iconTint))
+        b.shieldButton.contentDescription = getString(style.description, fmt(n))
+        val badgeKey = Triple(style.badgeTint, style.badgeGradient, accent)
+        if (badgeKey != shieldBadgeKey) {
+            shieldBadgeKey = badgeKey
+            val c = shieldColor(style.badgeTint)
+            // Many: the theme's own accent gradient from the same palette as the rest of the toolbar (2.8).
+            val gradient = if (style.badgeGradient) ShieldBadge.gradient(accent) else null
+            (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let {
+                if (gradient != null) {
+                    it.orientation = GradientDrawable.Orientation.TL_BR
+                    it.colors = gradient
+                } else it.setColor(c)
+                b.shieldBadge.background = it
+            }
+            // onColor reads on the solid accent and across its gradient (SPEC onAccent).
+            b.shieldBadge.setTextColor(if (style.badgeTint == ShieldBadge.Tint.ACCENT) accent.onColor else inkOn(c))
+        }
+        b.shieldBadge.isVisible = style.showCount
         b.shieldBadge.text = if (n > 99) "99+" else n.toString()
         if (n > lastBadge && lastBadge >= 0 && n > 0) bump(b.shieldBadge)
         lastBadge = n
     }
+
+    private fun shieldColor(tint: ShieldBadge.Tint): Int = when (tint) {
+        ShieldBadge.Tint.ACCENT -> accent.color
+        ShieldBadge.Tint.MUTED -> getColor(R.color.text_hint)
+        ShieldBadge.Tint.WARN -> getColor(R.color.warn)
+    }
+
+    /** Near-black or white, whichever reads better on [bg]. */
+    private fun inkOn(bg: Int): Int =
+        if (Contrast.ratio(bg, INK_DARK) >= Contrast.ratio(bg, Color.WHITE)) INK_DARK else Color.WHITE
 
     private fun bump(v: View) {
         v.animate().cancel()
@@ -1083,8 +1126,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.swipe.setColorSchemeColors(c)
         b.btnMenu.imageTintList = ColorStateList.valueOf(c)
         b.menuDownloadRing.setIndicatorColor(c)
-        (getDrawable(R.drawable.bg_badge)!!.mutate() as GradientDrawable).let { it.setColor(c); b.shieldBadge.background = it }
-        b.shieldBadge.setTextColor(accent.onColor)
+        shieldBadgeKey = null // updateShield (via refreshUi below) repaints the badge, gradient included, from the new palette
         (getDrawable(R.drawable.bg_tab_count)!!.mutate() as GradientDrawable).let {
             it.setStroke(dp(this, 2), c); b.tabCount.background = it
         }
@@ -1937,6 +1979,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun wipeData() {
         Engine.clearSiteData(this)
         db.clearHistory()
+        tally.clear() // per-site counts are browsing data too
         Prefs.pendingWipe = false
     }
 
@@ -1968,9 +2011,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             override fun onBrowserAction(extension: WebExtension, session: GeckoSession?, action: WebExtension.Action) {
                 uboActions[tab.id] = action
                 val n = parseBadge(action.badgeText)
-                Stats.total.addAndGet(UboBadge.newBlocks(tab.uboCounted, n).toLong())
+                val gained = UboBadge.newBlocks(tab.uboCounted, n)
+                Stats.total.addAndGet(gained.toLong())
                 tab.uboCount = UboBadge.pageCount(tab.uboCount, tab.uboCounted, n)
                 tab.uboCounted = n
+                tallyUbo(tab, gained)
                 onBlockedChanged(tab)
             }
             override fun onTogglePopup(extension: WebExtension, action: WebExtension.Action) = showExtensionPopup()
@@ -2105,6 +2150,20 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         updateMediaBadge()
             if (tab.showingHome) updateHomeStats()
         }
+    }
+
+    override fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory, count: Int) {
+        tally.record(site, category, count.toLong())
+    }
+
+    /**
+     * Roadmap 10: uBlock Origin's newly counted blocks ([UboBadge.newBlocks], the same number just added to the
+     * all-time total) go into the weekly tally as their own line, never from private tabs.
+     */
+    private fun tallyUbo(tab: Tab, gained: Int) {
+        if (gained <= 0) return
+        val site = TrackerTally.siteToRecord(tab.isPrivate || tab.session.settings.usePrivateMode, tab.url) ?: return
+        onTrackerBlocked(tab, site, TrackerCategory.UBLOCK, gained)
     }
 
     override fun onVisited(tab: Tab, url: String) {
@@ -2505,5 +2564,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         private const val PIP_PAUSE = "pause"
         private const val PIP_BACK = "back"
         private const val PIP_FORWARD = "forward"
+        /** Dark ink for badges on light colours (same as the red accent's onColor). */
+        private val INK_DARK = 0xFF0E0E12.toInt()
     }
 }

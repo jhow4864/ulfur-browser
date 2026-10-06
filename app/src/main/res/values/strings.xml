@@ -82,6 +82,39 @@
     <string name="downloads_folder" translatable="false">&brand;</string>
     <string name="pref_downloads_summary">Active and finished downloads (saved to Downloads/&brand;)</string>
     <string name="downloads_empty_body">Files you download appear here with live progress.\nThey\'re saved to Downloads/&brand;.</string>
+    <!-- Roadmap 10: per-site tracker shield + weekly tally (kept on the phone only) -->
+    <string name="shield_level_none">Shields: nothing blocked on this page</string>
+    <string name="shield_level_some">Shields: %1$s blocked on this page</string>
+    <string name="shield_level_many">Shields: %1$s blocked on this page, a tracker-heavy site</string>
+    <string name="shield_level_down">Shields down on this site</string>
+    <string name="pref_tally_title">Weekly tracker tally</string>
+    <string name="pref_tally_summary_empty">Nothing blocked in the last 7 days</string>
+    <string name="pref_tally_summary">%1$s blocked in the last 7 days</string>
+    <string name="tally_section_week">Last 7 days</string>
+    <string name="tally_section_sites">Top sites</string>
+    <string name="tally_section_categories">By category</string>
+    <string name="tally_range">%1$s – %2$s</string>
+    <string name="tally_local_only">This tally is kept only on this phone and never leaves it. It stores the site name, the kind of block (Tracking Protection category or uBlock Origin) and a daily count. Private tabs are never counted, it is not part of backups, and days older than 8 weeks are deleted.</string>
+    <string name="tally_none_yet">Nothing yet. Trackers blocked on the sites you visit will show up here.</string>
+    <string name="tally_clear">Clear tally</string>
+    <string name="tally_clear_summary">Delete every count kept for this tally</string>
+    <string name="tally_clear_confirm">Clear the weekly tracker tally?</string>
+    <string name="tally_cleared">Tally cleared</string>
+    <string name="tally_cat_ads">Ad trackers</string>
+    <string name="tally_cat_analytics">Analytics</string>
+    <string name="tally_cat_social">Social media trackers</string>
+    <string name="tally_cat_fingerprinters">Fingerprinters</string>
+    <string name="tally_cat_cryptominers">Cryptominers</string>
+    <string name="tally_cat_email">Email trackers</string>
+    <string name="tally_cat_content">Tracking content</string>
+    <string name="tally_cat_cookies">Tracking cookies</string>
+    <string name="tally_cat_other">Other</string>
+    <string name="tally_cat_ublock">Blocked by uBlock Origin</string>
+
+    <plurals name="tally_total">
+        <item quantity="one">%1$s ad or tracker blocked</item>
+        <item quantity="other">%1$s ads and trackers blocked</item>
+    </plurals>
     <plurals name="downloads_clear_message">
         <item quantity="one">Removes %1$d finished, failed or cancelled entry from this list. Downloaded files stay in Downloads/&brand;.</item>
         <item quantity="other">Removes %1$d finished, failed or cancelled entries from this list. Downloaded files stay in Downloads/&brand;.</item>

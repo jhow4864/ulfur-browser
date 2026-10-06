@@ -20,6 +20,7 @@ import com.jamhowman.beastbrowser.crash.CrashReporter
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Stats
+import com.jamhowman.beastbrowser.data.TrackerTallyDb
 import com.jamhowman.beastbrowser.databinding.ActivitySettingsBinding
 
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
@@ -36,7 +37,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             val s = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(s.left, s.top, s.right, s.bottom); insets
         }
-        // 2.5: sub-screens (Secure DNS, Site content) live on the back stack; back pops them first.
+        // 2.5: sub-screens (Secure DNS, Site content, tracker tally) live on the back stack; back pops them first.
         b.toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.backStackEntryCount == 0) b.toolbar.setTitle(R.string.settings)
@@ -92,6 +93,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             // Sub-screens change these; refresh their rows' summaries when coming back.
             findPreference<Preference>("secure_dns")?.summary = SecureDnsFragment.rowSummary(this)
             findPreference<Preference>("site_content")?.summary = SiteContentFragment.rowSummary(this)
+            findPreference<Preference>("tracker_tally")?.summary = TrackerTallyFragment.rowSummary(this)
             findPreference<Preference>("appearance")?.summary = AppearanceFragment.rowSummary(this)
             refreshCrashReports()
         }
@@ -163,7 +165,10 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             MaterialAlertDialogBuilder(requireContext()).setTitle("Clear browsing data")
                 .setMultiChoiceItems(labels, checked) { _, i, on -> checked[i] = on }
                 .setPositiveButton("Clear") { _, _ ->
-                    if (checked[0]) BrowserDb.get(requireContext()).clearHistory()
+                    if (checked[0]) {
+                        BrowserDb.get(requireContext()).clearHistory()
+                        TrackerTallyDb.get(requireContext()).clear() // roadmap 10: per-site counts go with history
+                    }
                     Engine.clearSiteData(requireContext(), cookies = checked[1], cache = checked[2])
                     android.widget.Toast.makeText(requireContext(), "Cleared", android.widget.Toast.LENGTH_SHORT).show()
                 }

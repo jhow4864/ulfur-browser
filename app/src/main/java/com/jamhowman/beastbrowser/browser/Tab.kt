@@ -54,8 +54,9 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
 
     val blockedOnPage: Int get() = etpBlocked.get() + uboCount
     /**
-     * Last uBO badge number already added to the all-time blocked total ([UboBadge.newBlocks]). Deliberately not
-     * reset with the page stats: a late update repeating the previous page's number must not be counted twice.
+     * Last uBO badge number already added to the all-time blocked total and the weekly tally ([UboBadge.newBlocks]).
+     * Deliberately not reset with the page stats: a late update repeating the previous page's number must not be
+     * counted twice.
      */
     var uboCounted = 0
 
