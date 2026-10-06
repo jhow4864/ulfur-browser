@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -104,7 +105,7 @@ class DownloadAdapter(
             cornerRadius = 18f * dp
             setColor(accent.surfaceTint)
             setStroke((1.5f * dp).toInt(), accent.withAlpha(0x99))
-        } else b.root.context.getDrawable(R.drawable.bg_download_card)
+        } else AppCompatResources.getDrawable(b.root.context, R.drawable.bg_download_card)
     }
 
     private fun bindButton(btn: android.widget.ImageButton, action: DlAction?, d: DownloadItem, highlight: Boolean) {
@@ -147,7 +148,7 @@ class DownloadAdapter(
         p.setIndicatorColor(barColor)
 
         b.dlStatus.text = d.status.label.uppercase()
-        val chip = (ctx.getDrawable(R.drawable.bg_chip)!!.mutate() as GradientDrawable)
+        val chip = (AppCompatResources.getDrawable(ctx, R.drawable.bg_chip)!!.mutate() as GradientDrawable)
         val (chipBg, chipFg) = when (d.status) {
             DlStatus.DOWNLOADING -> accent.color to accent.onColor
             DlStatus.DONE -> accent.withAlpha(0x33) to accent.accentText
