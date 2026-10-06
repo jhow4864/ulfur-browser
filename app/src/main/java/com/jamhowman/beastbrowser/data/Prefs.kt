@@ -61,13 +61,6 @@ object Prefs {
     val accent: ThemePreset get() = accentFor(realm)
     /** 2.8: the theme picked in Settings > Appearance (Play's accent, key `accent`). Work follows it while on AUTO. */
     val theme: ThemePreset get() = accentFor(Realm.PLAY)
-    /**
-     * 2.8 animated new-tab wolf (SPEC "Animated wolf" switch, item 19). Stored here so the Appearance screen and
-     * the wolf share one key; nothing reads it until item 19 ships.
-     */
-    var wolfAnimation: Boolean
-        get() = sp.getBoolean("wolf_animation", true)
-        set(v) = sp.edit { putBoolean("wolf_animation", v) }
 
     // ---- 2.3.8: Realms. Key names match 2.3.8 so upgraded installs keep their state. ----
 

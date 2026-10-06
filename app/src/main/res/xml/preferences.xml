@@ -47,11 +47,9 @@
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Appearance" app:iconSpaceReserved="false">
-        <ListPreference app:key="ui_theme" app:defaultValue="dark" app:iconSpaceReserved="false"
-            app:title="Theme" app:useSimpleSummaryProvider="true"
-            app:entries="@array/ui_theme_names" app:entryValues="@array/ui_theme_keys" />
-        <com.jamhowman.beastbrowser.ui.AccentPreference app:key="accent" app:defaultValue="red"
-            app:title="Accent colour" app:iconSpaceReserved="false" />
+        <!-- 2.8: mode (ui_theme), theme presets and realm accents live on their own screen (roadmap item 18). -->
+        <Preference app:key="appearance" app:iconSpaceReserved="false" app:title="@string/pref_appearance_title"
+            app:fragment="com.jamhowman.beastbrowser.ui.AppearanceFragment" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/pref_category_browsing" app:iconSpaceReserved="false">

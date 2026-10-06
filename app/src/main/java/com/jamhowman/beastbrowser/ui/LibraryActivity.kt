@@ -40,7 +40,7 @@ class LibraryActivity : AppCompatActivity() {
     private val adapter = Adapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        theme.applyStyle(Prefs.accent.overlay, true)
+        ThemedScreen(this)
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         b = ActivityLibraryBinding.inflate(layoutInflater)

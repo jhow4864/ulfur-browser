@@ -27,8 +27,7 @@ class PasswordsActivity : AppCompatActivity() {
     private var listener: (() -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
+        val accent = ThemedScreen(this).palette
         super.onCreate(savedInstanceState)
         PasswordVault.init(this)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)

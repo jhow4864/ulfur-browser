@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.jamhowman.beastbrowser.R
-import com.jamhowman.beastbrowser.data.ThemePreset
+import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.databinding.ItemDownloadBinding
 import com.jamhowman.beastbrowser.downloads.DlFormat
 import com.jamhowman.beastbrowser.downloads.DlStatus
@@ -19,7 +19,7 @@ enum class DlAction { PAUSE, RESUME, CANCEL, RETRY, OPEN, SHARE, DELETE, MORE }
 
 /** Download cards. Progress-only changes rebind in place (no flicker) via a payload. */
 class DownloadAdapter(
-    private val accent: ThemePreset,
+    private val accent: ThemePalette,
     private val onAction: (DownloadItem, DlAction, android.view.View) -> Unit,
 ) : ListAdapter<DownloadItem, DownloadAdapter.VH>(Diff) {
 
@@ -32,7 +32,7 @@ class DownloadAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val b = ItemDownloadBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         b.dlProgress.setIndicatorColor(accent.color)
-        b.dlType.setTextColor(accent.color)
+        b.dlType.setTextColor(accent.accentText)
         return VH(b)
     }
 
@@ -107,7 +107,7 @@ class DownloadAdapter(
         val chip = (ctx.getDrawable(R.drawable.bg_chip)!!.mutate() as GradientDrawable)
         val (chipBg, chipFg) = when (d.status) {
             DlStatus.DOWNLOADING -> accent.color to accent.onColor
-            DlStatus.DONE -> accent.withAlpha(0x33) to accent.color
+            DlStatus.DONE -> accent.withAlpha(0x33) to accent.accentText
             DlStatus.FAILED -> 0x33FFB020 to ctx.getColor(R.color.warn)
             else -> ctx.getColor(R.color.surface3) to ctx.getColor(R.color.text_secondary)
         }

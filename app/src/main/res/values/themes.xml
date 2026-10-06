@@ -191,7 +191,7 @@
         <item name="android:textSize">22sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:fontFamily">sans-serif-condensed</item>
-        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textColor">?attr/ulfurAccentText</item>
     </style>
     <style name="BeastStatLabel">
         <item name="android:layout_width">wrap_content</item>

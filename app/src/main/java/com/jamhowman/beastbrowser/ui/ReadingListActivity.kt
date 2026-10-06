@@ -16,8 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.jamhowman.beastbrowser.R
-import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.databinding.ActivityReadingListBinding
 import com.jamhowman.beastbrowser.databinding.ItemReadingBinding
 import com.jamhowman.beastbrowser.reader.ReaderMode
@@ -32,8 +32,7 @@ class ReadingListActivity : AppCompatActivity() {
     private lateinit var db: ReadingListDb
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
+        val accent = ThemedScreen(this).palette
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         b = ActivityReadingListBinding.inflate(layoutInflater)
@@ -92,7 +91,7 @@ class ReadingListActivity : AppCompatActivity() {
 }
 
 class ReadingAdapter(
-    private val accent: ThemePreset,
+    private val accent: ThemePalette,
     private val onOpen: (SavedArticle) -> Unit,
     private val onDelete: (SavedArticle) -> Unit,
 ) : RecyclerView.Adapter<ReadingAdapter.VH>() {
@@ -111,7 +110,7 @@ class ReadingAdapter(
         val host = runCatching { java.net.URI(a.url).host?.removePrefix("www.") }.getOrNull().orEmpty()
         val minutes = if (a.words > 0) "${maxOf(1, a.words / 230)} min read" else null
         h.b.readingSite.text = listOfNotNull(a.site.ifBlank { host }.ifBlank { null }, minutes).joinToString(" · ")
-        h.b.readingSite.setTextColor(accent.color)
+        h.b.readingSite.setTextColor(accent.accentText)
         h.b.readingTitle.text = a.title
         h.b.readingExcerpt.text = a.excerpt
         h.b.readingExcerpt.isVisible = a.excerpt.isNotBlank()

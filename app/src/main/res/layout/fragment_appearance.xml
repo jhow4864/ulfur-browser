@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 2.8 Settings > Appearance (Designer's SPEC.md "Theme picker"). Colours are set in AppearanceFragment.bind(). -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/appearanceRoot"
     android:layout_width="match_parent"
@@ -45,8 +46,8 @@
                     android:id="@+id/miniPhone"
                     android:layout_width="124dp"
                     android:layout_height="218dp"
-                    android:orientation="vertical"
-                    android:importantForAccessibility="noHideDescendants">
+                    android:importantForAccessibility="noHideDescendants"
+                    android:orientation="vertical">
 
                     <LinearLayout
                         android:id="@+id/miniAddress"
@@ -165,7 +166,8 @@
                             android:layout_marginStart="3dp"
                             android:fontFamily="sans-serif-medium"
                             android:letterSpacing="0.12"
-                            android:text="SPEED DIAL"
+                            android:text="@string/appearance_preview_dial"
+                            android:textAllCaps="true"
                             android:textColor="@color/text_primary"
                             android:textSize="4.5sp" />
                     </LinearLayout>
@@ -209,10 +211,10 @@
                                 android:layout_gravity="center"
                                 android:gravity="center"
                                 android:includeFontPadding="false"
-                                android:text="3"
                                 android:textColor="@color/text_primary"
                                 android:textSize="5.5sp"
-                                android:textStyle="bold" />
+                                android:textStyle="bold"
+                                tools:text="3" />
                         </FrameLayout>
 
                         <ImageView
@@ -282,7 +284,7 @@
                         <TextView
                             android:id="@+id/previewChipShields"
                             style="@style/PreviewChip"
-                            android:text="ETP + uBO" />
+                            android:text="@string/appearance_preview_shields_chip" />
 
                         <TextView
                             android:id="@+id/previewChipRealm"
@@ -309,8 +311,8 @@
                             android:id="@+id/previewPercent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="62%"
-                            android:textSize="10sp" />
+                            android:textSize="10sp"
+                            tools:text="62%" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -369,8 +371,7 @@
                                 android:layout_width="12dp"
                                 android:layout_height="12dp"
                                 android:src="@drawable/ic_close"
-                                app:tint="@color/text_secondary"
-                                xmlns:app="http://schemas.android.com/apk/res-auto" />
+                                app:tint="@color/text_secondary" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
@@ -403,64 +404,9 @@
             <LinearLayout
                 android:id="@+id/realmRow"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal" />
 
-            <!-- ============================================================ ANIMATED WOLF (item 19) -->
-            <!-- Hidden until the animated wolf ships (AppearanceFragment.SHOW_WOLF_SWITCH). -->
-            <LinearLayout
-                android:id="@+id/wolfRow"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="?attr/selectableItemBackground"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <FrameLayout
-                    android:id="@+id/wolfIconBox"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp">
-
-                    <ImageView
-                        android:id="@+id/wolfIcon"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_beast_logo" />
-                </FrameLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="14dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/appearance_wolf_title"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
-
-                    <TextView
-                        android:id="@+id/wolfSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="@string/appearance_wolf_summary"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/wolfSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </FrameLayout>

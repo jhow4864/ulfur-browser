@@ -371,14 +371,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             b.home.statsStatus.background = it
         }
 
-        val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        WindowInsetsControllerCompat(window, b.root).apply {
-            isAppearanceLightStatusBars = !night
-            isAppearanceLightNavigationBars = !night
-        }
-        window.navigationBarColor = bg
-
-        applyAccent() // also styleAddressBar / refreshUi / home accent tints
+        applyAccent() // also system bars, styleAddressBar / refreshUi / home accent tints
     }
 
     private fun recolorCard(view: android.view.View, fill: Int, stroke: Int) {
@@ -1064,9 +1057,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun applyAccent() {
         val c = accent.color
         // Behind the status and navigation bars (edge-to-edge): bg, unless an override (private mode) tints them.
-        val bars = accent.systemBars ?: getColor(R.color.bg)
-        b.root.setBackgroundColor(bars)
-        window.navigationBarColor = bars
+        b.root.setBackgroundColor(accent.systemBars ?: getColor(R.color.bg))
+        applySystemBars(window, accent) // API 26 light mode keeps its black navigation bar
         accentLine(b.accentLineTop, c, 0x99)
         accentLine(b.accentLineBottom, c, 0x55)
         b.progress.setIndicatorColor(c)
@@ -1081,7 +1073,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         // home
         b.home.logo.imageTintList = ColorStateList.valueOf(c)
         glow(b.home.logoGlow, c)
-        b.home.wordmarkSub.setTextColor(c)
+        b.home.wordmarkSub.setTextColor(accent.accentText) // accent as text: AA in light mode too (SPEC accentText)
         b.home.wordmarkSub.text = "BROWSER · " + realm.label.uppercase(Locale.ROOT)
         b.home.homeSearchIcon.imageTintList = ColorStateList.valueOf(c)
         (getDrawable(R.drawable.bg_home_search)!!.mutate() as GradientDrawable).let {
@@ -1089,7 +1081,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             it.setStroke(dp(this, 1), accent.withAlpha(0x66))
             b.home.homeSearch.background = it
         }
-        listOf(b.home.statBlocked, b.home.statData, b.home.statTime, b.home.statsStatus).forEach { it.setTextColor(c) }
+        listOf(b.home.statBlocked, b.home.statData, b.home.statTime, b.home.statsStatus).forEach { it.setTextColor(accent.accentText) }
         b.home.statsShield.imageTintList = ColorStateList.valueOf(c)
         b.home.speedDialMarker.setBackgroundColor(c)
         tileAdapter.accent = c
@@ -1104,7 +1096,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.switcher.realmSeal.contentDescription = "Realm: ${realm.label}"
         b.btnMenu.tooltipText = "Menu · long-press for realms (${realm.label})"
         styleToggle()
-        b.findCount.setTextColor(c)
+        b.findCount.setTextColor(accent.accentText)
         refreshUi()
     }
 
@@ -1632,7 +1624,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val host = if (t.showingHome) "Speed Dial" else Domains.display(UrlUtils.host(t.url)).ifEmpty { t.url }
         s.shieldsHost.text = host
         s.shieldsIcon.imageTintList = ColorStateList.valueOf(accent.color)
-        s.shieldsPageCount.setTextColor(accent.color)
+        s.shieldsPageCount.setTextColor(accent.accentText)
         s.shieldsPageCount.text = fmt(if (t.showingHome) 0 else t.blockedOnPage)
         s.shieldsTotal.text = fmt(Stats.total.get())
         val ubo = Engine.ublock

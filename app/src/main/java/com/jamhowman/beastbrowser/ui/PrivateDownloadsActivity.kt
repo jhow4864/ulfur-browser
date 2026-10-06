@@ -40,8 +40,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
     private var clearItem: MenuItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
+        val accent = ThemedScreen(this, private = true).palette // the vault: private-mode override (item 11), if any
         super.onCreate(savedInstanceState)
         DownloadCenter.init(this)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)

@@ -18,12 +18,16 @@ data class ThemePalette(
     val accentEnd: Int,
     val accentText: Int,
     val surfaceTint: Int,
+    /** Second stop of the wolf's eye gradient (`?attr/ulfurEye`), for the animated wolf (item 19). */
+    val eye: Int,
     /** Background behind the status and navigation bars (edge-to-edge); null = `@color/bg`, the pre-2.8 look. */
     val systemBars: Int? = null,
     /** Theme overlays, applied in order with `theme.applyStyle(it, true)`. */
     val overlays: List<Int> = listOf(preset.overlay),
 ) {
     val gradient: IntArray get() = intArrayOf(accentStart, accentEnd)
+    /** Ink for text on a fill: on the gradient when the preset allows it, else (Ghost) only on the solid [color]. */
+    val gradientCarriesText: Boolean get() = preset.gradientCarriesText
     fun withAlpha(alpha: Int): Int = (color and 0x00FFFFFF) or (alpha shl 24)
 
     companion object {
@@ -36,6 +40,7 @@ data class ThemePalette(
             accentEnd = preset.accentEnd,
             accentText = preset.accentText(night),
             surfaceTint = preset.surfaceTint(night),
+            eye = preset.eye,
         )
     }
 }
