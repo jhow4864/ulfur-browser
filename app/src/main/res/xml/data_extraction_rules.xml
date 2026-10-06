@@ -4,6 +4,7 @@
   Nothing from Beast is migrated. The password vault (filesDir/passwords.vault, its .tmp, and passwords.meta.json
   with origins and usernames) is listed explicitly so it stays excluded even if the broad rules are ever narrowed.
   The private download vault (filesDir/private_downloads/) is covered by domain="file".
+  The weekly tracker tally (databases/tracker_tally.db) must never leave the phone, so it is listed too.
 -->
 <data-extraction-rules>
     <cloud-backup>
@@ -15,6 +16,7 @@
         <exclude domain="file" path="passwords.vault" />
         <exclude domain="file" path="passwords.vault.tmp" />
         <exclude domain="file" path="passwords.meta.json" />
+        <exclude domain="database" path="tracker_tally.db" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="root" />
@@ -25,5 +27,6 @@
         <exclude domain="file" path="passwords.vault" />
         <exclude domain="file" path="passwords.vault.tmp" />
         <exclude domain="file" path="passwords.meta.json" />
+        <exclude domain="database" path="tracker_tally.db" />
     </device-transfer>
 </data-extraction-rules>

@@ -5,6 +5,8 @@ import com.jamhowman.beastbrowser.media.MediaSniffer
 
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Stats
+import com.jamhowman.beastbrowser.data.TrackerCategory
+import com.jamhowman.beastbrowser.data.TrackerTally
 import com.jamhowman.beastbrowser.util.Domains
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.ContentBlocking
@@ -216,6 +218,11 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         val h = UrlUtils.host(event.uri)
         if (h != null) tab.blockedHosts.merge(Domains.display(h), 1, Int::plus)
         Stats.total.incrementAndGet()
+        // Roadmap 10: weekly tally kept on the phone. Only the top-level page's host, never from private / Ghost tabs.
+        val private = tab.isPrivate || session.settings.usePrivateMode
+        TrackerTally.siteToRecord(private, tab.url)?.let { site ->
+            host.onTrackerBlocked(tab, site, TrackerCategory.from(event.antiTrackingCategory, event.cookieBehaviorCategory))
+        }
         host.onBlockedChanged(tab)
     }
 }

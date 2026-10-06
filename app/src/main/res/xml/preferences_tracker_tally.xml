@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Roadmap 10: Settings > Shields > Weekly tracker tally. Stock preferences; rows filled by TrackerTallyFragment. -->
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:key="tally_week" app:title="@string/tally_section_week" app:iconSpaceReserved="false">
+        <Preference app:key="tally_total" app:selectable="false" app:persistent="false" app:iconSpaceReserved="false" />
+        <Preference app:key="tally_local_only" app:selectable="false" app:persistent="false" app:iconSpaceReserved="false"
+            app:summary="@string/tally_local_only" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:key="tally_sites" app:title="@string/tally_section_sites" app:iconSpaceReserved="false" />
+
+    <PreferenceCategory app:key="tally_categories" app:title="@string/tally_section_categories" app:iconSpaceReserved="false" />
+
+    <PreferenceCategory app:key="tally_actions" app:iconSpaceReserved="false">
+        <Preference app:key="tally_clear" app:persistent="false" app:iconSpaceReserved="false"
+            app:title="@string/tally_clear" app:summary="@string/tally_clear_summary" />
+    </PreferenceCategory>
+</PreferenceScreen>
