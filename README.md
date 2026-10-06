@@ -52,6 +52,17 @@ Ulfur needs Android 8.0 or later on a 64-bit ARM phone, which covers almost ever
   Ulfur over them. Uninstall Beast Browser first, then install Ulfur. Uninstalling deletes the old app's data, so
   write down any saved passwords you'll need first. (Those versions have no export option.)
 
+## Check your download
+
+Every Ulfur release is signed with the same release key. Its certificate SHA-256 fingerprint is:
+
+    1F:04:B6:6B:6D:0B:DF:3C:6E:39:64:0C:23:B9:5E:51:7D:7A:14:45:49:38:58:85:E1:78:9E:3B:92:F6:DD:16
+
+On a computer with the Android SDK build tools, run `apksigner verify --print-certs Ulfur-<version>-arm64.apk` and
+check that the `SHA-256 digest` line matches (apksigner prints it in lower case without colons:
+`1f04b66b6d0bdf3c6e39640c23b95e517d7a144549385885e1789e3b92f6dd16`). On a phone, an app such as AppVerifier can
+compare it for you. If it doesn't match, don't install the APK, and please open an issue.
+
 ## Updates
 
 Ulfur checks this repo's releases about once a day and offers to download and install new versions. You can also tap
@@ -128,6 +139,14 @@ The debug APK lands in `app/build/outputs/apk/debug/app-debug.apk`. The Gradle p
     # Size-optimised installable APK (~95 MB): R8 + shrinkResources release, lossless zopfli recompression,
     # zipalign and apksigner with the release key (needs `pip install zopfli`)
     tools/build_small_apk.sh /path/to/Ulfur-arm64.apk
+
+### Continuous integration
+`.github/workflows/ci.yml` runs on every push and pull request: `assembleDebug`, `testDebugUnitTest` and
+`lintDebug` (lint errors fail the build, warnings don't). The debug APK and the test and lint reports are attached to
+each run for 14 days. CI never signs release builds.
+
+### Releasing
+Follow [docs/release-checklist.md](docs/release-checklist.md) for every release.
 
 ### Release signing
 Signing material (keystore, passwords, `keystore.properties`) lives **outside this repository** and must never be
