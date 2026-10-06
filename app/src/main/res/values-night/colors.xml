@@ -10,6 +10,9 @@
     <color name="text_hint">#6E6E7C</color>
     <color name="private_bg">#1B1328</color>
     <color name="private_stroke">#3D2A5C</color>
+    <!-- Roadmap 11: private-mode chip and wolf-eye ink, and NOT SECURE on plain http -->
+    <color name="private_ink">#C9B8F0</color>
+    <color name="private_warn">#FFB020</color>
     <color name="gx_cyan">#00E1FF</color>
     <color name="gx_green">#2BFF88</color>
     <color name="scrim">#F20E0E12</color>

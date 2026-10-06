@@ -10,6 +10,8 @@
 <resources>
     <string name="app_name">&brand;</string>
     <string name="search_hint">Search or enter address</string>
+    <string name="private_chip">PRIVATE</string>
+    <string name="private_chip_not_secure">NOT SECURE</string>
     <string name="search_hint_private">Private search or address</string>
     <string name="back">Back</string>
     <string name="forward">Forward</string>

@@ -74,6 +74,7 @@ import com.jamhowman.beastbrowser.browser.TabCallbacks
 import com.jamhowman.beastbrowser.browser.UboBadge
 import com.jamhowman.beastbrowser.browser.UrlUtils
 import com.jamhowman.beastbrowser.data.AppTheme
+import com.jamhowman.beastbrowser.data.PrivateLook
 import com.jamhowman.beastbrowser.data.BeastControl
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
@@ -995,8 +996,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             t.url.startsWith("http://") -> R.drawable.ic_warning to getColor(R.color.warn)
             else -> R.drawable.ic_search to getColor(R.color.text_hint)
         }
-        b.securityIcon.setImageResource(if (t.isPrivate && !t.showingHome) R.drawable.ic_incognito else icon)
-        b.securityIcon.imageTintList = ColorStateList.valueOf(if (t.isPrivate) accent.color else tint)
+        // Item 11: private tabs show the wolf eye plus a PRIVATE chip, or NOT SECURE on plain http.
+        b.securityIcon.setImageResource(if (t.isPrivate) R.drawable.ic_private_eye else icon)
+        b.securityIcon.imageTintList = ColorStateList.valueOf(if (t.isPrivate) getColor(R.color.private_ink) else tint)
         styleAddressBar(b.urlInput.hasFocus())
 
         b.reloadButton.isVisible = !t.showingHome
@@ -1033,6 +1035,22 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             else -> getColor(R.color.stroke)
         })
         b.addressBar.background = bg
+        stylePrivateChip(t, focused)
+    }
+
+    /** Item 11: PRIVATE chip in the address bar; NOT SECURE (warn colour) when a private tab is on plain http. */
+    private fun stylePrivateChip(t: Tab?, focused: Boolean) {
+        val show = t != null && t.isPrivate && !t.showingHome && !focused
+        b.privateChip.isVisible = show
+        if (!show) return
+        val insecure = t!!.url.startsWith("http://")
+        val ink = getColor(if (insecure) R.color.private_warn else R.color.private_ink)
+        b.privateChip.setText(if (insecure) R.string.private_chip_not_secure else R.string.private_chip)
+        b.privateChip.setTextColor(ink)
+        b.privateChip.background = GradientDrawable().apply {
+            cornerRadius = dp(this@MainActivity, 6).toFloat()
+            setColor((ink and 0x00FFFFFF) or (0x26 shl 24))
+        }
     }
 
     private fun updateShield() {
@@ -1118,9 +1136,18 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun applyAccent() {
         val c = accent.color
         // Behind the status and navigation bars (edge-to-edge): bg, unless an override (private mode) tints them.
-        b.root.setBackgroundColor(accent.systemBars ?: getColor(R.color.bg))
+        val bars = accent.systemBars ?: getColor(R.color.bg)
+        b.root.setBackgroundColor(bars)
+        // Item 11: the toolbar and bottom bar follow the system bars, so a private tab is violet top and bottom.
+        b.topBar.setBackgroundColor(bars)
+        b.bottomBar.setBackgroundColor(bars)
         applySystemBars(window, accent) // API 26 light mode keeps its black navigation bar
-        accentLine(b.accentLineTop, c, 0x99)
+        val privateLook = accent.systemBars != null
+        if (privateLook) {
+            b.accentLineTop.background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(PrivateLook.STRIPE_VIOLET, accent.accentEnd, PrivateLook.STRIPE_VIOLET))
+        } else accentLine(b.accentLineTop, c, 0x99)
+        b.accentLineTop.layoutParams = b.accentLineTop.layoutParams.apply { height = dp(this@MainActivity, if (privateLook) 2 else 1) }
         accentLine(b.accentLineBottom, c, 0x55)
         b.progress.setIndicatorColor(c)
         b.swipe.setColorSchemeColors(c)

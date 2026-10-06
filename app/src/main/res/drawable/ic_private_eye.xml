@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Roadmap 11: wolf-eye mark for private tabs (faceted eye, slit pupil cut out, brow slash). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path android:fillColor="@android:color/white" android:fillType="evenOdd"
+        android:pathData="M1.5,12.5L7.5,7L16,6.4L22.5,11.4L16.2,17.4L7.6,18Z M12,8.3L13.5,12.4L12,16.5L10.5,12.4Z M5.5,5.2L17.2,3.4L18.8,5L7,6.6Z"/>
+</vector>

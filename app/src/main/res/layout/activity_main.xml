@@ -122,6 +122,23 @@
                         app:tint="@color/text_hint"
                         tools:ignore="ContentDescription" />
 
+                    <!-- Roadmap 11: PRIVATE / NOT SECURE chip, styled in MainActivity.stylePrivateChip() -->
+                    <TextView
+                        android:id="@+id/privateChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="18dp"
+                        android:layout_marginEnd="8dp"
+                        android:gravity="center"
+                        android:letterSpacing="0.12"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:text="@string/private_chip"
+                        android:textColor="@color/private_ink"
+                        android:textSize="9sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
                     <EditText
                         android:id="@+id/urlInput"
                         android:layout_width="0dp"
