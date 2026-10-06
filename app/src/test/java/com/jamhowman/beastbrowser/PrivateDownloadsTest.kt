@@ -60,6 +60,41 @@ class PrivateDownloadsTest {
         assertEquals("a.mp4", DownloadCenter.privateItems.value.first().fileName)
     }
 
+    @Test fun sweepRemovesOnlyUnlistedDownloads() {
+        val dir = File(app.cacheDir, "sweep-test").apply { deleteRecursively(); mkdirs() }
+        val vaulted = File(dir, "kept.mp4").apply { writeText("done") }
+        val orphan = File(dir, "half.mp4").apply { writeText("partial") }
+        val orphan2 = File(dir, "half (1).zip").apply { writeText("partial") }
+        val nomedia = File(dir, ".nomedia").apply { writeText("") }
+        val hidden = File(dir, ".vault-state").apply { writeText("x") }
+        val json = File(dir, "private_downloads.json").apply { writeText("[]") }
+        val jsonTmp = File(dir, "private_downloads.json.tmp").apply { writeText("[]") }
+        val sub = File(dir, "sub").apply { mkdirs() }
+        val inSub = File(sub, "nested.bin").apply { writeText("x") }
+
+        val deleted = DownloadCenter.sweepOrphanedPrivateFiles(dir, listOf(vaulted.absolutePath))
+
+        assertEquals(setOf("half.mp4", "half (1).zip"), deleted.map { it.name }.toSet())
+        assertFalse(orphan.exists())
+        assertFalse(orphan2.exists())
+        listOf(vaulted, nomedia, hidden, json, jsonTmp, inSub).forEach { assertTrue(it.name, it.isFile) }
+        assertTrue(sub.isDirectory)
+    }
+
+    @Test fun sweepMatchesNonCanonicalPaths() {
+        val dir = File(app.cacheDir, "sweep-test2").apply { deleteRecursively(); mkdirs() }
+        val kept = File(dir, "a.pdf").apply { writeText("x") }
+        // Same file, spelled with a redundant "./" segment: must still count as listed.
+        val deleted = DownloadCenter.sweepOrphanedPrivateFiles(dir, listOf(dir.absolutePath + "/./a.pdf"))
+        assertTrue(deleted.isEmpty())
+        assertTrue(kept.isFile)
+    }
+
+    @Test fun sweepOnMissingDirIsNoOp() {
+        val dir = File(app.cacheDir, "does-not-exist").apply { deleteRecursively() }
+        assertTrue(DownloadCenter.sweepOrphanedPrivateFiles(dir, emptyList()).isEmpty())
+    }
+
     @Test fun lockStartsLocked() {
         PrivateLock.lock()
         assertFalse(PrivateLock.isUnlocked())

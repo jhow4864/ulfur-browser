@@ -121,6 +121,7 @@ object DownloadCenter {
         }.sortedByDescending { it.createdAt }
 
         val privFile = File(app.filesDir, PRIVATE_STORE)
+        var privReadOk = true
         val privLoaded = runCatching {
             if (!privFile.isFile) emptyList() else {
                 val arr = JSONArray(privFile.readText())
@@ -128,12 +129,41 @@ object DownloadCenter {
                     DownloadItem.fromJson(arr.getJSONObject(it)).copy(isPrivate = true)
                 }
             }
-        }.getOrElse { Log.w(TAG, "could not read $PRIVATE_STORE", it); emptyList() }
+        }.getOrElse { Log.w(TAG, "could not read $PRIVATE_STORE", it); privReadOk = false; emptyList() }
         // Drop vault entries whose file vanished (uninstall-partial / clear-data edge cases).
         _privateItems.value = privLoaded.filter { fileExists(it) }
             .sortedByDescending { it.finishedAt.takeIf { t -> t > 0 } ?: it.createdAt }
-        ensurePrivateDir()
+        val privDir = ensurePrivateDir()
+        // Private downloads that were running when the process died are never saved anywhere, so their partial
+        // files would sit hidden in the folder forever. Runs before any download can start (this is the first
+        // init in this process), so nothing in the folder can belong to a running download. If the vault list
+        // couldn't be read, keep everything: an unreadable list must never cost the user their vault files.
+        if (privReadOk) {
+            val keep = _privateItems.value.mapNotNull { it.filePath } +
+                _items.value.filter { it.isPrivate }.mapNotNull { it.filePath }
+            sweepOrphanedPrivateFiles(privDir, keep)
+        }
     }
+
+    /**
+     * Deletes files in the private downloads folder that no vault entry (or [keepPaths]) refers to.
+     * Never touches dot-files (`.nomedia`, any future bookkeeping), the vault list or its temp file, or
+     * sub-directories. Download names can't start with a dot ([sanitize] trims them). Returns what was deleted.
+     */
+    internal fun sweepOrphanedPrivateFiles(dir: File, keepPaths: Collection<String>): List<File> {
+        val keep = keepPaths.mapTo(HashSet()) { canonical(File(it)) }
+        val protectedNames = setOf(PRIVATE_STORE, "$PRIVATE_STORE.tmp")
+        val deleted = ArrayList<File>()
+        dir.listFiles()?.forEach { f ->
+            if (!f.isFile || f.name.startsWith(".") || f.name in protectedNames) return@forEach
+            if (canonical(f) in keep) return@forEach
+            if (f.delete()) deleted += f else Log.w(TAG, "could not delete orphaned private file")
+        }
+        if (deleted.isNotEmpty()) Log.i(TAG, "removed ${deleted.size} unfinished private download(s) left by an earlier run")
+        return deleted
+    }
+
+    private fun canonical(f: File): String = runCatching { f.canonicalPath }.getOrDefault(f.absolutePath)
 
     /** For previews/tests only. */
     fun replaceAllForPreview(list: List<DownloadItem>) { _items.value = list }
