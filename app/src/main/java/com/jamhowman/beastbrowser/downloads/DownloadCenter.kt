@@ -19,6 +19,7 @@ import android.webkit.MimeTypeMap
 import android.webkit.URLUtil
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.util.Domains
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -119,6 +120,8 @@ object DownloadCenter {
         _items.value = loaded.map {
             if (it.status.isActive) it.copy(status = DlStatus.PAUSED, speedBps = 0, error = "Interrupted") else it
         }.sortedByDescending { it.createdAt }
+        // Paused downloads: keep their pending MediaStore entries alive / notice ones Android already removed.
+        io.execute { checkUnfinishedTargets() }
 
         val privFile = File(app.filesDir, PRIVATE_STORE)
         var privReadOk = true
@@ -419,6 +422,16 @@ object DownloadCenter {
             if (job.stop != null) { job.initial?.body?.let { runCatching { it.close() } }; settleStop(job); return }
             var item = get(id) ?: return
             set(id) { it.copy(status = DlStatus.DOWNLOADING, error = null, speedBps = 0) }
+            if (targetGone(item)) {
+                // The partial file was removed (e.g. Android expired the pending MediaStore entry while paused):
+                // start over cleanly instead of failing on the missing entry or writing a file full of zeros.
+                Log.i(TAG, "download $id: partial file is gone, restarting from scratch")
+                item = restartFromScratch(item, null).copy(status = DlStatus.DOWNLOADING)
+                set(id) { restartFromScratch(it, null) }
+                save()
+                val what = if (item.isPrivate) "Private download" else item.fileName
+                main.post { android.widget.Toast.makeText(app, "$what: $TARGET_GONE_TOAST", android.widget.Toast.LENGTH_LONG).show() }
+            }
             if (job.isHls || item.isHls) { runHls(job, item); return }
 
             var offset = if (item.contentUri != null || item.filePath != null) item.downloaded else 0L
@@ -575,6 +588,7 @@ object DownloadCenter {
             set(job.id) { it.copy(status = DlStatus.CANCELLED, downloaded = 0, speedBps = 0, contentUri = null, filePath = null, segmentsDone = 0) }
         } else {
             set(job.id) { it.copy(status = DlStatus.PAUSED, speedBps = 0) }
+            d.contentUri?.let { keepPendingAlive(it.toUri()) }
         }
     }
 
@@ -710,6 +724,79 @@ object DownloadCenter {
             return
         }
         item.filePath?.let { MediaScannerConnection.scanFile(app, arrayOf(it), arrayOf(item.mime), null) }
+    }
+
+    // ------------------------------------------------------------------ paused MediaStore entries (bug 4)
+    //
+    // Unfinished downloads on Android 10+ are MediaStore rows with IS_PENDING=1, so Gallery/Files never show a
+    // half-finished file. Android 11+ gives a pending row a DATE_EXPIRES of "now + 7 days" and deletes it during
+    // idle maintenance once that passes. DATE_EXPIRES itself is read-only, but MediaProvider recomputes it every
+    // time an update sets IS_PENDING (FileUtils.computeDateExpires), so re-setting IS_PENDING=1 pushes the
+    // deadline out again (Android 10 never sets DATE_EXPIRES for our rows, so they don't expire there).
+    // We do that when a download is paused and on each app start; if the row is gone anyway (app not opened
+    // for a week, user deleted it, ...), resume starts the download over with a clear message.
+
+    /** Refresh a pending row once its expiry is closer than this. */
+    private const val PENDING_REFRESH_WINDOW_SEC = 3L * 24 * 60 * 60
+    internal const val TARGET_GONE_MESSAGE = "Unfinished file was removed, so it will start over"
+    private const val TARGET_GONE_TOAST = "the unfinished file was removed, so the download is starting over"
+
+    internal fun pendingNeedsRefresh(dateExpiresSec: Long?, nowSec: Long): Boolean =
+        dateExpiresSec != null && dateExpiresSec - nowSec < PENDING_REFRESH_WINDOW_SEC
+
+    /** Forget the (missing) partial file so the next run downloads from byte 0 into a new file. */
+    internal fun restartFromScratch(d: DownloadItem, message: String?): DownloadItem =
+        d.copy(contentUri = null, filePath = null, downloaded = 0, total = -1, segmentsDone = 0, speedBps = 0, error = message)
+
+    /**
+     * True only when we know the partial file is gone: the MediaStore row / file no longer exists.
+     * Other errors (e.g. storage briefly unavailable) count as "still there", so we never throw away progress on a guess.
+     */
+    internal fun targetGone(d: DownloadItem): Boolean {
+        d.contentUri?.let { s ->
+            return try {
+                app.contentResolver.openFileDescriptor(s.toUri(), "r")?.close()
+                false
+            } catch (_: java.io.FileNotFoundException) {
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+        return d.filePath?.let { !File(it).exists() } ?: false
+    }
+
+    /** Re-arms the pending row's expiry (Android 11+) when it's due within [PENDING_REFRESH_WINDOW_SEC]. */
+    private fun keepPendingAlive(uri: Uri) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        runCatching {
+            val cr = app.contentResolver
+            val expires = cr.query(uri, arrayOf(MediaStore.MediaColumns.IS_PENDING, MediaStore.MediaColumns.DATE_EXPIRES), null, null, null)
+                ?.use { c -> if (c.moveToFirst() && c.getInt(0) == 1 && !c.isNull(1)) c.getLong(1) else null }
+            if (pendingNeedsRefresh(expires, System.currentTimeMillis() / 1000)) {
+                cr.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 1) }, null, null)
+            }
+        }.onFailure { Log.w(TAG, "could not refresh pending download", it) }
+    }
+
+    /** At startup: keep paused/failed downloads' pending rows alive, and flag the ones whose file already vanished. */
+    internal fun checkUnfinishedTargets() {
+        var changed = false
+        _items.value.filter {
+            !it.isPrivate && (it.status == DlStatus.PAUSED || it.status == DlStatus.FAILED) &&
+                (it.contentUri != null || it.filePath != null) && !jobs.containsKey(it.id)
+        }.forEach { d ->
+            if (targetGone(d)) {
+                set(d.id) { cur ->
+                    if (cur.contentUri == d.contentUri && cur.filePath == d.filePath && !jobs.containsKey(cur.id))
+                        restartFromScratch(cur, TARGET_GONE_MESSAGE) else cur
+                }
+                changed = true
+            } else {
+                d.contentUri?.let { keepPendingAlive(it.toUri()) }
+            }
+        }
+        if (changed) save()
     }
 
     private fun ensurePrivateDir(): File {
