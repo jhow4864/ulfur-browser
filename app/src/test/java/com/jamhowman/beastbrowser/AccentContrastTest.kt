@@ -40,9 +40,10 @@ class AccentContrastTest {
     }
 
     @Test fun redThemeOverlaysMatchOnColor() {
+        // 2.8: GX Red's overlay became Blood Moon's (same `red` key); its ink is still #0E0E12.
         for (dir in listOf("values", "values-night")) {
             val xml = File(main, "res/$dir/themes.xml").readText()
-            val red = xml.substringAfter("<style name=\"ThemeOverlay.Beast.Accent.Red\">").substringBefore("</style>")
+            val red = xml.substringAfter("<style name=\"ThemeOverlay.Ulfur.Preset.BloodMoon\">").substringBefore("</style>")
             assertTrue("$dir red overlay", red.contains("<item name=\"colorOnPrimary\">#0E0E12</item>"))
             assertTrue("$dir red overlay", red.contains("<item name=\"colorOnSecondary\">#0E0E12</item>"))
             assertFalse(red.contains("#FFFFFF"))

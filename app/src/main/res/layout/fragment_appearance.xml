@@ -239,17 +239,24 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
 
-                    <TextView
-                        android:id="@+id/previewNewTab"
+                    <FrameLayout
+                        android:id="@+id/previewNewTabBox"
                         android:layout_width="match_parent"
                         android:layout_height="36dp"
-                        android:layout_marginTop="10dp"
-                        android:drawablePadding="6dp"
-                        android:fontFamily="sans-serif-medium"
-                        android:gravity="center"
-                        android:importantForAccessibility="no"
-                        android:text="@string/appearance_preview_new_tab"
-                        android:textSize="13sp" />
+                        android:layout_marginTop="10dp">
+
+                        <TextView
+                            android:id="@+id/previewNewTab"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:drawablePadding="6dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center_vertical"
+                            android:importantForAccessibility="no"
+                            android:text="@string/appearance_preview_new_tab"
+                            android:textSize="13sp" />
+                    </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"

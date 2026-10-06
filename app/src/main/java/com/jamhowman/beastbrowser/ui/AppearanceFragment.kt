@@ -151,7 +151,7 @@ class AppearanceFragment : Fragment() {
         b.miniMenuWolf.imageTintList = ColorStateList.valueOf(p.color)
 
         // Filled button: the gradient carries dark ink (white on Void); Ghost's text-bearing fills stay solid.
-        b.previewNewTab.background = fill(ctx, p, 18)
+        b.previewNewTabBox.background = fill(ctx, p, 18)
         b.previewNewTab.setTextColor(p.onColor)
         ctx.getDrawable(R.drawable.ic_add)?.mutate()?.let { icon ->
             val s = dp(ctx, 16)
@@ -159,7 +159,6 @@ class AppearanceFragment : Fragment() {
             icon.setTint(p.onColor)
             b.previewNewTab.setCompoundDrawablesRelative(icon, null, null, null)
         }
-        b.previewNewTab.setPaddingRelative(dp(ctx, 12), 0, dp(ctx, 12), 0)
         b.previewSwitch.thumbTintList = ColorStateList.valueOf(p.onColor)
         b.previewSwitch.trackTintList = ColorStateList.valueOf(p.color)
         b.previewSwitch.trackDecorationTintList = ColorStateList.valueOf(p.color)
@@ -188,14 +187,13 @@ class AppearanceFragment : Fragment() {
         b.modeRow.removeAllViews()
         keys.forEachIndexed { i, key ->
             val selected = key == current
-            b.modeRow.addView(TextView(ctx).apply {
+            val label = TextView(ctx).apply {
                 text = names[i]
-                gravity = Gravity.CENTER
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
                 setTextColor(if (selected) p.accentText else ctx.getColor(R.color.text_secondary))
-                background = if (selected) rounded(ctx, p.surfaceTint, 12, p.withAlpha(0x88), 1)
-                else rounded(ctx, ctx.getColor(R.color.surface), 12, ctx.getColor(R.color.stroke), 1)
+                gravity = Gravity.CENTER_VERTICAL
+                maxLines = 1
                 if (selected) ctx.getDrawable(R.drawable.ic_check)?.mutate()?.let { icon ->
                     val s = dp(ctx, 16)
                     icon.setBounds(0, 0, s, s)
@@ -203,6 +201,12 @@ class AppearanceFragment : Fragment() {
                     setCompoundDrawablesRelative(icon, null, null, null)
                     compoundDrawablePadding = dp(ctx, 4)
                 }
+            }
+            b.modeRow.addView(FrameLayout(ctx).apply {
+                background = if (selected) rounded(ctx, p.surfaceTint, 12, p.withAlpha(0x88), 1)
+                else rounded(ctx, ctx.getColor(R.color.surface), 12, ctx.getColor(R.color.stroke), 1)
+                foreground = ctx.getDrawable(selectableBackground(ctx))
+                addView(label, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER))
                 isSelected = selected
                 contentDescription = getString(R.string.appearance_mode_option, names[i])
                 radioRole(this, selected)
@@ -245,7 +249,7 @@ class AppearanceFragment : Fragment() {
     ).apply {
         width = 0
         height = ViewGroup.LayoutParams.WRAP_CONTENT
-        setMargins(dp(ctx, 2), dp(ctx, 2), dp(ctx, 2), dp(ctx, 2))
+        setMargins(dp(ctx, 1), dp(ctx, 2), dp(ctx, 1), dp(ctx, 2))
     }
 
     // ------------------------------------------------------------------ realm accents
@@ -330,12 +334,11 @@ class AppearanceFragment : Fragment() {
         })
         tile.addView(TextView(ctx).apply {
             text = sub
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTextColor(ctx.getColor(R.color.text_secondary))
             maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
+            setAutoSizeTextTypeUniformWithConfiguration(8, 11, 1, TypedValue.COMPLEX_UNIT_SP) // "Ember (Frost in use)"
             setPaddingRelative(dp(ctx, 10), 0, dp(ctx, 10), dp(ctx, 10))
-        })
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 15 + 10)))
         tile.addView(View(ctx).apply {
             background = GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, rp.gradient)
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 4)))
@@ -421,7 +424,7 @@ class AppearanceFragment : Fragment() {
         val surface = ctx.getColor(R.color.surface)
         // Outer frame leaves room for the glow and the badge that sits on the corner.
         val frame = FrameLayout(ctx).apply {
-            val m = dp(ctx, 4)
+            val m = dp(ctx, 3)
             setPadding(m, m, m, m)
             clipToPadding = false
             clipChildren = false
@@ -455,18 +458,18 @@ class AppearanceFragment : Fragment() {
             typeface = Typeface.create("sans-serif-medium", if (selected) Typeface.BOLD else Typeface.NORMAL)
             setTextColor(ctx.getColor(R.color.text_primary))
             maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
+            setAutoSizeTextTypeUniformWithConfiguration(9, 12, 1, TypedValue.COMPLEX_UNIT_SP) // narrow phones: shrink, don't cut
             setPaddingRelative(dp(ctx, 2), dp(ctx, 6), 0, 0)
-        })
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 22)))
         card.addView(TextView(ctx).apply {
             text = hexPair(preset)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 8.5f)
             typeface = Typeface.MONOSPACE
             setTextColor(ctx.getColor(R.color.text_secondary))
             maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
+            setAutoSizeTextTypeUniformWithConfiguration(5, 9, 1, TypedValue.COMPLEX_UNIT_SP)
             setPaddingRelative(dp(ctx, 2), 0, 0, dp(ctx, 2))
-        })
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(ctx, 13)))
         frame.addView(card, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
         if (selected) frame.addView(ImageView(ctx).apply {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(p.color); setStroke(dp(ctx, 2), surface) }
@@ -476,7 +479,7 @@ class AppearanceFragment : Fragment() {
             val ip = dp(ctx, 3)
             setPadding(ip, ip, ip, ip)
         }, FrameLayout.LayoutParams(dp(ctx, 20), dp(ctx, 20), Gravity.TOP or Gravity.END).apply {
-            setMargins(0, -dp(ctx, 4), -dp(ctx, 4), 0)
+            setMargins(0, -dp(ctx, 3), -dp(ctx, 3), 0)
         })
         return frame
     }

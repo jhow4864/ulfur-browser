@@ -8,8 +8,9 @@ import android.view.View
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.test.core.app.ApplicationProvider
-import com.jamhowman.beastbrowser.data.Accent
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.ThemePalette
+import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.databinding.ActivityReadingListBinding
 import com.jamhowman.beastbrowser.reader.SavedArticle
 import com.jamhowman.beastbrowser.ui.ReadingAdapter
@@ -39,9 +40,9 @@ class ReaderPreviewTest {
     }
 
     @Test fun renderReadingList() {
-        val accent = Accent.RED
+        val accent = ThemePalette.of(ThemePreset.BLOOD_MOON, night = false)
         val c = ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.Theme_Beast).apply {
-            theme.applyStyle(accent.overlay, true); Prefs.init(this)
+            theme.applyStyle(accent.preset.overlay, true); Prefs.init(this)
         }
         val now = System.currentTimeMillis()
         val h = 3_600_000L
