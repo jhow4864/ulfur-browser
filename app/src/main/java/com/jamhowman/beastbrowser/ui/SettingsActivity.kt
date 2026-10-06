@@ -38,6 +38,8 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     class SettingsFragment : PreferenceFragmentCompat() {
+        private val backupUi = BackupUi(this)
+
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             preferenceManager.sharedPreferencesName = Prefs.FILE
             setPreferencesFromResource(R.xml.preferences, rootKey)
@@ -82,6 +84,8 @@ class SettingsActivity : AppCompatActivity() {
                 startActivity(Intent(requireContext(), DownloadsActivity::class.java)); true
             }
             findPreference<Preference>("clear_now")?.setOnPreferenceClickListener { confirmClear(); true }
+            findPreference<Preference>("backup_export")?.setOnPreferenceClickListener { backupUi.startExport(); true }
+            findPreference<Preference>("backup_import")?.setOnPreferenceClickListener { backupUi.startImport(); true }
             findPreference<Preference>("check_updates")?.let { com.jamhowman.beastbrowser.update.Updater.bindPreference(this, it) }
             findPreference<Preference>("about")?.apply {
                 summary = "Version ${BuildConfig.VERSION_NAME} · GeckoView ${org.mozilla.geckoview.BuildConfig.MOZ_APP_VERSION}"

@@ -88,4 +88,72 @@
     <string name="realm_note_play">Play uses &brand;\'s original cookie jar (your existing logins). Shared across realms: uBlock filters, bookmarks, history (not Ghost), saved passwords, downloads.</string>
     <string name="error_https_only">&brand;\'s HTTPS-Only mode couldn\'t find a secure version of %1$s. Your connection would be unencrypted.</string>
     <string name="error_insecure_cert">The site\'s certificate couldn\'t be verified, so &brand; blocked the connection to protect you.</string>
+    <!-- Backup & restore (Settings) -->
+    <string name="pref_category_backup">Backup &amp; restore</string>
+    <string name="pref_backup_export_title">Export encrypted backup</string>
+    <string name="pref_backup_export_summary">Passwords, bookmarks, speed dial, reading list and settings in one passphrase-protected file</string>
+    <string name="pref_backup_import_title">Import backup</string>
+    <string name="pref_backup_import_summary">Merge an &brand; backup, or a Chrome / Firefox password CSV export</string>
+    <string name="backup_choose_title">What to back up</string>
+    <string name="backup_import_choose_title">What to import</string>
+    <string name="backup_item_passwords">Passwords (%1$d)</string>
+    <string name="backup_item_bookmarks">Bookmarks (%1$d)</string>
+    <string name="backup_item_speed_dial">Speed dial (%1$d)</string>
+    <string name="backup_item_reading_list">Reading list (%1$d)</string>
+    <string name="backup_item_settings">Settings &amp; accent colours</string>
+    <string name="backup_continue">Continue</string>
+    <string name="backup_passphrase_title">Set a backup passphrase</string>
+    <string name="backup_passphrase_message">You\'ll need this passphrase to restore the backup. &brand; can\'t recover it if you forget it.</string>
+    <string name="backup_passphrase_hint">Passphrase</string>
+    <string name="backup_passphrase_confirm_hint">Repeat passphrase</string>
+    <string name="backup_passphrase_too_short">Use at least %1$d characters</string>
+    <string name="backup_passphrase_mismatch">Passphrases don\'t match</string>
+    <string name="backup_unlock_title">Backup passphrase</string>
+    <string name="backup_unlock_message">Enter the passphrase this &brand; backup was created with.</string>
+    <string name="backup_encrypting">Encrypting backup…</string>
+    <string name="backup_decrypting">Decrypting backup…</string>
+    <string name="backup_importing">Importing…</string>
+    <string name="backup_saved_title">Backup saved</string>
+    <string name="backup_saved">Saved %1$s. Keep the passphrase somewhere safe: without it the file can\'t be opened.</string>
+    <string name="backup_failed">Couldn\'t save the backup</string>
+    <string name="backup_vault_locked">Passwords weren\'t included: the vault couldn\'t be unlocked.</string>
+    <string name="backup_wrong_passphrase">Wrong passphrase or damaged file</string>
+    <string name="backup_retry">Try again</string>
+    <string name="backup_not_a_backup">This isn\'t an &brand; backup or a password CSV export.</string>
+    <string name="backup_unreadable">This backup can\'t be read by this version of &brand; (%1$s).</string>
+    <string name="backup_read_failed">Couldn\'t read the file</string>
+    <string name="backup_import_done_title">Import complete</string>
+    <string name="backup_imported">Imported %1$s.</string>
+    <string name="backup_imported_nothing">Nothing new to import: everything in this file is already here.</string>
+    <string name="backup_passwords_locked">Passwords weren\'t imported: the vault couldn\'t be unlocked.</string>
+    <string name="backup_passwords_not_saved">Passwords are imported but not saved yet. Open Passwords and confirm with your fingerprint to keep them.</string>
+    <string name="backup_csv_warning">Delete the CSV file now: it holds your passwords in plain text.</string>
+    <plurals name="backup_n_passwords">
+        <item quantity="one">%1$d password</item>
+        <item quantity="other">%1$d passwords</item>
+    </plurals>
+    <plurals name="backup_n_passwords_updated">
+        <item quantity="one">%1$d existing password was updated.</item>
+        <item quantity="other">%1$d existing passwords were updated.</item>
+    </plurals>
+    <plurals name="backup_n_passwords_skipped">
+        <item quantity="one">%1$d password was already saved.</item>
+        <item quantity="other">%1$d passwords were already saved.</item>
+    </plurals>
+    <plurals name="backup_n_bookmarks">
+        <item quantity="one">%1$d bookmark</item>
+        <item quantity="other">%1$d bookmarks</item>
+    </plurals>
+    <plurals name="backup_n_tiles">
+        <item quantity="one">%1$d speed-dial tile</item>
+        <item quantity="other">%1$d speed-dial tiles</item>
+    </plurals>
+    <plurals name="backup_n_articles">
+        <item quantity="one">%1$d reading-list article</item>
+        <item quantity="other">%1$d reading-list articles</item>
+    </plurals>
+    <plurals name="backup_n_settings">
+        <item quantity="one">%1$d setting</item>
+        <item quantity="other">%1$d settings</item>
+    </plurals>
 </resources>

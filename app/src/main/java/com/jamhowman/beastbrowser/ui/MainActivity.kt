@@ -247,6 +247,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
         // Settings → theme (or system flip while we were paused): config may have changed already.
         maybeReapplyUiModeChrome(resources.configuration)
+        // Settings → Import backup may have added speed-dial tiles.
+        SpeedDialStore.load().let { if (it != tileAdapter.tiles) { tileAdapter.tiles = it; tileAdapter.notifyDataSetChanged() } }
         updateHomeStats()
         refreshUi()
     }

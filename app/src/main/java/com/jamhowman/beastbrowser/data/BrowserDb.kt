@@ -102,9 +102,9 @@ class BrowserDb private constructor(context: Context) :
         )
     fun isBookmarked(url: String): Boolean =
         readableDatabase.rawQuery("SELECT 1 FROM bookmarks WHERE url = ?", arrayOf(url)).use { it.moveToFirst() }
-    fun addBookmark(url: String, title: String, folderId: String? = null) {
+    fun addBookmark(url: String, title: String, folderId: String? = null, created: Long = System.currentTimeMillis()) {
         writableDatabase.insertWithOnConflict("bookmarks", null, ContentValues().apply {
-            put("url", url); put("title", title); put("created", System.currentTimeMillis())
+            put("url", url); put("title", title); put("created", created)
             if (folderId != null) put("folder_id", folderId) else putNull("folder_id")
         }, SQLiteDatabase.CONFLICT_REPLACE)
     }

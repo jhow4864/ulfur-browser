@@ -54,6 +54,13 @@
             app:title="Prefer dark websites" app:summary="Asks sites for their dark theme (prefers-color-scheme: dark)" />
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/pref_category_backup" app:iconSpaceReserved="false">
+        <Preference app:key="backup_export" app:iconSpaceReserved="false" app:title="@string/pref_backup_export_title"
+            app:summary="@string/pref_backup_export_summary" />
+        <Preference app:key="backup_import" app:iconSpaceReserved="false" app:title="@string/pref_backup_import_title"
+            app:summary="@string/pref_backup_import_summary" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="General" app:iconSpaceReserved="false">
         <Preference app:key="downloads" app:iconSpaceReserved="false" app:title="Downloads"
             app:summary="@string/pref_downloads_summary" />

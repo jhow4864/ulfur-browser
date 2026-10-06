@@ -9,12 +9,13 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import org.json.JSONArray
-import org.json.JSONObject
-import org.mozilla.geckoview.Autocomplete
+import com.jamhowman.beastbrowser.backup.BackupMerge
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.crypto.Cipher
+import org.json.JSONArray
+import org.json.JSONObject
+import org.mozilla.geckoview.Autocomplete
 
 /**
  * Encrypted password vault. Plaintext lives in memory only while unlocked.
@@ -290,6 +291,23 @@ object PasswordVault {
         unlocked = emptyList()
         persistUnlocked()
         notifyListeners()
+    }
+
+    /**
+     * Backup / CSV import: merges [incoming] into the unlocked vault ([BackupMerge.mergeLogins]: exact duplicates
+     * skipped, same origin+username with a different password updated, the rest added). Like [save], the change is
+     * queued; call [flushPending] afterwards to write it (biometric confirm). Null if the vault is locked.
+     */
+    fun importLogins(incoming: List<SavedLogin>): BackupMerge.LoginResult? {
+        if (!isUnlocked()) return null
+        touch()
+        val result = BackupMerge.mergeLogins(unlocked, incoming, ::normalizeOrigin)
+        if (result.added + result.updated > 0) {
+            unlocked = result.merged
+            persistUnlocked()
+            notifyListeners()
+        }
+        return result
     }
 
     fun toGeckoArray(list: List<SavedLogin>): Array<Autocomplete.LoginEntry> =
