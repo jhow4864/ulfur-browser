@@ -66,10 +66,24 @@ test("DRM: SAMPLE-AES, Widevine/PlayReady/FairPlay key formats, skd:", () => {
   }
 });
 
-test("clear AES-128 is encrypted but not DRM", () => {
+test("AES-128 is refused (encrypted, not listed), though not a DRM key format", () => {
   const r = parseM3U8('#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="https://e.org/key.bin"\n#EXTINF:6,\ns.ts\n', "https://e.org/p.m3u8");
   assert.equal(r.drm, false);
   assert.equal(r.encrypted, true);
+  assert.equal(r.refuse, true);
+});
+
+test("AES-128 session key on a master playlist is refused", () => {
+  const r = parseM3U8('#EXTM3U\n#EXT-X-SESSION-KEY:METHOD=AES-128,URI="https://e.org/key.bin"\n#EXT-X-STREAM-INF:BANDWIDTH=1\nv.m3u8\n', "https://e.org/m.m3u8");
+  assert.equal(r.refuse, true);
+});
+
+test("unencrypted and METHOD=NONE playlists are not refused", () => {
+  for (const t of ['#EXTM3U\n#EXTINF:6,\ns.ts\n', '#EXTM3U\n#EXT-X-KEY:METHOD=NONE\n#EXTINF:6,\ns.ts\n']) {
+    const r = parseM3U8(t, "https://e.org/p.m3u8");
+    assert.equal(r.encrypted, false);
+    assert.equal(r.refuse, false);
+  }
 });
 
 test("DRM host matcher (exact + subdomain, not lookalikes) and BBC iPlayer path", () => {

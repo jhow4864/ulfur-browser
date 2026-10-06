@@ -8,11 +8,12 @@ import java.util.Locale
  *
  * Handles master playlists (`#EXT-X-STREAM-INF` variants) and media playlists with
  * `#EXTINF`, `#EXT-X-MEDIA-SEQUENCE`, `#EXT-X-KEY` / `#EXT-X-SESSION-KEY`, `#EXT-X-MAP` (fMP4 init)
- * and `#EXT-X-BYTERANGE`. Only clear or AES-128 streams are downloadable; DRM key formats
- * (Widevine / PlayReady / FairPlay) and SAMPLE-AES are flagged so the caller can refuse them.
+ * and `#EXT-X-BYTERANGE`. Only unencrypted streams are downloadable: any key other than
+ * `METHOD=NONE` (AES-128, SAMPLE-AES, Widevine / PlayReady / FairPlay) is flagged so the caller
+ * refuses the stream. Keys are only parsed for that check; they are never fetched.
  */
 object HlsPlaylist {
-    const val ENCRYPTED_MESSAGE = "Encrypted HLS not supported yet"
+    const val ENCRYPTED_MESSAGE = "Encrypted HLS streams can't be saved"
 
     private val DRM_KEYFORMAT = Regex(
         "(widevine|playready|com\\.apple\\.streamingkeydelivery|com\\.microsoft|urn:uuid:edef8ba9|urn:uuid:9a04f079|urn:uuid:94ce86fb)",
@@ -34,13 +35,12 @@ object HlsPlaylist {
         val keyFormat: String = "",
     ) {
         val isNone: Boolean get() = method == "NONE"
-        val isAes128: Boolean get() = method == "AES-128"
         val isDrm: Boolean
             get() = method.startsWith("SAMPLE-AES") ||
                 DRM_KEYFORMAT.containsMatchIn(keyFormat) ||
                 uri?.startsWith("skd:", ignoreCase = true) == true
-        /** Anything other than no encryption or plain AES-128. */
-        val isUnsupported: Boolean get() = !isNone && !isAes128
+        /** Any encryption at all, AES-128 included. Only METHOD=NONE is downloadable. */
+        val isUnsupported: Boolean get() = !isNone
     }
 
     data class Segment(
@@ -67,7 +67,6 @@ object HlsPlaylist {
         val container: Container = Container.MPEG_TS,
     ) {
         val hasUnsupportedEncryption: Boolean get() = drm || segments.any { it.key.isUnsupported }
-        val needsAes128: Boolean get() = !drm && segments.any { it.key.isAes128 }
 
         /** Highest resolution, then highest bandwidth. */
         fun bestVariantUrl(): String? =
@@ -182,18 +181,6 @@ object HlsPlaylist {
             out[m.groupValues[1].uppercase(Locale.ROOT)] = v
         }
         return out
-    }
-
-    /** AES-128 IV: explicit `IV=0x…` or, per RFC 8216, the media sequence number as a 128-bit big-endian value. */
-    fun ivFor(segment: Segment): ByteArray {
-        segment.key.iv?.let { return it }
-        val iv = ByteArray(16)
-        var seq = segment.mediaSequence
-        for (i in 15 downTo 8) {
-            iv[i] = (seq and 0xFF).toByte()
-            seq = seq ushr 8
-        }
-        return iv
     }
 
     fun fileExtension(container: Container): String = when (container) {

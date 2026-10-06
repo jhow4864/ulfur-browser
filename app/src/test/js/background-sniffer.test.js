@@ -81,6 +81,15 @@ test("progressive file listed; DRM page and DRM CDN never listed", async () => {
   assert.equal(g.items.length, 0);
 });
 
+test("AES-128 stream dropped", () => {
+  const b = load();
+  b.listeners.onBeforeRequest({ tabId: 6, type: "main_frame", url: "https://example.org/" });
+  b.listeners.onHeadersReceived({ tabId: 6, requestId: "e", type: "xmlhttprequest", statusCode: 200,
+    url: "https://cdn.example.org/aes.m3u8", responseHeaders: H({ "content-type": "application/vnd.apple.mpegurl" }) });
+  b.feed(b.filters.e, '#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="https://cdn.example.org/key.bin"\n#EXTINF:6,\na.ts\n');
+  assert.ok(!b.sent.some(s => s.msg.items.length > 0));
+});
+
 test("SAMPLE-AES stream dropped", () => {
   const b = load();
   b.listeners.onBeforeRequest({ tabId: 5, type: "main_frame", url: "https://example.org/" });

@@ -127,11 +127,13 @@ const DRM_KEYFORMATS = /(widevine|playready|com\.apple\.streamingkeydelivery|com
 
 /**
  * Parses an HLS playlist.
- * @returns {valid, isMaster, drm, encrypted, variants:[{url, bandwidth, averageBandwidth, width, height, codecs, frameRate}]}
+ * Any key other than METHOD=NONE (AES-128 included) sets `encrypted` and `refuse`: the stream must not be
+ * listed or saved. `drm` additionally marks SAMPLE-AES / Widevine / PlayReady / FairPlay keys.
+ * @returns {valid, isMaster, drm, encrypted, refuse, variants:[{url, bandwidth, averageBandwidth, width, height, codecs, frameRate}]}
  *   variants sorted best-first (height, then bandwidth); for media playlists `variants` is empty.
  */
 function parseM3U8(text, baseUrl) {
-  const res = { valid: false, isMaster: false, drm: false, encrypted: false, variants: [] };
+  const res = { valid: false, isMaster: false, drm: false, encrypted: false, refuse: false, variants: [] };
   if (typeof text !== "string") return res;
   const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).map(l => l.trim());
   if (!lines.length || !lines[0].startsWith("#EXTM3U")) return res;
@@ -167,6 +169,7 @@ function parseM3U8(text, baseUrl) {
     }
   }
   res.variants.sort((x, y) => (y.height - x.height) || (y.bandwidth - x.bandwidth));
+  res.refuse = res.drm || res.encrypted;
   return res;
 }
 

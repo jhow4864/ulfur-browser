@@ -4,20 +4,20 @@ import android.util.Log
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
-import javax.crypto.Cipher
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.spec.SecretKeySpec
 
 /**
  * Downloads an HLS stream (2.3.6): resolves master → best variant, then fetches segments
- * [CONCURRENCY] at a time, decrypts AES-128 when needed, and writes them strictly in order
- * so the output is a single playable .ts (or fragmented .mp4 when there is an init segment).
+ * [CONCURRENCY] at a time, and writes them strictly in order so the output is a single
+ * playable .ts (or fragmented .mp4 when there is an init segment).
+ *
+ * Only unencrypted streams are saved. Any `#EXT-X-KEY` / `#EXT-X-SESSION-KEY` other than
+ * `METHOD=NONE` (AES-128, SAMPLE-AES, or a DRM key format) makes [download] throw
+ * [EncryptedException] before any segment or key is fetched. Nothing is ever decrypted.
  */
 object HlsDownloader {
     private const val TAG = "BeastHls"
@@ -45,15 +45,13 @@ object HlsDownloader {
         onProgress: (Long, Int, Int, Long) -> Unit,
         write: (ByteArray) -> Unit,
     ): Long {
-        var playlistUrl = url
         var playlist = HlsPlaylist.parse(String(fetch(url, null), Charsets.UTF_8), url)
         if (playlist.isMaster) {
             val variant = playlist.bestVariantUrl() ?: throw IOException("HLS master has no variants")
-            if (playlist.drm) throw EncryptedException()
-            playlistUrl = variant
+            if (playlist.encrypted) throw EncryptedException()
             playlist = HlsPlaylist.parse(String(fetch(variant, null), Charsets.UTF_8), variant)
         }
-        if (playlist.hasUnsupportedEncryption) throw EncryptedException()
+        if (playlist.encrypted || playlist.hasUnsupportedEncryption) throw EncryptedException()
         val segments = playlist.segments
         if (segments.isEmpty()) throw IOException("HLS playlist has no segments")
 
@@ -91,7 +89,6 @@ object HlsDownloader {
             emit(fetch(init.url, init.byteRange))
         }
 
-        val keys = ConcurrentHashMap<String, ByteArray>()
         val firstError = AtomicReference<Throwable?>(null)
         val pool = Executors.newFixedThreadPool(CONCURRENCY) { r ->
             Thread(r, "beast-hls-seg").apply { isDaemon = true }
@@ -104,19 +101,9 @@ object HlsDownloader {
                     pool.submit<ByteArray> {
                         try {
                             checkStop()
-                            val body = fetch(seg.url, seg.byteRange)
-                            if (seg.key.isAes128) {
-                                val keyUrl = seg.key.uri?.let { resolveKey(it, playlistUrl) }
-                                    ?: throw IOException("AES-128 key URI missing")
-                                val key = keys.getOrPut(keyUrl) {
-                                    fetch(keyUrl, null).also {
-                                        if (it.size != 16) throw IOException("Bad AES-128 key (${it.size} bytes)")
-                                    }
-                                }
-                                decryptAes128(body, key, HlsPlaylist.ivFor(seg))
-                            } else {
-                                body
-                            }
+                            // Belt and braces: the playlist check above already refused any keyed stream.
+                            if (!seg.key.isNone) throw EncryptedException()
+                            fetch(seg.url, seg.byteRange)
                         } catch (t: Throwable) {
                             firstError.compareAndSet(null, t)
                             throw t
@@ -144,23 +131,6 @@ object HlsDownloader {
         return written
     }
 
-    fun decryptAes128(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        val spec = SecretKeySpec(key, "AES")
-        return try {
-            Cipher.getInstance("AES/CBC/PKCS5Padding").run {
-                init(Cipher.DECRYPT_MODE, spec, IvParameterSpec(iv))
-                doFinal(data)
-            }
-        } catch (e: Exception) {
-            // Some packagers omit PKCS#7 padding on block-aligned segments.
-            if (data.size % 16 != 0) throw IOException("AES-128 decrypt failed", e)
-            Cipher.getInstance("AES/CBC/NoPadding").run {
-                init(Cipher.DECRYPT_MODE, spec, IvParameterSpec(iv))
-                doFinal(data)
-            }
-        }
-    }
-
     /** Reads a whole response body, refusing anything over [max] bytes. */
     fun readAll(input: InputStream, max: Int = MAX_RESPONSE): ByteArray {
         val out = ByteArrayOutputStream()
@@ -173,9 +143,6 @@ object HlsDownloader {
         }
         return out.toByteArray()
     }
-
-    private fun resolveKey(uri: String, base: String): String =
-        try { java.net.URI(base).resolve(uri).toString() } catch (_: Exception) { uri }
 
     private fun wrap(t: Throwable): Throwable {
         val cause = if (t is ExecutionException) t.cause ?: t else t
