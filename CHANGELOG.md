@@ -3,6 +3,19 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## Unreleased (2.8)
+
+**New features**
+* **Theme picker.** Settings › Appearance › Theme & accent has eight preset themes: Blood Moon, Frost, Toxic,
+  Ember, Void, Gold, Sakura and Ash. A live preview shows each one before you leave the screen, and Dark / Light /
+  System mode moved there too. Realm accents: Work follows Auto (Frost, or Ember while the theme is Frost) or gets
+  its own preset, and Ghost is always dim. Blood Moon is the default, and earlier accents carry over: GX Red →
+  Blood Moon, Cyber Cyan → Frost, Toxic Green → Toxic, Lava Orange → Ember, Ultraviolet → Void.
+
+**Fixes**
+* Accent-coloured text (home stats, download types, reading-list sites) is now readable in light mode.
+* Android 8.0: the navigation bar stays black in light mode, so its buttons stay visible.
+
 ## Unreleased (2.5.1)
 
 **New features**

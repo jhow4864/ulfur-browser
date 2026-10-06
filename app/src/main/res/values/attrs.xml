@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 2.8 theme tokens (Designer's SPEC.md "Theme tokens"), set by ThemeOverlay.Ulfur.Preset.*.
+         Same names as the hand-off resources in branding/ulfur/mockups/android-reference, so the animated wolf
+         drawables (item 19: ?attr/ulfurAccentStart, ?attr/ulfurAccentEnd, ?attr/ulfurEye) drop in unchanged. -->
+    <attr name="ulfurAccentStart" format="color" />
+    <attr name="ulfurAccentEnd" format="color" />
+    <attr name="ulfurAccent" format="color" />
+    <attr name="ulfurOnAccent" format="color" />
+    <attr name="ulfurAccentText" format="color" />
+    <attr name="ulfurSurfaceTint" format="color" />
+    <attr name="ulfurEye" format="color" />
+</resources>

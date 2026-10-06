@@ -38,8 +38,7 @@ class DownloadsActivity : AppCompatActivity() {
     private var clearItem: MenuItem? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val accent = Prefs.accent
-        theme.applyStyle(accent.overlay, true)
+        val accent = ThemedScreen(this).palette
         super.onCreate(savedInstanceState)
         DownloadCenter.init(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
