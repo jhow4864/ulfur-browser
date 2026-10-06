@@ -3,6 +3,7 @@ package com.jamhowman.beastbrowser.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.jamhowman.beastbrowser.browser.AutoplayPolicy
 
 object Prefs {
     const val FILE = "beast_prefs"
@@ -40,6 +41,12 @@ object Prefs {
     val dohCustomUrl get() = sp.getString("doh_custom_url", "") ?: ""
     val secureDnsChoice: SecureDns.Choice get() = SecureDns.choice(dohMode, dohProvider)
     val secureDns: SecureDns.Config get() = SecureDns.config(dohMode, dohProvider, dohNextDnsId, dohCustomUrl)
+    /** 2.5: autoplay blocker ([AutoplayPolicy.Mode] key, default block_audible = the pre-2.5 behaviour). */
+    val autoplay: AutoplayPolicy.Mode get() = AutoplayPolicy.Mode.from(sp.getString("autoplay", null))
+    /** Mode whose answers Gecko's stored autoplay permissions reflect; null on the first 2.5 start. */
+    var autoplayApplied: String?
+        get() = sp.getString("autoplay_applied", null)
+        set(v) = sp.edit { putString("autoplay_applied", v) }
     val searchSuggestions get() = sp.getBoolean("search_suggestions", true)
     val searchEngine get() = SearchEngine.from(sp.getString("search_engine", null))
     /** Accent of the current [realm] (2.3.8: per-realm accents). */

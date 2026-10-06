@@ -131,6 +131,26 @@
         android:textSize="12sp"
         tools:text="Blocking ads, trackers and cosmetic clutter" />
 
+    <!-- 2.5: per-site autoplay exception (hidden when autoplay is allowed everywhere) -->
+    <com.google.android.material.materialswitch.MaterialSwitch
+        android:id="@+id/autoplaySwitch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/shields_autoplay_site"
+        android:textColor="@color/text_primary"
+        android:textSize="15sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/autoplayState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:visibility="gone"
+        tools:text="Videos with sound wait for a tap" />
+
     <TextView
         android:id="@+id/shieldsListTitle"
         android:layout_width="wrap_content"

@@ -58,6 +58,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.jamhowman.beastbrowser.R
+import com.jamhowman.beastbrowser.browser.AutoplayPolicy
 import com.jamhowman.beastbrowser.browser.BrowserHost
 import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.browser.Tab
@@ -1620,6 +1621,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             }
         }
         render()
+        bindAutoplaySwitch(s, t, dialog)
         // Fresh state from uBO (it may have been changed in uBO's own panel)
         if (!t.showingHome) Engine.uboSiteEnabled(t.url) { on ->
             t.uboSiteOn = on; t.uboSiteHost = UrlUtils.host(t.url).orEmpty()
@@ -1649,6 +1651,57 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
 
     private var shieldsRefresh: (() -> Unit)? = null
+
+    /** 2.5: "Allow autoplay on this site" (Settings > Media > Autoplay decides everywhere else). */
+    private fun bindAutoplaySwitch(s: SheetShieldsBinding, t: Tab, dialog: BottomSheetDialog) {
+        val mode = Prefs.autoplay
+        val shown = !t.showingHome && AutoplayPolicy.siteSwitchShown(mode, t.url)
+        s.autoplaySwitch.isVisible = shown
+        s.autoplayState.isVisible = shown
+        if (!shown) return
+        val site = AutoplayPolicy.siteKey(t.url)
+        val allowed = autoplayFor(t, site) == AutoplayPolicy.Mode.ALLOW_ALL
+        s.autoplaySwitch.isChecked = allowed
+        s.autoplayState.text = getString(when {
+            allowed -> R.string.shields_autoplay_allowed
+            mode == AutoplayPolicy.Mode.BLOCK_ALL -> R.string.shields_autoplay_blocked_all
+            else -> R.string.shields_autoplay_blocked_audible
+        })
+        s.autoplaySwitch.setOnCheckedChangeListener { _, on ->
+            dialog.dismiss()
+            setSiteAutoplay(t, site, if (on) AutoplayPolicy.Mode.ALLOW_ALL else null)
+            snack(getString(if (on) R.string.autoplay_site_allowed else R.string.autoplay_site_blocked, site))
+        }
+    }
+
+    /** Autoplay choices made in private / Ghost tabs: kept for this session only, never written to the DB. */
+    private val sessionAutoplay = HashMap<String, AutoplayPolicy.Mode?>()
+    /** Hosts that already showed the "Autoplay blocked" snackbar this session. */
+    private val autoplaySnackShown = HashSet<String>()
+
+    override fun autoplayFor(tab: Tab, site: String): AutoplayPolicy.Mode? {
+        if (site.isEmpty()) return null
+        if (tab.isPrivate && sessionAutoplay.containsKey(site)) return sessionAutoplay[site]
+        return AutoplayPolicy.siteMode(db.getSitePrefs(site).autoplay)
+    }
+
+    /** Saves a per-site override (null = follow Settings), drops Gecko's remembered answers, reloads the site's tabs. */
+    private fun setSiteAutoplay(t: Tab, site: String, mode: AutoplayPolicy.Mode?) {
+        if (t.isPrivate) sessionAutoplay[site] = mode else db.setAutoplay(site, mode?.key)
+        Engine.resetAutoplayPermissions(site) {
+            allTabs.filter { !it.showingHome && it.isPrivate == t.isPrivate && AutoplayPolicy.siteKey(it.url) == site }
+                .forEach { it.session.reload() }
+        }
+    }
+
+    override fun onAutoplayBlocked(tab: Tab, site: String) {
+        // Designer SPEC (d): once per host per session, never over fullscreen video or PiP, with an Allow action.
+        if (tab !== current || site.isEmpty() || fullscreenTab != null || inPip) return
+        if (!autoplaySnackShown.add(site)) return
+        snack(getString(R.string.autoplay_blocked_on, site), getString(R.string.autoplay_allow), Snackbar.LENGTH_LONG) {
+            setSiteAutoplay(tab, site, AutoplayPolicy.Mode.ALLOW_ALL)
+        }
+    }
 
     /** The single per-site switch drives both Firefox ETP (site exception) and uBO's trusted-site list. */
     private fun setSiteShields(t: Tab, up: Boolean, host: String) {
@@ -2322,8 +2375,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     fun snack(msg: String, action: (() -> Unit)? = null) = snack(msg, "Show", action)
 
-    fun snack(msg: String, actionLabel: String, action: (() -> Unit)?) {
-        val s = Snackbar.make(b.root, msg, Snackbar.LENGTH_SHORT)
+    fun snack(msg: String, actionLabel: String, action: (() -> Unit)?) = snack(msg, actionLabel, Snackbar.LENGTH_SHORT, action)
+
+    fun snack(msg: String, actionLabel: String, duration: Int, action: (() -> Unit)?) {
+        val s = Snackbar.make(b.root, msg, duration)
         if (b.bottomBar.isVisible) s.anchorView = b.bottomBar
         s.setBackgroundTint(getColor(R.color.surface3)).setTextColor(getColor(R.color.text_primary))
         if (action != null) s.setAction(actionLabel) { action() }.setActionTextColor(accent.color)

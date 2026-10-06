@@ -56,9 +56,9 @@
             app:title="Prefer dark websites" app:summary="Asks sites for their dark theme (prefers-color-scheme: dark)" />
     </PreferenceCategory>
 
-    <PreferenceCategory app:title="@string/pref_category_media" app:iconSpaceReserved="false">
-        <SwitchPreferenceCompat app:key="pip" app:defaultValue="true" app:iconSpaceReserved="false"
-            app:title="@string/pref_pip_title" app:summary="@string/pref_pip_summary" />
+    <PreferenceCategory app:title="@string/pref_category_browsing" app:iconSpaceReserved="false">
+        <Preference app:key="site_content" app:iconSpaceReserved="false" app:title="@string/pref_site_content_title"
+            app:fragment="com.jamhowman.beastbrowser.ui.SiteContentFragment" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/pref_category_backup" app:iconSpaceReserved="false">

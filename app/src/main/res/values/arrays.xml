@@ -30,6 +30,15 @@
         <item>light</item>
         <item>system</item>
     </string-array>
+    <!-- 2.5: autoplay (browser/AutoplayPolicy.kt keys) -->
+    <string-array name="autoplay_names">
+        <item>@string/autoplay_block_all</item>
+        <item>@string/autoplay_block_audible</item>
+        <item>@string/autoplay_allow_all</item>
+    </string-array>
+    <string-array name="autoplay_keys">
+        <item>block_all</item><item>block_audible</item><item>allow_all</item>
+    </string-array>
     <!-- 2.5: Secure DNS (data/SecureDns.kt keys; Mullvad left out on purpose: its DoH shuts down 2 Nov 2026) -->
     <string-array name="doh_mode_names">
         <item>@string/doh_mode_off</item>

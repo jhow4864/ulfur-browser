@@ -92,7 +92,6 @@
     <string name="error_https_only">&brand;\'s HTTPS-Only mode couldn\'t find a secure version of %1$s. Your connection would be unencrypted.</string>
     <string name="error_insecure_cert">The site\'s certificate couldn\'t be verified, so &brand; blocked the connection to protect you.</string>
     <!-- 2.5: picture-in-picture -->
-    <string name="pref_category_media">Media</string>
     <string name="pref_pip_title">Picture-in-picture</string>
     <string name="pref_pip_summary">Keep a fullscreen video playing in a small window when you leave &brand;</string>
     <string name="pip_back_10">Back 10 seconds</string>
@@ -101,6 +100,38 @@
     <string name="pip_play">Play</string>
     <string name="pip_pause">Pause</string>
     <string name="pip_unavailable">Picture-in-picture isn\'t available on this device</string>
+    <!-- 2.5: autoplay blocker -->
+    <string name="pref_category_browsing">Browsing</string>
+    <string name="pref_site_content_title">Site content</string>
+    <string name="pref_site_content_summary">Autoplay: %1$s · Picture-in-picture: %2$s</string>
+    <string name="pref_on">On</string>
+    <string name="pref_off">Off</string>
+    <string name="site_content_section_autoplay">Autoplay</string>
+    <string name="site_content_section_video">Video</string>
+    <string name="pref_autoplay_title">Autoplay</string>
+    <string name="autoplay_block_all">Block audio and video</string>
+    <string name="autoplay_block_audible">Block audio only</string>
+    <string name="autoplay_allow_all">Allow</string>
+    <string name="autoplay_block_all_summary">Nothing plays until you tap it</string>
+    <string name="autoplay_block_audible_summary">Muted videos can play. Videos with sound wait for a tap</string>
+    <string name="autoplay_allow_all_summary">Videos can start by themselves, with sound</string>
+    <string name="autoplay_allowed_sites">Allowed sites</string>
+    <string name="autoplay_allowed_sites_none">No sites yet. Allow one from the snackbar or &brand; Shields when a video is blocked.</string>
+    <plurals name="autoplay_allowed_sites_count">
+        <item quantity="one">%1$d site</item>
+        <item quantity="other">%1$d sites</item>
+    </plurals>
+    <string name="autoplay_remove_site">Remove %1$s?</string>
+    <string name="autoplay_remove_site_body">Autoplay there will follow your setting again.</string>
+    <string name="remove">Remove</string>
+    <string name="autoplay_blocked_on">Autoplay blocked on %1$s</string>
+    <string name="autoplay_allow">Allow</string>
+    <string name="shields_autoplay_site">Allow autoplay on this site</string>
+    <string name="shields_autoplay_allowed">Videos here can start on their own, with sound</string>
+    <string name="shields_autoplay_blocked_audible">Videos with sound wait until you tap play</string>
+    <string name="shields_autoplay_blocked_all">Videos wait until you tap play</string>
+    <string name="autoplay_site_allowed">Autoplay allowed on %1$s</string>
+    <string name="autoplay_site_blocked">Autoplay blocked on %1$s</string>
     <!-- 2.5: Secure DNS (DNS over HTTPS); wording from Designer's mockups-2.5/SPEC.md (a) -->
     <string name="pref_doh_title">Secure DNS</string>
     <string name="pref_doh_summary_off">Off</string>

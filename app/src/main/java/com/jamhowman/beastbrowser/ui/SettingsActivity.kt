@@ -61,6 +61,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             super.onResume()
             // Sub-screens change these; refresh their rows' summaries when coming back.
             findPreference<Preference>("secure_dns")?.summary = SecureDnsFragment.rowSummary(this)
+            findPreference<Preference>("site_content")?.summary = SiteContentFragment.rowSummary(this)
         }
 
         private val backupUi = BackupUi(this)

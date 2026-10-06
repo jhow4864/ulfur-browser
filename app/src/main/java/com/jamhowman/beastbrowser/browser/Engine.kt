@@ -8,6 +8,7 @@ import org.mozilla.geckoview.ContentBlocking
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
+import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
 import org.mozilla.geckoview.StorageController
 import org.mozilla.geckoview.WebExtension
 import org.mozilla.geckoview.WebExtensionController
@@ -141,6 +142,12 @@ object Engine {
         r.settings.setPreferredColorScheme(colorScheme())
         r.settings.setFingerprintingProtection(Prefs.fingerprinting)
         applySecureDns(r.settings)
+        // 2.5: autoplay mode changed (or first 2.5 start): forget Gecko's stored per-site autoplay answers.
+        val autoplay = Prefs.autoplay.key
+        if (Prefs.autoplayApplied != autoplay) {
+            resetAutoplayPermissions()
+            Prefs.autoplayApplied = autoplay
+        }
         ublock?.let { ext ->
             val ctl = r.webExtensionController
             val enabled = ext.metaData.enabled
@@ -157,6 +164,28 @@ object Engine {
         if (dns.trrMode != appliedDns?.trrMode) s.setTrustedRecursiveResolverMode(dns.trrMode)
         appliedDns = dns
         Log.i(TAG, "Secure DNS: mode ${dns.trrMode}" + (dns.uri?.let { " via ${UrlUtils.host(it)}" } ?: ""))
+    }
+
+    /**
+     * Resets Gecko's stored autoplay permissions (GeckoView keeps every answer of onContentPermissionRequest as a
+     * permanent per-site permission) to "ask", for every site or just [siteKey], so [AutoplayPolicy] decides again.
+     * Uses StorageController.getAllPermissions / setPermission(…, VALUE_PROMPT). [done] runs on the main thread.
+     */
+    fun resetAutoplayPermissions(siteKey: String? = null, done: () -> Unit = {}) {
+        val r = runtime ?: run { done(); return }
+        val sc = r.storageController
+        sc.allPermissions.accept({ list ->
+            var n = 0
+            list.orEmpty()
+                .filter { AutoplayPolicy.isAutoplay(it.permission) && it.value != ContentPermission.VALUE_PROMPT }
+                .filter { siteKey == null || AutoplayPolicy.siteKey(it.uri) == siteKey }
+                .forEach { runCatching { sc.setPermission(it, ContentPermission.VALUE_PROMPT); n++ } }
+            Log.i(TAG, "autoplay: reset $n stored permission(s)" + (siteKey?.let { " for $it" } ?: ""))
+            done()
+        }, { e ->
+            Log.w(TAG, "autoplay: couldn't read stored permissions", e)
+            done()
+        })
     }
 
     /**

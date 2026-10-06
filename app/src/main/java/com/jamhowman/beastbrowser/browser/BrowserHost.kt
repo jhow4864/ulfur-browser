@@ -20,6 +20,10 @@ interface BrowserHost {
     fun onFullScreen(tab: Tab, fullScreen: Boolean)
     /** 2.5: play / pause / fullscreen-video changes from the tab's MediaSession (picture-in-picture). */
     fun onMediaStateChanged(tab: Tab)
+    /** 2.5: per-site autoplay override for [site] as seen from [tab] (private tabs also see session-only choices). */
+    fun autoplayFor(tab: Tab, site: String): AutoplayPolicy.Mode?
+    /** 2.5: an autoplay request on [tab] was refused. */
+    fun onAutoplayBlocked(tab: Tab, site: String)
     fun onContextMenu(tab: Tab, element: ContextElement)
     fun onDownload(tab: Tab, response: WebResponse)
     fun onCrashed(tab: Tab)

@@ -2,6 +2,7 @@ package com.jamhowman.beastbrowser.browser
 
 import com.jamhowman.beastbrowser.media.MediaSniffer
 
+import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Stats
 import com.jamhowman.beastbrowser.util.Domains
 import org.mozilla.geckoview.AllowOrDeny
@@ -73,6 +74,7 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         tab.loading = true
         tab.hasLoaded = true
         tab.resetPageStats()
+        tab.autoplayBlocked = 0
         MediaSniffer.clear(session)
         host.onBlockedChanged(tab)
         host.onPageStarted(tab, url)
@@ -174,13 +176,20 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
 
     override fun onContentPermissionRequest(session: GeckoSession, perm: ContentPermission): GeckoResult<Int>? {
         val value = when (perm.permission) {
-            PermissionDelegate.PERMISSION_AUTOPLAY_INAUDIBLE -> ContentPermission.VALUE_ALLOW
+            // 2.5: Settings > Media > Autoplay, plus the per-site exception from the Shields sheet
+            PermissionDelegate.PERMISSION_AUTOPLAY_INAUDIBLE, PermissionDelegate.PERMISSION_AUTOPLAY_AUDIBLE -> {
+                val site = AutoplayPolicy.siteKey(perm.uri)
+                val mode = AutoplayPolicy.effective(Prefs.autoplay, host.autoplayFor(tab, site))
+                AutoplayPolicy.decide(mode, perm.permission).also { v ->
+                    if (v == AutoplayPolicy.BLOCK) { tab.autoplayBlocked++; host.onAutoplayBlocked(tab, site) }
+                }
+            }
             PermissionDelegate.PERMISSION_MEDIA_KEY_SYSTEM_ACCESS -> {
                 HelperSessions.markDrm(session) // DRM page: never offer media downloads
                 ContentPermission.VALUE_ALLOW // DRM video (Netflix etc.)
             }
             PermissionDelegate.PERMISSION_STORAGE_ACCESS -> ContentPermission.VALUE_DENY
-            else -> ContentPermission.VALUE_DENY // location, notifications, XR, local network, audible autoplay
+            else -> ContentPermission.VALUE_DENY // location, notifications, XR, local network
         }
         return GeckoResult.fromValue(value)
     }

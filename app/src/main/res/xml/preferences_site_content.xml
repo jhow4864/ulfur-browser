@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.5 Settings > Browsing > Site content (Designer SPEC (b)), built from stock preferences. -->
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:key="sc_autoplay" app:title="@string/site_content_section_autoplay" app:iconSpaceReserved="false">
+        <ListPreference app:key="autoplay" app:defaultValue="block_audible" app:iconSpaceReserved="false"
+            app:title="@string/pref_autoplay_title"
+            app:entries="@array/autoplay_names" app:entryValues="@array/autoplay_keys" />
+        <Preference app:key="autoplay_allowed_sites" app:iconSpaceReserved="false" app:title="@string/autoplay_allowed_sites" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:key="sc_video" app:title="@string/site_content_section_video" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat app:key="pip" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="@string/pref_pip_title" app:summary="@string/pref_pip_summary" />
+    </PreferenceCategory>
+</PreferenceScreen>

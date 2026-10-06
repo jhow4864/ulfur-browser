@@ -65,6 +65,9 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
     val siteShieldsDown: Boolean
         get() = shieldsDown || uboSiteOn == false
 
+    /** 2.5: autoplay requests refused on the current page. */
+    var autoplayBlocked = 0
+
     // 2.5: media state for picture-in-picture (GeckoView MediaSession delegate)
     /** Gecko's controllable media session for this tab, while one is active. */
     var mediaSession: MediaSession? = null
