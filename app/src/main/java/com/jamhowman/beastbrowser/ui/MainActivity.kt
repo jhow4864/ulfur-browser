@@ -79,6 +79,7 @@ import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Realm
 import com.jamhowman.beastbrowser.data.TabGroup
 import com.jamhowman.beastbrowser.data.TrackerCategory
+import com.jamhowman.beastbrowser.data.TrackerTally
 import com.jamhowman.beastbrowser.data.TrackerTallyDb
 import com.jamhowman.beastbrowser.search.SearchSuggest
 import com.jamhowman.beastbrowser.search.SuggestItem
@@ -1971,6 +1972,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 val n = parseBadge(action.badgeText)
                 if (n > tab.uboCount) Stats.total.addAndGet((n - tab.uboCount).toLong())
                 tab.uboCount = n
+                tallyUbo(tab, n)
                 onBlockedChanged(tab)
             }
             override fun onTogglePopup(extension: WebExtension, action: WebExtension.Action) = showExtensionPopup()
@@ -2080,8 +2082,17 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
     }
 
-    override fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory) {
-        tally.record(site, category)
+    override fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory, count: Int) {
+        tally.record(site, category, count.toLong())
+    }
+
+    /** Roadmap 10: uBlock Origin's badge increase goes into the weekly tally as its own line, never from private tabs. */
+    private fun tallyUbo(tab: Tab, badge: Int) {
+        val gained = TrackerTally.uboIncrease(tab.uboTallied, badge)
+        tab.uboTallied = badge
+        if (gained <= 0) return
+        val site = TrackerTally.siteToRecord(tab.isPrivate || tab.session.settings.usePrivateMode, tab.url) ?: return
+        onTrackerBlocked(tab, site, TrackerCategory.UBLOCK, gained)
     }
 
     override fun onVisited(tab: Tab, url: String) {

@@ -13,8 +13,8 @@ interface BrowserHost {
     fun onPageStopped(tab: Tab, success: Boolean)
     fun onProgress(tab: Tab, progress: Int)
     fun onBlockedChanged(tab: Tab)
-    /** Roadmap 10: Gecko blocked a [category] tracker on a page of [site] (host only). Never called for private tabs. */
-    fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory)
+    /** Roadmap 10: [count] [category] blocks on a page of [site] (host only) for the weekly tally. Never called for private tabs. */
+    fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory, count: Int = 1)
     fun onVisited(tab: Tab, url: String)
     fun onNewWindow(opener: Tab, uri: String): GeckoSession?
     fun closeTabRequested(tab: Tab)

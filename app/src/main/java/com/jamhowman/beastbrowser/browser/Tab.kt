@@ -49,6 +49,11 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
     val blockedHosts: MutableMap<String, Int> = ConcurrentHashMap()
     /** uBlock Origin's per-tab badge count for the current page. */
     var uboCount = 0
+    /**
+     * Roadmap 10: last uBO badge value already added to the weekly tally. Deliberately not reset with the page
+     * stats: uBO's own badge drop marks a new page, so a late update repeating the old number isn't counted twice.
+     */
+    var uboTallied = 0
 
     val blockedOnPage: Int get() = etpBlocked.get() + uboCount
 

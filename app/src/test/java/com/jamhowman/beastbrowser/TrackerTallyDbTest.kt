@@ -82,6 +82,25 @@ class TrackerTallyDbTest {
         assertTrue(db.rows(Long.MIN_VALUE / 2, Long.MAX_VALUE / 2).isEmpty())
     }
 
+    @Test fun ublockIsItsOwnCategoryLine() {
+        db.record("video.example", TrackerCategory.UBLOCK, count = 12, day = today)
+        db.record("video.example", TrackerCategory.ADS, count = 3, day = today)
+        db.record("news.example", TrackerCategory.UBLOCK, count = 5, day = today - 2)
+        val w = db.weekly(today)
+        assertEquals(20L, w.total)
+        assertEquals(listOf(TrackerCategory.UBLOCK to 17L, TrackerCategory.ADS to 3L), w.byCategory)
+        assertEquals(listOf("video.example" to 15L, "news.example" to 5L), w.topSites)
+        assertEquals("ublock", db.readableDatabase.rawQuery("SELECT DISTINCT category FROM tally WHERE site = 'news.example'", null)
+            .use { it.moveToFirst(); it.getString(0) })
+        // Same retention and clearing rules as Gecko's categories
+        db.record("old.example", TrackerCategory.UBLOCK, day = today - TrackerTally.RETENTION_DAYS)
+        db.rows(Long.MIN_VALUE / 2, today)
+        db.prune(today)
+        assertTrue(db.rows(Long.MIN_VALUE / 2, today).none { it.site == "old.example" })
+        db.clear()
+        assertTrue(db.weekly(today).isEmpty)
+    }
+
     @Test fun ignoresEmptySitesAndNonPositiveCounts() {
         db.record("", TrackerCategory.ADS, day = today)
         db.record("a.com", TrackerCategory.ADS, count = 0, day = today)

@@ -7,8 +7,9 @@ import org.mozilla.geckoview.ContentBlocking
 import java.time.LocalDate
 
 /**
- * Roadmap 10: what kind of tracker Gecko blocked. [key] is stored in tracker_tally.db; don't change it.
- * Derived from a [ContentBlocking.BlockEvent]'s category flags ([from]), most specific first.
+ * Roadmap 10: what kind of tracker was blocked. [key] is stored in tracker_tally.db; don't change it.
+ * Gecko's blocks are derived from a [ContentBlocking.BlockEvent]'s category flags ([from]), most specific first.
+ * [UBLOCK] is uBlock Origin's own line: it only reports a per-page number, so its blocks have no finer type.
  */
 enum class TrackerCategory(val key: String, @StringRes val label: Int) {
     ADS("ads", R.string.tally_cat_ads),
@@ -19,7 +20,9 @@ enum class TrackerCategory(val key: String, @StringRes val label: Int) {
     EMAIL("email", R.string.tally_cat_email),
     CONTENT("content", R.string.tally_cat_content),
     COOKIES("cookies", R.string.tally_cat_cookies),
-    OTHER("other", R.string.tally_cat_other);
+    OTHER("other", R.string.tally_cat_other),
+    /** Increase of uBlock Origin's per-page badge ([TrackerTally.uboIncrease]); never returned by [from]. */
+    UBLOCK("ublock", R.string.tally_cat_ublock);
 
     companion object {
         fun fromKey(key: String?): TrackerCategory = entries.firstOrNull { it.key == key } ?: OTHER
@@ -89,6 +92,18 @@ object TrackerTally {
 
     /** The only gate in front of the store: private (and Ghost) tabs are never recorded. */
     fun siteToRecord(isPrivate: Boolean, pageUrl: String?): String? = if (isPrivate) null else siteOf(pageUrl)
+
+    /**
+     * Blocks to add when uBlock Origin's per-page badge for a tab goes from [previous] (the last value already
+     * counted) to [badge]. Within a page the badge only climbs, so a rise counts the difference and the same
+     * number again (repeated updates, late updates for the previous page) counts nothing. A drop means uBO
+     * started a new page or a reload, which begins at zero, so the new number counts in full. Never negative.
+     */
+    fun uboIncrease(previous: Int, badge: Int): Int = when {
+        badge <= 0 -> 0
+        badge >= previous -> badge - previous
+        else -> badge
+    }
 
     /** Rows dated on or before this day are pruned. */
     fun pruneBefore(today: Long): Long = today - RETENTION_DAYS

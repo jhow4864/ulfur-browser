@@ -37,6 +37,9 @@ class TrackerTallyPrivacyTest {
         // The store is only written through BrowserHost.onTrackerBlocked, which TabCallbacks calls after the gate.
         val ui = src("ui/MainActivity.kt")
         assertTrue(Regex("""tally\.record\(""").findAll(ui).count() == 1)
-        assertTrue(ui.contains("override fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory) {\n        tally.record(site, category)"))
+        assertTrue(ui.contains("override fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory, count: Int) {\n        tally.record(site, category, count.toLong())"))
+        // uBlock Origin's line goes through the same private-tab gate before onTrackerBlocked.
+        assertTrue(ui.contains("TrackerTally.siteToRecord(tab.isPrivate || tab.session.settings.usePrivateMode, tab.url) ?: return\n        onTrackerBlocked(tab, site, TrackerCategory.UBLOCK, gained)"))
+        assertTrue(Regex("""onTrackerBlocked\(""").findAll(ui).count() == 2) // the override + the uBO path
     }
 }
