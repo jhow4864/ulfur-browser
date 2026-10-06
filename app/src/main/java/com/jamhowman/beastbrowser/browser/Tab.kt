@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import com.jamhowman.beastbrowser.data.Realm
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
+import org.mozilla.geckoview.MediaSession
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -63,6 +64,33 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
     /** Shields counted as down if either ETP or uBO is paused for this site. */
     val siteShieldsDown: Boolean
         get() = shieldsDown || uboSiteOn == false
+
+    // 2.5: media state for picture-in-picture (GeckoView MediaSession delegate)
+    /** Gecko's controllable media session for this tab, while one is active. */
+    var mediaSession: MediaSession? = null
+    var mediaPlaying = false
+    /** A video element is fullscreen (MediaSession.Delegate.onFullscreen). */
+    var mediaFullscreen = false
+    /** Size of the fullscreen video, 0 if unknown. */
+    var videoWidth = 0L
+    var videoHeight = 0L
+    /** Last MediaSession.PositionState (seconds) and when it arrived (SystemClock.elapsedRealtime). */
+    var mediaDuration = 0.0
+    var mediaPosition = 0.0
+    var mediaRate = 1.0
+    var mediaPositionAt = 0L
+
+    fun resetMedia() {
+        mediaDuration = 0.0
+        mediaPosition = 0.0
+        mediaRate = 1.0
+        mediaPositionAt = 0L
+        mediaSession = null
+        mediaPlaying = false
+        mediaFullscreen = false
+        videoWidth = 0L
+        videoHeight = 0L
+    }
 
     fun resetPageStats() {
         etpBlocked.set(0)

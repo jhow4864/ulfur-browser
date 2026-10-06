@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ulfur 2.5 · ic_pip · 24dp, single colour. Tinted like every other ic_*.xml: android:tint="?attr/colorControlNormal";
+     callers override with app:tint / imageTintList. Source: branding/ulfur/mockups-2.5/tools/icons.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <path android:strokeColor="@android:color/white" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M5.1,4.4H18.9A2.2,2.2 0 0 1 21.1,6.6V17.4A2.2,2.2 0 0 1 18.9,19.6H5.1A2.2,2.2 0 0 1 2.9,17.4V6.6A2.2,2.2 0 0 1 5.1,4.4Z"/>
+    <path android:fillColor="@android:color/white" android:pathData="M13.2,11.2H17.9Q18.9,11.2 18.9,12.2V16Q18.9,17 17.9,17H12.2Q11.2,17 11.2,16V13.2Z"/>
+    <path android:strokeColor="@android:color/white" android:strokeWidth="1.7" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M6.1,7.5L9.6,11M9.9,7.9V11.3H6.5"/>
+</vector>

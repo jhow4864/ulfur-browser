@@ -27,6 +27,12 @@ object Prefs {
     /** dark | light | system — chrome theme (default dark). */
     val uiTheme get() = sp.getString("ui_theme", "dark") ?: "dark"
     val restoreTabs get() = sp.getBoolean("restore_tabs", true)
+    /** 2.5: picture-in-picture for playing fullscreen video (default on). */
+    val pipEnabled get() = sp.getBoolean("pip", true)
+    /** Fullscreen sessions that showed the PiP button (labelled the first 3 times). */
+    var pipHintCount: Int
+        get() = sp.getInt("pip_hint_count", 0)
+        set(v) = sp.edit { putInt("pip_hint_count", v) }
     val searchSuggestions get() = sp.getBoolean("search_suggestions", true)
     val searchEngine get() = SearchEngine.from(sp.getString("search_engine", null))
     /** Accent of the current [realm] (2.3.8: per-realm accents). */

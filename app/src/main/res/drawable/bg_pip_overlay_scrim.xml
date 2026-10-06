@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.5: top scrim behind the fullscreen PiP button, #000000A0 fading to transparent. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="270" android:startColor="#A0000000" android:endColor="#00000000" />
+</shape>

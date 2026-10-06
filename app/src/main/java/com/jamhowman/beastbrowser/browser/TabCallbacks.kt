@@ -15,13 +15,14 @@ import org.mozilla.geckoview.GeckoSession.PermissionDelegate
 import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
 import org.mozilla.geckoview.GeckoSession.ProgressDelegate
 import org.mozilla.geckoview.GeckoSession.ScrollDelegate
+import org.mozilla.geckoview.MediaSession
 import org.mozilla.geckoview.WebRequestError
 import org.mozilla.geckoview.WebResponse
 
 /** All per-session Gecko delegates for one tab. */
 class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     NavigationDelegate, ProgressDelegate, ContentDelegate, HistoryDelegate, ScrollDelegate,
-    PermissionDelegate, ContentBlocking.Delegate {
+    PermissionDelegate, ContentBlocking.Delegate, MediaSession.Delegate {
 
     fun attach(session: GeckoSession) {
         session.navigationDelegate = this
@@ -31,6 +32,7 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         session.scrollDelegate = this
         session.permissionDelegate = this
         session.contentBlockingDelegate = this
+        session.mediaSessionDelegate = this
     }
 
     // ---------------------------------------------------------------- navigation
@@ -105,6 +107,54 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     override fun onExternalResponse(session: GeckoSession, response: WebResponse) = host.onDownload(tab, response)
     override fun onCrash(session: GeckoSession) = host.onCrashed(tab)
     override fun onKill(session: GeckoSession) = host.onCrashed(tab)
+
+    // ---------------------------------------------------------------- media session (2.5: picture-in-picture)
+
+    override fun onActivated(session: GeckoSession, mediaSession: MediaSession) {
+        tab.mediaSession = mediaSession
+        host.onMediaStateChanged(tab)
+    }
+
+    override fun onDeactivated(session: GeckoSession, mediaSession: MediaSession) {
+        tab.resetMedia()
+        host.onMediaStateChanged(tab)
+    }
+
+    override fun onPlay(session: GeckoSession, mediaSession: MediaSession) {
+        tab.mediaSession = mediaSession
+        tab.mediaPlaying = true
+        host.onMediaStateChanged(tab)
+    }
+
+    override fun onPause(session: GeckoSession, mediaSession: MediaSession) {
+        tab.mediaPlaying = false
+        host.onMediaStateChanged(tab)
+    }
+
+    override fun onStop(session: GeckoSession, mediaSession: MediaSession) {
+        tab.mediaPlaying = false
+        host.onMediaStateChanged(tab)
+    }
+
+    override fun onPositionState(session: GeckoSession, mediaSession: MediaSession, state: MediaSession.PositionState) {
+        val hadSeek = tab.mediaDuration.isFinite() && tab.mediaDuration > 0
+        tab.mediaDuration = state.duration
+        tab.mediaPosition = state.position
+        tab.mediaRate = state.playbackRate
+        tab.mediaPositionAt = android.os.SystemClock.elapsedRealtime()
+        // Only the first known duration changes the PiP actions (back / forward 10 s appear).
+        if (hadSeek != (state.duration.isFinite() && state.duration > 0)) host.onMediaStateChanged(tab)
+    }
+
+    override fun onFullscreen(session: GeckoSession, mediaSession: MediaSession, enabled: Boolean, meta: MediaSession.ElementMetadata?) {
+        tab.mediaSession = mediaSession
+        tab.mediaFullscreen = enabled
+        if (enabled && meta != null && meta.width > 0 && meta.height > 0) {
+            tab.videoWidth = meta.width
+            tab.videoHeight = meta.height
+        }
+        host.onMediaStateChanged(tab)
+    }
 
     // ---------------------------------------------------------------- history (never called for private sessions)
 

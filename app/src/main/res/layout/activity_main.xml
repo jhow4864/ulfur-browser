@@ -349,4 +349,52 @@
         android:layout_height="match_parent"
         android:background="#000000"
         android:visibility="gone" />
+
+    <!-- 2.5: picture-in-picture button over fullscreen video (top-right, hides after 3 s; SPEC (c)) -->
+    <View
+        android:id="@+id/fullscreenPipScrim"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_gravity="top"
+        android:alpha="0"
+        android:background="@drawable/bg_pip_overlay_scrim"
+        android:importantForAccessibility="no"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/fullscreenPipButton"
+        android:layout_width="wrap_content"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:alpha="0"
+        android:background="@drawable/bg_pip_overlay_pill"
+        android:clickable="true"
+        android:contentDescription="@string/menu_pip"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/fullscreenPipIcon"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_pip"
+            app:tint="#FFFFFFFF" />
+
+        <TextView
+            android:id="@+id/fullscreenPipLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:importantForAccessibility="no"
+            android:text="@string/menu_pip"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp" />
+    </LinearLayout>
 </FrameLayout>

@@ -2,17 +2,24 @@ package com.jamhowman.beastbrowser.ui
 
 import android.Manifest
 import android.animation.ObjectAnimator
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
 import android.app.SearchManager
+import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +28,7 @@ import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Base64
+import android.util.Rational
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -76,6 +84,7 @@ import com.jamhowman.beastbrowser.databinding.SheetShieldsBinding
 import com.jamhowman.beastbrowser.util.Domains
 import com.jamhowman.beastbrowser.downloads.DownloadCenter
 import com.jamhowman.beastbrowser.media.MediaSniffer
+import com.jamhowman.beastbrowser.media.PipPolicy
 import com.jamhowman.beastbrowser.browser.HelperSessions
 import com.jamhowman.beastbrowser.reader.ReaderMode
 import com.jamhowman.beastbrowser.widget.SpeedDialWidget
@@ -138,6 +147,28 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     /** Tab switcher group filter ([TabGroup.id]); null = All. */
     private var switcherGroupFilter: String? = null
     private var fullscreenTab: Tab? = null
+    /** 2.5: the activity is shown in a picture-in-picture window (browser chrome hidden). */
+    private var inPip = false
+    private var pipFindBarWasVisible = false
+    private val pipSupported: Boolean by lazy { packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE) }
+    /** Play / pause buttons in the PiP window. */
+    private val pipReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != ACTION_PIP_CONTROL) return
+            val t = current ?: return
+            val ms = t.mediaSession ?: return
+            when (intent.getStringExtra(EXTRA_PIP_CMD)) {
+                PIP_PLAY -> ms.play()
+                PIP_PAUSE -> ms.pause()
+                PIP_BACK, PIP_FORWARD -> {
+                    val elapsed = (android.os.SystemClock.elapsedRealtime() - t.mediaPositionAt) / 1000.0
+                    val now = PipPolicy.estimatedPosition(t.mediaPosition, t.mediaRate, t.mediaPlaying, elapsed, t.mediaDuration)
+                    val delta = if (intent.getStringExtra(EXTRA_PIP_CMD) == PIP_BACK) -PipPolicy.SEEK_SECONDS else PipPolicy.SEEK_SECONDS
+                    ms.seekTo(PipPolicy.seekTarget(now, delta, t.mediaDuration), false)
+                }
+            }
+        }
+    }
     private var lastBadge = -1
     /** Tracks UI_MODE_NIGHT_* so we recolour chrome when light/dark flips without recreate. */
     private var lastUiNightMask = Configuration.UI_MODE_NIGHT_UNDEFINED
@@ -213,6 +244,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         setupSwitcher()
         setupFindBar()
         setupTranslateChip()
+        setupFullscreenPipButton()
         setupSwipe()
         setupBack()
         applyAccent()
@@ -220,6 +252,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
         Engine.onExtensionReady(extListener)
         Engine.uboBridge.events += uboEvents
+        ContextCompat.registerReceiver(this, pipReceiver, IntentFilter(ACTION_PIP_CONTROL), ContextCompat.RECEIVER_NOT_EXPORTED)
         observeDownloads()
         restoreTabs(realm)
         if (!handleIntent(intent) && tabs.isEmpty()) newTab()
@@ -251,6 +284,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         SpeedDialStore.load().let { if (it != tileAdapter.tiles) { tileAdapter.tiles = it; tileAdapter.notifyDataSetChanged() } }
         updateHomeStats()
         refreshUi()
+        updatePipParams() // Settings may have turned picture-in-picture on or off
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -361,6 +395,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         ReaderMode.removeListener(readerListener)
         if (ReaderMode.host === readerHost) ReaderMode.host = null
         Engine.uboBridge.events -= uboEvents
+        runCatching { unregisterReceiver(pipReceiver) }
         if (isFinishing) {
             DownloadCenter.endPrivateSession()
             if (Prefs.clearOnExit) wipeData()
@@ -508,6 +543,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         lastBadge = -1
         refreshUi()
         updateHomeStats()
+        updatePipParams()
     }
 
     private fun closeTab(tab: Tab, force: Boolean = false) {
@@ -701,17 +737,24 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             val sys = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
             imeVisible = ime.bottom > 0
-            if (fullscreenTab == null) {
+            if (fullscreenTab == null && !inPip) {
                 b.content.setPadding(sys.left, sys.top, sys.right, max(sys.bottom, ime.bottom))
             } else b.content.setPadding(0, 0, 0, 0)
             b.switcher.root.setPadding(sys.left, sys.top, sys.right, sys.bottom)
+            // Fullscreen PiP button: 16dp from the corner, clear of a display cutout / system bars.
+            val cut = insets.getInsets(WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.systemBars())
+            (b.fullscreenPipButton.layoutParams as FrameLayout.LayoutParams).let {
+                it.topMargin = dp(this, 16) + cut.top
+                it.marginEnd = dp(this, 16) + cut.right
+                b.fullscreenPipButton.layoutParams = it
+            }
             updateBarsVisibility()
             insets
         }
     }
 
     private fun updateBarsVisibility() {
-        val fs = fullscreenTab != null
+        val fs = fullscreenTab != null || inPip
         b.topBar.isVisible = !fs
         b.accentLineTop.isVisible = !fs
         if (fs) b.translateBar.root.isVisible = false else updateTranslateChip()
@@ -1281,7 +1324,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         m.menuSubtitle.text = "${fmt(Stats.total.get())} ads & trackers blocked in total"
         m.menuHeader.setOnClickListener { dialog.dismiss(); showShields() }
         val bookmarked = onPage && db.isBookmarked(t.url)
-        val items = listOf(
+        val pipOffered = onPage && PipPolicy.canEnterManually(Prefs.pipEnabled, pipSupported, mediaState(t))
+        val items = listOfNotNull(
             MenuItem(R.drawable.ic_add, "New tab") { newTab() },
             MenuItem(R.drawable.ic_incognito, if (realm == Realm.GHOST) "Ghost tab" else "Private tab") { newTab(private = true) },
             MenuItem(realm.sealIcon, "Realm · ${realm.label}", realm != Realm.PLAY) { showRealms() },
@@ -1296,6 +1340,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                     else Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
                 }
             },
+            if (pipOffered) MenuItem(R.drawable.ic_pip, getString(R.string.menu_pip)) {
+                if (!enterPip()) toast(getString(R.string.pip_unavailable))
+            } else null,
             MenuItem(R.drawable.ic_reader, "Reading list") { startActivity(Intent(this, ReadingListActivity::class.java)) },
             MenuItem(R.drawable.ic_dashboard, getString(R.string.beast_control)) { showBeastControl() },
             MenuItem(if (bookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
@@ -1949,9 +1996,172 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (fullScreen) {
             ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             ctl.hide(WindowInsetsCompat.Type.systemBars())
-        } else ctl.show(WindowInsetsCompat.Type.systemBars())
+            if (fullscreenPipButtonAllowed()) {
+                val count = Prefs.pipHintCount
+                styleFullscreenPipButton(PipPolicy.fullscreenButtonLabelled(count))
+                if (PipPolicy.fullscreenButtonLabelled(count)) Prefs.pipHintCount = count + 1
+                fadePipButton(true)
+            }
+        } else {
+            ctl.show(WindowInsetsCompat.Type.systemBars())
+            fadePipButton(false)
+        }
         updateBarsVisibility()
         ViewCompat.requestApplyInsets(b.root)
+        updatePipParams()
+    }
+
+    override fun onMediaStateChanged(tab: Tab) {
+        if (tab === current) updatePipParams()
+    }
+
+    // ======================================================================= picture-in-picture (2.5)
+
+    private fun mediaState(t: Tab?) = PipPolicy.MediaState(
+        playing = t?.mediaPlaying == true,
+        mediaFullscreen = t?.mediaFullscreen == true,
+        pageFullscreen = t != null && t === fullscreenTab,
+    )
+
+    /** A fullscreen video is playing in the current tab and PiP is on: leaving the app enters PiP. */
+    private fun pipAutoEligible() = PipPolicy.shouldAutoEnter(Prefs.pipEnabled, pipSupported, mediaState(current))
+
+    private fun pipParams(): PictureInPictureParams {
+        val t = current
+        val ratio = PipPolicy.aspectRatio(t?.videoWidth ?: 0L, t?.videoHeight ?: 0L)
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(ratio.num, ratio.den))
+            .setActions(pipActions(t))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+: the system enters PiP itself on swipe-home, with a smooth animation.
+            builder.setAutoEnterEnabled(pipAutoEligible())
+            builder.setSeamlessResizeEnabled(false) // video content: avoid cross-fading resizes
+        }
+        // Smooth enter animation from the fullscreen video's bounds.
+        if (fullscreenTab != null && fullscreenTab === t) {
+            val r = android.graphics.Rect()
+            if (geckoView.getGlobalVisibleRect(r) && !r.isEmpty) builder.setSourceRectHint(r)
+        }
+        return builder.build()
+    }
+
+    private fun pipAction(cmd: String, requestCode: Int, icon: Int, label: Int): RemoteAction {
+        val intent = Intent(ACTION_PIP_CONTROL).setPackage(packageName).putExtra(EXTRA_PIP_CMD, cmd)
+        val pi = PendingIntent.getBroadcast(this, requestCode, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val text = getString(label)
+        return RemoteAction(Icon.createWithResource(this, icon), text, text, pi)
+    }
+
+    /** Play / pause, plus back / forward 10 s for media with a known length (Designer's ic_pip_rewind / _forward). */
+    private fun pipActions(t: Tab?): List<RemoteAction> {
+        if (t?.mediaSession == null) return emptyList()
+        val playPause = if (t.mediaPlaying) pipAction(PIP_PAUSE, 1, R.drawable.ic_pip_pause, R.string.pip_pause)
+        else pipAction(PIP_PLAY, 1, R.drawable.ic_pip_play, R.string.pip_play)
+        val max = runCatching { maxNumPictureInPictureActions }.getOrDefault(3)
+        if (!PipPolicy.seekActionsAvailable(t.mediaDuration, max)) return listOf(playPause)
+        return listOf(
+            pipAction(PIP_BACK, 2, R.drawable.ic_pip_rewind, R.string.pip_back_10),
+            playPause,
+            pipAction(PIP_FORWARD, 3, R.drawable.ic_pip_forward, R.string.pip_forward_10),
+        )
+    }
+
+    /** Keeps the system's PiP params (ratio, play/pause, Android 12+ auto-enter) in step with the current tab. */
+    private fun updatePipParams() {
+        if (!pipSupported) return
+        runCatching { setPictureInPictureParams(pipParams()) }
+            .onFailure { android.util.Log.w("BeastPip", "setPictureInPictureParams failed", it) }
+    }
+
+    private fun enterPip(): Boolean {
+        if (!pipSupported || !Prefs.pipEnabled) return false
+        return runCatching { enterPictureInPictureMode(pipParams()) }.getOrDefault(false)
+    }
+
+    // ---- fullscreen PiP button (Designer SPEC (c)): top-right, fades in, hides after 3 s, back on any touch
+
+    private val hidePipButton = Runnable { fadePipButton(false) }
+
+    private fun fullscreenPipButtonAllowed() =
+        PipPolicy.fullscreenButtonShown(fullscreenTab != null, pipSupported, Prefs.pipEnabled, inPip)
+
+    private fun styleFullscreenPipButton(labelled: Boolean) {
+        val btn = b.fullscreenPipButton
+        val lp = btn.layoutParams
+        if (labelled) {
+            lp.width = FrameLayout.LayoutParams.WRAP_CONTENT; lp.height = dp(this, 44)
+            btn.setBackgroundResource(R.drawable.bg_pip_overlay_pill)
+            btn.setPaddingRelative(dp(this, 12), 0, dp(this, 16), 0)
+            b.fullscreenPipIcon.layoutParams.let { it.width = dp(this, 22); it.height = dp(this, 22) }
+        } else {
+            lp.width = dp(this, 48); lp.height = dp(this, 48)
+            btn.setBackgroundResource(R.drawable.bg_pip_overlay_circle)
+            btn.setPadding(0, 0, 0, 0)
+            b.fullscreenPipIcon.layoutParams.let { it.width = dp(this, 24); it.height = dp(this, 24) }
+        }
+        b.fullscreenPipLabel.isVisible = labelled
+        btn.layoutParams = lp
+    }
+
+    private fun fadePipButton(show: Boolean) {
+        val views = listOf(b.fullscreenPipButton, b.fullscreenPipScrim)
+        b.root.removeCallbacks(hidePipButton)
+        if (show && fullscreenPipButtonAllowed()) {
+            views.forEach { v ->
+                if (!v.isVisible) { v.alpha = 0f; v.isVisible = true }
+                v.animate().alpha(1f).setDuration(150).start()
+            }
+            b.root.postDelayed(hidePipButton, PipPolicy.FULLSCREEN_BUTTON_HIDE_MS)
+        } else {
+            views.forEach { v ->
+                if (!v.isVisible) return@forEach
+                v.animate().alpha(0f).setDuration(150).withEndAction { if (v.alpha == 0f) v.isVisible = false }.start()
+            }
+        }
+    }
+
+    private fun setupFullscreenPipButton() {
+        b.fullscreenPipButton.setOnClickListener {
+            fadePipButton(false)
+            if (!enterPip()) toast(getString(R.string.pip_unavailable))
+        }
+    }
+
+    /** Any touch while fullscreen brings the button back; the event still goes to the page (never consumed). */
+    override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
+        if (ev.actionMasked == android.view.MotionEvent.ACTION_DOWN && fullscreenTab != null && !inPip) fadePipButton(true)
+        return super.dispatchTouchEvent(ev)
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Android 8-11 only: on 12+ setAutoEnterEnabled already handles leaving the app.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && pipAutoEligible()) enterPip()
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        inPip = isInPictureInPictureMode
+        if (inPip) {
+            b.root.removeCallbacks(hidePipButton)
+            listOf(b.fullscreenPipButton, b.fullscreenPipScrim).forEach { it.animate().cancel(); it.alpha = 0f; it.isVisible = false }
+            // Only the page (the video) is shown: hide every bit of browser chrome and transient UI.
+            pipFindBarWasVisible = b.findBar.isVisible
+            b.findBar.isVisible = false
+            if (b.switcher.root.isVisible) b.switcher.root.isVisible = false
+            if (b.suggestList.isVisible) hideSuggest()
+            if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
+            b.urlInput.clearFocus()
+            hideKeyboard()
+        } else {
+            if (pipFindBarWasVisible && current?.showingHome == false) b.findBar.isVisible = true
+            pipFindBarWasVisible = false
+            // Closed with the PiP window's X (activity already stopped) rather than expanded: stop the sound.
+            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) current?.mediaSession?.pause()
+        }
+        updateBarsVisibility()
+        ViewCompat.requestApplyInsets(b.root)
+        if (!inPip) refreshUi()
     }
 
     override fun onContextMenu(tab: Tab, element: ContextElement) {
@@ -2048,6 +2258,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val wasCurrent = tab === current
         if (geckoView.session === tab.session) geckoView.releaseSession()
         runCatching { tab.session.close() }
+        tab.resetMedia()
         tab.session = createSession(tab.isPrivate, tab.realm)
         wire(tab)
         tab.session.open(runtime)
@@ -2123,5 +2334,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     companion object {
         const val EXTRA_URL = "url"
+        private const val ACTION_PIP_CONTROL = "com.jamhowman.beastbrowser.action.PIP_CONTROL"
+        private const val EXTRA_PIP_CMD = "cmd"
+        private const val PIP_PLAY = "play"
+        private const val PIP_PAUSE = "pause"
+        private const val PIP_BACK = "back"
+        private const val PIP_FORWARD = "forward"
     }
 }

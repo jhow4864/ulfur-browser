@@ -18,6 +18,8 @@ interface BrowserHost {
     fun openExternal(tab: Tab, uri: String): Boolean
     fun onBeastUri(tab: Tab, uri: String)
     fun onFullScreen(tab: Tab, fullScreen: Boolean)
+    /** 2.5: play / pause / fullscreen-video changes from the tab's MediaSession (picture-in-picture). */
+    fun onMediaStateChanged(tab: Tab)
     fun onContextMenu(tab: Tab, element: ContextElement)
     fun onDownload(tab: Tab, response: WebResponse)
     fun onCrashed(tab: Tab)

@@ -47,6 +47,7 @@ object BackupManager {
         "dnt_gpc" to Boolean::class.java, "fingerprinting" to Boolean::class.java, "safe_browsing" to Boolean::class.java,
         "clear_on_exit" to Boolean::class.java, "search_suggestions" to Boolean::class.java,
         "dark_pages" to Boolean::class.java, "restore_tabs" to Boolean::class.java,
+        "pip" to Boolean::class.java,
         "https_mode" to String::class.java, "cookie_mode" to String::class.java, "search_engine" to String::class.java,
         "ui_theme" to String::class.java, "accent" to String::class.java, "accent_work" to String::class.java,
     )
