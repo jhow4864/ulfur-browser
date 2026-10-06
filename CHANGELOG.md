@@ -10,7 +10,9 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   usual "Downloaded … Open" message. In Reader view it saves just the clean article. Private and Ghost tabs save
   into the private vault instead, so the file never shows up in Gallery or Files.
 * **Cookie banners hidden.** Shields now hides cookie consent banners by default, using uBlock Origin's own
-  cookie-notice lists. You can turn this off in Settings › Shields › Hide cookie banners.
+  cookie-notice lists. It hides the banner rather than clicking accept, so sites treat you as never having agreed,
+  and a few sites lock scrolling or hold back videos, maps or comments until you answer it. You can turn this off
+  in Settings › Shields › Hide cookie banners.
 * If a site acts up because its banner is hidden, open Shields on that page and turn off **Hide cookie banners on
   this site**. The page reloads with the banner back, and ad and tracker blocking stays on. uBlock Origin's other
   cosmetic cleanup also pauses on that site, and a few banners may stay hidden where the list blocks the consent
