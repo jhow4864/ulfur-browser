@@ -8,6 +8,8 @@ first page you open.
 
 Ulfur was called **Beast Browser** up to version 2.3.8.
 
+Ulfur is an independent project. It embeds Mozilla's open source GeckoView library and is not affiliated with, endorsed by, or maintained by Mozilla. Firefox is a trademark of the Mozilla Foundation. Ulfur does not use Mozilla trademarks or logos as its own branding.
+
 ## Features
 
 **Privacy and blocking**
@@ -32,7 +34,7 @@ Ulfur was called **Beast Browser** up to version 2.3.8.
 * Reader view with an offline reading list
 * On-device page translation, so pages aren't sent to a translation server
 * A download manager with pause and resume, plus downloads of HLS video streams
-* **Media Radar**, which shows every video and audio stream on a page. DRM-protected media is never offered.
+* **Media Radar**, which lists plain progressive MP4/WebM and unencrypted HLS. It does not list or save AES-128 HLS, SAMPLE-AES, or EME (Widevine, PlayReady, FairPlay). It does not list major streaming hosts (YouTube, Netflix, Disney+, and the rest of the host block). It does not bypass DRM.
 
 **Look and feel**
 * Dark-first design, a choice of accent colours (each realm can have its own) and an icon that follows your

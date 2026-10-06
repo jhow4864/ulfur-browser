@@ -16,6 +16,8 @@ GeckoView is used unmodified as a library. Its source code is available from Moz
 https://hg.mozilla.org/mozilla-central and https://github.com/mozilla-firefox/firefox, and the licence text is at
 https://www.mozilla.org/MPL/2.0/.
 
+GeckoView is used unmodified as a library. Ulfur is not a Mozilla product and is not affiliated with the Mozilla Foundation. Firefox and the Mozilla logo are trademarks of the Mozilla Foundation; they are not used as Ulfur branding.
+
 ## uBlock Origin (GPL-3.0)
 uBlock Origin is bundled as a built-in extension. Its complete corresponding source is included in this repository
 under `app/src/main/assets/extensions/ublock/`, and upstream at https://github.com/gorhill/uBlock. Ulfur's addition
