@@ -302,6 +302,68 @@ object DownloadCenter {
         savePrivate()
     }
 
+    /**
+     * Roadmap item 1 (2.5.1): moves vault files out to the public Downloads/<downloads_folder>.
+     * Copy, verify, then delete: each file is copied while hashing the source, the copy is read back and
+     * hashed again, and only a matching copy removes the file from the vault. A copy that fails or doesn't
+     * match is deleted and the original stays in the vault. [onDone] runs on the main thread with the items
+     * that moved (as their new public records) and the vault items that didn't.
+     */
+    fun moveToDownloads(ids: Collection<Long>, onDone: (moved: List<DownloadItem>, failed: List<DownloadItem>) -> Unit) {
+        val picked = _privateItems.value.filter { it.id in ids }
+        io.execute {
+            val moved = ArrayList<DownloadItem>(); val failed = ArrayList<DownloadItem>()
+            for (src in picked) {
+                val out = runCatching { moveOne(src) }
+                    .onFailure { Log.w(TAG, "move to Downloads failed for ${src.id}", it) }.getOrNull()
+                if (out == null) { failed += src; continue }
+                moved += out
+                _privateItems.update { list -> list.filterNot { it.id == src.id } }
+                _items.update { list -> listOf(out) + list }
+                runCatching { src.filePath?.let { File(it).delete() } }
+            }
+            if (moved.isNotEmpty()) { savePrivate(); save() }
+            main.post { onDone(moved, failed) }
+        }
+    }
+
+    /** Copies one vault file to public Downloads and verifies it. Returns the new public record, or null. */
+    private fun moveOne(src: DownloadItem): DownloadItem? {
+        val from = File(src.filePath ?: return null)
+        if (!from.isFile) return null
+        var target = createTarget(src.copy(id = idGen.incrementAndGet(), isPrivate = false, contentUri = null, filePath = null))
+        var ok = false
+        try {
+            val want = java.security.MessageDigest.getInstance("SHA-256")
+            var size = 0L
+            openOutput(target, 0).use { o ->
+                from.inputStream().use { i ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = i.read(buf); if (n < 0) break
+                        o.write(buf, n); want.update(buf, 0, n); size += n
+                    }
+                }
+            }
+            finalizeTarget(target)
+            val got = java.security.MessageDigest.getInstance("SHA-256")
+            val back = target.contentUri?.let { app.contentResolver.openInputStream(Uri.parse(it)) }
+                ?: target.filePath?.let { File(it).inputStream() } ?: return null
+            var backSize = 0L
+            back.use { i ->
+                val buf = ByteArray(64 * 1024)
+                while (true) { val n = i.read(buf); if (n < 0) break; got.update(buf, 0, n); backSize += n }
+            }
+            ok = backSize == size && want.digest().contentEquals(got.digest())
+            if (!ok) return null
+            target = target.copy(status = DlStatus.DONE, downloaded = size, total = size, speedBps = 0, error = null,
+                finishedAt = System.currentTimeMillis())
+            return target
+        } finally {
+            if (!ok) deleteTarget(target)
+        }
+    }
+
     fun clearPrivateVault(): Int {
         val gone = _privateItems.value
         gone.forEach { d -> io.execute { deleteTarget(d) } }
