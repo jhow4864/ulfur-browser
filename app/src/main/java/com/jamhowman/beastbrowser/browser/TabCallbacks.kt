@@ -90,6 +90,10 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         host.onProgress(tab, progress)
     }
 
+    override fun onFirstContentfulPaint(session: GeckoSession) {
+        host.onFirstPaint(tab)
+    }
+
     override fun onSecurityChange(session: GeckoSession, securityInfo: ProgressDelegate.SecurityInformation) {
         tab.isSecure = securityInfo.isSecure
         host.onTabUpdated(tab)

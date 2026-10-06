@@ -11,6 +11,8 @@ interface BrowserHost {
     fun onPageStarted(tab: Tab, url: String)
     fun onPageStopped(tab: Tab, success: Boolean)
     fun onProgress(tab: Tab, progress: Int)
+    /** Gecko painted the first content of the current page (item 19: lets go of the home page). */
+    fun onFirstPaint(tab: Tab) {}
     fun onBlockedChanged(tab: Tab)
     fun onVisited(tab: Tab, url: String)
     fun onNewWindow(opener: Tab, uri: String): GeckoSession?

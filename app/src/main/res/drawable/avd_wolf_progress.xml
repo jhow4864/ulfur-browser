@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Loading: load with SeekableAnimatedVectorDrawable and call setCurrentPlayTime(progress * 10) (0..100 -> 0..1000 ms). ring_track dims over the first 150 ms. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_wolf_hero">
+    <target android:name="ring_track" android:animation="@animator/wolf_ring_dim" />
+    <target android:name="ring_progress" android:animation="@animator/wolf_progress_trim" />
+</animated-vector>

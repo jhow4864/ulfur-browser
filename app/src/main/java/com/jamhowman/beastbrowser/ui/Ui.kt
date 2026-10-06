@@ -18,13 +18,13 @@ fun accentLine(view: View, accent: Int, alpha: Int = 0xCC) {
     )
 }
 
-/** Soft radial glow behind the logo. */
-fun glow(view: View, accent: Int) {
+/** Soft radial glow behind the logo, [radiusDp] from the centre. */
+fun glow(view: View, accent: Int, radiusDp: Int = 75) {
     view.background = GradientDrawable().apply {
         gradientType = GradientDrawable.RADIAL_GRADIENT
         shape = GradientDrawable.OVAL
         colors = intArrayOf((accent and 0x00FFFFFF) or (0x55 shl 24), 0x00000000)
-        gradientRadius = view.resources.displayMetrics.density * 75
+        gradientRadius = view.resources.displayMetrics.density * radiusDp
     }
 }
 

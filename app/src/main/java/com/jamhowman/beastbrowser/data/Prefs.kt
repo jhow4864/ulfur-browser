@@ -33,6 +33,10 @@ object Prefs {
     var forceDarkTipShown: Boolean
         get() = sp.getBoolean("force_dark_tip", false)
         set(v) = sp.edit { putBoolean("force_dark_tip", v) }
+    /** Item 19: the new-tab wolf's idle pulse and eye flash (default on). The loading ring shows either way. */
+    var wolfAnimation: Boolean
+        get() = sp.getBoolean("wolf_animation", true)
+        set(v) = sp.edit { putBoolean("wolf_animation", v) }
     /** dark | light | system — chrome theme (default dark). */
     val uiTheme get() = sp.getString("ui_theme", "dark") ?: "dark"
     val restoreTabs get() = sp.getBoolean("restore_tabs", true)

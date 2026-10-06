@@ -16,6 +16,8 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
     var progress: Int = 100
     var loading = false
     var showingHome = true
+    /** Item 19: a load started from the home page; keep the home page (and the wolf's ring) up until first paint. */
+    var homeHold = false
     var desktopMode = false
     /** Page zoom percent for this tab (100 = default). Remembered per host in BrowserDb. */
     var zoomPercent = 100

@@ -11,6 +11,10 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   System mode moved there too. Realm accents: Work follows Auto (Frost, or Ember while the theme is Frost) or gets
   its own preset, and Ghost is always dim. Blood Moon is the default, and earlier accents carry over: GX Red →
   Blood Moon, Cyber Cyan → Frost, Toxic Green → Toxic, Lava Orange → Ember, Ultraviolet → Void.
+* **Animated wolf.** The new-tab page has a full-colour wolf in your theme's colours. It breathes gently, its
+  ring fills while a search you started from the new-tab page loads, and its eye flashes when the page is ready.
+  Ghost gets a dimmer, slower wolf with no flash. Turn the motion off in Settings › Appearance › Motion; it also
+  stays still while Android's "Remove animations" is on, though the ring still shows progress.
 
 **Fixes**
 * Accent-coloured text (home stats, download types, reading-list sites) is now readable in light mode.
