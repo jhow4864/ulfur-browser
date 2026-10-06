@@ -27,13 +27,16 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
         <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Beast.BottomSheet</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.Beast.Dialog</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
     </style>
 
-    <style name="Theme.Beast" parent="Theme.Beast.Base" />
+    <!-- Android 8.0 (API 26) can't draw dark navigation bar icons (windowLightNavigationBar is API 27+), so a light
+         bar there would hide its white icons. Use a black bar on 26; values-v27 switches to the light bar. -->
+    <style name="Theme.Beast" parent="Theme.Beast.Base">
+        <item name="android:navigationBarColor">@android:color/black</item>
+    </style>
 
     <style name="ThemeOverlay.Beast.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/Widget.Beast.BottomSheet</item>
