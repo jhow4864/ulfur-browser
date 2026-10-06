@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.text.format.Formatter
+import android.util.Log
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object Updater {
 
+    private const val TAG = "BeastUpdater"
     private const val CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
     private const val LAUNCH_DELAY_MS = 4_000L
     private const val UPDATES_DIR = "updates"
@@ -272,13 +274,30 @@ object Updater {
                 dialog.dismiss()
                 UpdatePrefs.get(activity).clearPending()
             } catch (e: CancellationException) {
+                // Activity gone mid-update: keep pendingTag so the next launch re-checks.
                 if (dialog.isShowing) dialog.dismiss()
                 throw e
-            } catch (e: IOException) {
-                dialog.dismiss()
-                info(activity, "Download failed", e.message ?: "Couldn't download the update.")
+            } catch (e: Exception) {
+                // Any failure (network, verifier, installer, UI): never crash, never leave the update stuck as pending.
+                Log.w(TAG, "update download failed", e)
+                runCatching { if (dialog.isShowing) dialog.dismiss() }
+                abandonDownload(activity, dest)
+                info(activity, "Download failed", failureMessage(e))
             }
         }
+    }
+
+    /** Undoes a failed update: forgets the pending tag and deletes the (partial or unverified) APK. */
+    internal fun abandonDownload(context: Context, dest: File) {
+        UpdatePrefs.get(context).clearPending()
+        runCatching { File(dest.parentFile, dest.name + ".part").delete() }
+        runCatching { dest.delete() }
+    }
+
+    /** Message for the "Download failed" dialog. IOExceptions carry user-facing text; anything else gets a generic line. */
+    internal fun failureMessage(e: Exception): String = when (e) {
+        is IOException -> e.message ?: "Couldn't download the update."
+        else -> "Something went wrong while updating (${e.javaClass.simpleName}). Please try again."
     }
 
     /** Streams [apk] into a PackageInstaller session and commits it. Returns an error message or null. */
