@@ -90,4 +90,16 @@ class AppearanceScreenTest {
         assertTrue("Light is the selected segment", mode.getChildAt(1).isSelected)
         render(activity, "appearance_frost_light.png")
     }
+
+    @Test fun animatedWolfSwitchStoresThePref() {
+        Prefs.init(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+        Prefs.sp.edit(commit = true) { clear() }
+        val (_, f) = open()
+        val sw = f.requireView().findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.wolfSwitch)
+        assertTrue("on by default", sw.isChecked && Prefs.wolfAnimation)
+        f.requireView().findViewById<View>(R.id.wolfRow).performClick()
+        assertTrue(!sw.isChecked && !Prefs.wolfAnimation)
+        assertEquals(f.getString(R.string.appearance_wolf_off),
+            f.requireView().findViewById<android.widget.TextView>(R.id.wolfSummary).text.toString())
+    }
 }

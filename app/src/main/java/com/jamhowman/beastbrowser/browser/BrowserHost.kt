@@ -12,6 +12,8 @@ interface BrowserHost {
     fun onPageStarted(tab: Tab, url: String)
     fun onPageStopped(tab: Tab, success: Boolean)
     fun onProgress(tab: Tab, progress: Int)
+    /** Gecko painted the first content of the current page (item 19: lets go of the home page). */
+    fun onFirstPaint(tab: Tab) {}
     fun onBlockedChanged(tab: Tab)
     /** Roadmap 10: [count] [category] blocks on a page of [site] (host only) for the weekly tally. Never called for private tabs. */
     fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory, count: Int = 1)

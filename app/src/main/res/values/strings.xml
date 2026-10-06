@@ -391,6 +391,11 @@
     <string name="appearance_realm_auto">%1$s (%2$s in use)</string>
     <string name="appearance_realm_ghost">Always dim</string>
     <string name="appearance_realm_tile">%1$s realm accent: %2$s, %3$s</string>
+    <string name="appearance_section_motion">Motion</string>
+    <string name="appearance_wolf_title">Animated wolf</string>
+    <string name="appearance_wolf_on">The new-tab wolf breathes and its eye flashes when a page loads</string>
+    <string name="appearance_wolf_off">The wolf stays still. Its ring still shows loading progress</string>
+    <string name="appearance_wolf_system_off">Off while system animations are off</string>
     <string name="appearance_sheet_title">%1$s realm accent</string>
     <string name="appearance_sheet_play_note">Play uses the theme. Changing it here changes the theme.</string>
     <string name="appearance_sheet_work_note">Work gets its own accent, so you can tell the realms apart at a glance.</string>

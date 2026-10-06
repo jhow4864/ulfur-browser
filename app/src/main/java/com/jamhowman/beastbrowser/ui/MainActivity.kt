@@ -160,6 +160,12 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private var nextId = 1L
     /** 2.8: the realm's theme preset resolved for light/dark (+ the private-mode override, item 11). See [syncPalette]. */
     private var accent = ThemePalette.of(ThemePreset.DEFAULT, night = true)
+    /** Item 19: the new-tab wolf. */
+    private lateinit var wolf: WolfHero
+    /** The tab switcher is open (or opening) over the home page. */
+    private var switcherUp = false
+    /** Lets go of the home page if Gecko never reports a first paint for a load started from it. */
+    private val homeHoldTimeout = Runnable { realmTabs.values.flatten().filter { it.homeHold }.forEach { releaseHomeHold(it) } }
     private var switcherPrivate = false
     /** Tab switcher search text (2.3.5); matches title, URL or group name. */
     private var switcherQuery = ""
@@ -241,6 +247,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         b = ActivityMainBinding.inflate(layoutInflater)
         setContentView(b.root)
+        wolf = WolfHero(b.home.logo)
 
         db = BrowserDb.get(this)
         runtime = Engine.runtime(this)
@@ -301,6 +308,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         Engine.applySettings()
         syncForceDark() // Settings may have switched forced dark or edited "Never force dark on"
         syncPalette() // Settings > Appearance may have picked another theme: re-tint in place, no restart
+        wolf.refresh(ghost = realm == Realm.GHOST) // reduce motion and the Animated wolf switch, read again on resume
         // Settings → theme (or system flip while we were paused): config may have changed already.
         maybeReapplyUiModeChrome(resources.configuration)
         // Settings → Import backup may have added speed-dial tiles.
@@ -398,6 +406,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     override fun onPause() {
         super.onPause()
+        wolf.onHomeHidden()
         Stats.save()
         tally.flushAsync()
         saveTabs()
@@ -532,6 +541,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     fun load(tab: Tab, url: String) {
         if (url == UrlUtils.HOME) { showHome(tab); return }
+        // Started from the home page: keep it (and the wolf's ring) up until Gecko paints (SPEC "Animated wolf").
+        if (tab.showingHome && tab === current) holdHome(tab)
         tab.showingHome = false
         tab.pendingUrl = null
         tab.url = url
@@ -618,6 +629,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
 
     private fun showHome(tab: Tab) {
+        releaseHomeHold(tab, refresh = false)
         tab.showingHome = true
         tab.session.setActive(false)
         if (tab === current) { refreshUi(); updateHomeStats() }
@@ -963,7 +975,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     private fun refreshUi() {
         val t = current ?: return
-        b.home.root.isVisible = t.showingHome
+        val homeUp = t.showingHome || t.homeHold
+        b.home.root.isVisible = homeUp
+        if (homeUp && !switcherUp && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) wolf.onHomeShown()
+        else wolf.onHomeHidden()
         b.swipe.isInvisible = t.showingHome
         if (!b.urlInput.hasFocus()) b.urlInput.setText(if (t.showingHome) "" else displayUrl(t))
         b.urlInput.hint = getString(when {
@@ -1116,8 +1131,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             it.setStroke(dp(this, 2), c); b.tabCount.background = it
         }
         // home
-        b.home.logo.imageTintList = ColorStateList.valueOf(c)
-        glow(b.home.logoGlow, c)
+        wolf.refresh(ghost = realm == Realm.GHOST) // the wolf's gradients read ?attr/ulfur* from the overlays just applied
+        glow(b.home.logoGlow, c, radiusDp = 105)
         b.home.wordmarkSub.setTextColor(accent.accentText) // accent as text: AA in light mode too (SPEC accentText)
         b.home.wordmarkSub.text = "BROWSER · " + realm.label.uppercase(Locale.ROOT)
         b.home.homeSearchIcon.imageTintList = ColorStateList.valueOf(c)
@@ -1253,6 +1268,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val root = b.switcher.root
         root.alpha = 0f; root.scaleX = 0.96f; root.scaleY = 0.96f
         root.isVisible = true
+        switcherUp = true
+        wolf.onHomeHidden()
         root.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(180).start()
     }
 
@@ -1271,6 +1288,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         root.animate().alpha(0f).scaleX(0.97f).scaleY(0.97f).setDuration(140).withEndAction {
             root.isVisible = false
         }.start()
+        switcherUp = false
         refreshUi()
     }
 
@@ -2091,12 +2109,39 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             if (host.isNotEmpty()) Engine.setPageZoom(host, tab.zoomPercent)
         }
         if (tab === current) { b.swipe.isRefreshing = false; refreshUi() }
+        if (tab.homeHold) {
+            // Finished before Gecko reported a paint: let the eye flash play on the home page, then show the page.
+            val flashing = tab === current && wolf.onPageStop(success)
+            if (flashing) {
+                b.root.removeCallbacks(homeHoldTimeout)
+                b.root.postDelayed({ if (tab.homeHold) releaseHomeHold(tab) }, WolfHero.DONE_MS)
+            } else releaseHomeHold(tab)
+        }
     }
 
     override fun onProgress(tab: Tab, progress: Int) {
         if (tab !== current) return
         b.progress.isVisible = progress < 100 && !tab.showingHome
         b.progress.setProgressCompat(progress, true)
+        if (tab.homeHold) wolf.onProgress(progress)
+    }
+
+    override fun onFirstPaint(tab: Tab) {
+        if (tab.homeHold) releaseHomeHold(tab)
+    }
+
+    /** Item 19: keeps the home page over [tab]'s GeckoView while a load started from it hasn't painted yet. */
+    private fun holdHome(tab: Tab) {
+        tab.homeHold = true
+        b.root.removeCallbacks(homeHoldTimeout)
+        b.root.postDelayed(homeHoldTimeout, HOME_HOLD_MAX_MS)
+    }
+
+    private fun releaseHomeHold(tab: Tab, refresh: Boolean = true) {
+        if (!tab.homeHold) return
+        tab.homeHold = false
+        b.root.removeCallbacks(homeHoldTimeout)
+        if (refresh && tab === current) refreshUi()
     }
 
     override fun onBlockedChanged(tab: Tab) {
@@ -2323,6 +2368,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             pipFindBarWasVisible = b.findBar.isVisible
             b.findBar.isVisible = false
             if (b.switcher.root.isVisible) b.switcher.root.isVisible = false
+            switcherUp = false
             if (b.suggestList.isVisible) hideSuggest()
             if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
             b.urlInput.clearFocus()
@@ -2509,6 +2555,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 
     companion object {
+        /** Item 19: longest the home page stays up over a load that hasn't reported a first paint. */
+        private const val HOME_HOLD_MAX_MS = 5_000L
         const val EXTRA_URL = "url"
         private const val ACTION_PIP_CONTROL = "com.jamhowman.beastbrowser.action.PIP_CONTROL"
         private const val EXTRA_PIP_CMD = "cmd"

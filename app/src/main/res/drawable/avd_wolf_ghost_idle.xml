@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ghost realm idle: slow, shallow pulse. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_wolf_hero">
+    <target android:name="glow_inner" android:animation="@animator/wolf_ghost_glow_inner" />
+</animated-vector>

@@ -24,17 +24,17 @@
 
             <View
                 android:id="@+id/logoGlow"
-                android:layout_width="150dp"
-                android:layout_height="150dp"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
                 android:layout_gravity="center" />
 
+            <!-- Item 19: the full-colour wolf hero; WolfHero swaps in the idle / loading / done drawables. -->
             <ImageView
                 android:id="@+id/logo"
-                android:layout_width="68dp"
-                android:layout_height="72dp"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_beast_logo"
-                app:tint="?attr/colorPrimary"
+                android:src="@drawable/ic_wolf_hero"
                 tools:ignore="ContentDescription" />
         </FrameLayout>
 

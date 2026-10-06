@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Done: plays once (450 ms) when onPageStop(success) fires, then return to avd_wolf_idle. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_wolf_hero">
+    <target android:name="eye_flash" android:animation="@animator/wolf_eye_flash" />
+    <target android:name="glow_inner" android:animation="@animator/wolf_glow_spike" />
+    <target android:name="ring_track" android:animation="@animator/wolf_ring_restore" />
+    <target android:name="ring_progress" android:animation="@animator/wolf_progress_hide" />
+</animated-vector>

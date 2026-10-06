@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Idle breath: start() when the new-tab page is visible, stop() when hidden. Skip if animators are disabled. -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_wolf_hero">
+    <target android:name="glow_outer" android:animation="@animator/wolf_idle_glow_outer" />
+    <target android:name="glow_inner" android:animation="@animator/wolf_idle_glow_inner" />
+</animated-vector>

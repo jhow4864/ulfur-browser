@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser.ui
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -61,7 +62,7 @@ class AppearanceFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        listOf(b.headerPreview, b.headerMode, b.headerAccent, b.headerRealms).forEach {
+        listOf(b.headerPreview, b.headerMode, b.headerAccent, b.headerRealms, b.headerMotion).forEach {
             ViewCompat.setAccessibilityHeading(it.sectionLabel, true)
         }
         bind()
@@ -101,6 +102,38 @@ class AppearanceFragment : Fragment() {
             b.presetGrid.addView(presetCard(ctx, preset, preset == theme, night) { pickTheme(it) }, gridCell(ctx))
         }
         bindRealms(ctx, night)
+        header(b.headerMotion, p, R.string.appearance_section_motion, null)
+        bindWolf(p)
+    }
+
+    /**
+     * Item 19's "Animated wolf" switch (`wolf_animation`). With system animations off the wolf can't move anyway,
+     * so the row is disabled and says why; the saved choice is kept for when they come back on.
+     */
+    private fun bindWolf(p: ThemePalette) {
+        val system = ValueAnimator.areAnimatorsEnabled()
+        val on = Prefs.wolfAnimation
+        b.wolfSwitch.setOnCheckedChangeListener(null)
+        b.wolfSwitch.isChecked = system && on
+        b.wolfSwitch.isEnabled = system
+        b.wolfRow.isEnabled = system
+        b.wolfRow.alpha = if (system) 1f else 0.6f
+        b.wolfSummary.setText(when {
+            !system -> R.string.appearance_wolf_system_off
+            on -> R.string.appearance_wolf_on
+            else -> R.string.appearance_wolf_off
+        })
+        b.wolfSwitch.thumbTintList = null
+        b.wolfSwitch.trackTintList = ColorStateList(
+            arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+            intArrayOf(p.color, requireContext().getColor(R.color.surface3)),
+        )
+        b.wolfSwitch.contentDescription = getString(R.string.appearance_wolf_title) + ". " + b.wolfSummary.text
+        b.wolfRow.setOnClickListener { if (system) b.wolfSwitch.toggle() }
+        b.wolfSwitch.setOnCheckedChangeListener { _, checked ->
+            Prefs.wolfAnimation = checked
+            bindWolf(p)
+        }
     }
 
     private fun header(h: ViewSectionHeaderBinding, p: ThemePalette, label: Int, meta: String?) {

@@ -74,8 +74,7 @@ class UiPreviewTest {
         (c.getDrawable(R.drawable.bg_tab_count)!!.mutate() as GradientDrawable).let { it.setStroke(dp(c, 2), col); b.tabCount.background = it }
         b.tabCount.text = "3"
         b.reloadButton.isVisible = false
-        b.home.logo.imageTintList = ColorStateList.valueOf(col)
-        glow(b.home.logoGlow, col)
+        glow(b.home.logoGlow, col, radiusDp = 105) // the wolf hero (item 19) is full colour, from the theme overlay
         b.home.wordmarkSub.setTextColor(col)
         b.home.homeSearchIcon.imageTintList = ColorStateList.valueOf(col)
         (c.getDrawable(R.drawable.bg_home_search)!!.mutate() as GradientDrawable).let { it.setStroke(dp(c, 1), accent.withAlpha(0x66)); b.home.homeSearch.background = it }
