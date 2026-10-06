@@ -85,7 +85,13 @@ object DownloadCenter {
     private val _events = MutableSharedFlow<Event>(extraBufferCapacity = 32)
     val events: SharedFlow<Event> = _events.asSharedFlow()
 
-    private class Job(val id: Long, @Volatile var initial: WebResponse? = null) {
+    private class Job(
+        val id: Long,
+        @Volatile var initial: WebResponse? = null,
+        val isHls: Boolean = false,
+        /** HLS: page title used to name the file once the playlist container is known. */
+        val nameHint: String? = null,
+    ) {
         @Volatile var stop: DlStatus? = null   // PAUSED or CANCELLED
         @Volatile var input: InputStream? = null
         @Volatile var target: DownloadItem? = null
@@ -147,15 +153,28 @@ object DownloadCenter {
     fun enqueue(url: String, isPrivate: Boolean, referrer: String?, mime: String? = null): DownloadItem =
         add(url, URLUtil.guessFileName(url, null, mime), mime, isPrivate, referrer, -1, null)
 
-    private fun add(url: String, name: String, mime: String?, isPrivate: Boolean, referrer: String?, total: Long, initial: WebResponse?): DownloadItem {
+    /**
+     * An HLS stream (2.3.6): the .m3u8 is resolved to its best variant and the segments are joined into
+     * one file. The name/extension is provisional until the playlist says whether it's MPEG-TS or fMP4.
+     */
+    fun enqueueHls(url: String, isPrivate: Boolean, referrer: String?, title: String? = null): DownloadItem {
+        val name = if (!title.isNullOrBlank()) sanitize("$title.ts")
+            else URLUtil.guessFileName(url, null, "video/mp2t").replace(Regex("(?i)\\.m3u8$"), ".ts")
+        return add(url, name, "video/mp2t", isPrivate, referrer, -1, null, isHls = true, nameHint = title?.takeIf { it.isNotBlank() })
+    }
+
+    private fun add(
+        url: String, name: String, mime: String?, isPrivate: Boolean, referrer: String?, total: Long, initial: WebResponse?,
+        isHls: Boolean = false, nameHint: String? = null,
+    ): DownloadItem {
         val item = DownloadItem(
             id = idGen.incrementAndGet(), url = url, fileName = sanitize(name),
             mime = mime ?: guessMime(name), domain = Domains.display(Uri.parse(url).host).ifEmpty { Uri.parse(url).scheme ?: "" },
-            isPrivate = isPrivate, status = DlStatus.QUEUED, total = total, referrer = referrer,
+            isPrivate = isPrivate, status = DlStatus.QUEUED, total = total, referrer = referrer, isHls = isHls,
         )
         _items.update { listOf(item) + it }
         save()
-        submit(Job(item.id, initial))
+        submit(Job(item.id, initial, isHls, nameHint))
         _events.tryEmit(Event.Started(item))
         DownloadService.ensureRunning(app)
         return item
@@ -180,14 +199,14 @@ object DownloadCenter {
         if (d.status != DlStatus.PAUSED && d.status != DlStatus.FAILED) return
         if (jobs.containsKey(id)) return
         set(id) { it.copy(status = DlStatus.QUEUED, error = null, speedBps = 0) }
-        submit(Job(id))
+        submit(Job(id, null, d.isHls))
         DownloadService.ensureRunning(app)
     }
 
     /** Retry a failed or cancelled download (resumes from the partial file when possible). */
     fun retry(id: Long) {
         val d = get(id) ?: return
-        if (d.status == DlStatus.CANCELLED) set(id) { it.copy(status = DlStatus.PAUSED, downloaded = 0, total = -1, contentUri = null, filePath = null) }
+        if (d.status == DlStatus.CANCELLED) set(id) { it.copy(status = DlStatus.PAUSED, downloaded = 0, total = -1, contentUri = null, filePath = null, segmentsDone = 0) }
         resume(id)
     }
 
@@ -300,6 +319,7 @@ object DownloadCenter {
             if (job.stop != null) { job.initial?.body?.let { runCatching { it.close() } }; settleStop(job); return }
             var item = get(id) ?: return
             set(id) { it.copy(status = DlStatus.DOWNLOADING, error = null, speedBps = 0) }
+            if (job.isHls || item.isHls) { runHls(job, item); return }
 
             var offset = if (item.contentUri != null || item.filePath != null) item.downloaded else 0L
             val initial = job.initial.also { job.initial = null }
@@ -376,6 +396,74 @@ object DownloadCenter {
         }
     }
 
+    /**
+     * HLS worker. Segments are re-fetched from the start on resume (the joined file can't be
+     * resumed mid-segment safely), so the output is always opened at offset 0.
+     */
+    private fun runHls(job: Job, start: DownloadItem) {
+        val id = job.id
+        var item = start
+        var out: Output? = null
+        try {
+            val bytes = HlsDownloader.download(
+                url = item.url,
+                fetch = { url, range -> fetchBytes(item, url, range) },
+                stopCheck = { job.stop },
+                onPlaylist = { playlist ->
+                    val mime = HlsPlaylist.mimeFor(playlist.container)
+                    val segs = playlist.segments.size
+                    if (item.contentUri == null && item.filePath == null) {
+                        val name = sanitize(HlsPlaylist.suggestFileName(job.nameHint, item.url, playlist.container))
+                        item = createTarget(item.copy(fileName = name, mime = mime, isHls = true))
+                        job.target = item
+                        val fresh = item
+                        set(id) {
+                            it.copy(fileName = fresh.fileName, mime = fresh.mime, contentUri = fresh.contentUri,
+                                filePath = fresh.filePath, segmentsTotal = segs, isHls = true)
+                        }
+                        save()
+                    } else {
+                        set(id) { it.copy(mime = mime, segmentsTotal = segs, isHls = true) }
+                    }
+                    out = openOutput(get(id) ?: item, 0L)
+                },
+                onProgress = { written, done, total, speed ->
+                    set(id) { it.copy(downloaded = written, total = -1, speedBps = speed, segmentsDone = done, segmentsTotal = total) }
+                },
+                write = { chunk -> (out ?: throw IOException("HLS output not ready")).write(chunk, chunk.size) },
+            )
+            runCatching { out?.close() }
+            out = null
+            if (job.stop != null) { settleStop(job); return }
+            finalizeTarget(get(id) ?: item)
+            set(id) {
+                it.copy(status = DlStatus.DONE, downloaded = bytes, total = bytes, speedBps = 0, error = null,
+                    finishedAt = System.currentTimeMillis(), segmentsDone = it.segmentsTotal)
+            }
+            get(id)?.let { finished ->
+                _events.tryEmit(Event.Finished(finished))
+                if (finished.isPrivate) vaultFinished(finished)
+            }
+        } catch (e: HlsDownloader.StopException) {
+            runCatching { out?.close() }
+            job.stop = e.status
+            settleStop(job)
+        } catch (e: HlsDownloader.EncryptedException) {
+            runCatching { out?.close() }
+            Log.w(TAG, "HLS encrypted $id")
+            main.post { android.widget.Toast.makeText(app, HlsPlaylist.ENCRYPTED_MESSAGE, android.widget.Toast.LENGTH_LONG).show() }
+            get(id)?.let { deleteTarget(it) }
+            set(id) { it.copy(status = DlStatus.FAILED, speedBps = 0, error = HlsPlaylist.ENCRYPTED_MESSAGE, contentUri = null, filePath = null) }
+            get(id)?.let { _events.tryEmit(Event.Failed(it)) }
+        } catch (e: Throwable) {
+            runCatching { out?.close() }
+            if (job.stop != null) { settleStop(job); return }
+            Log.w(TAG, "HLS download $id failed", e)
+            set(id) { it.copy(status = DlStatus.FAILED, speedBps = 0, error = friendly(e)) }
+            get(id)?.let { _events.tryEmit(Event.Failed(it)) }
+        }
+    }
+
     private fun settleStop(job: Job) {
         val d = get(job.id) ?: run {
             // entry already removed (deleted / private session ended): just drop the partial file
@@ -384,7 +472,7 @@ object DownloadCenter {
         }
         if (job.stop == DlStatus.CANCELLED) {
             deleteTarget(d)
-            set(job.id) { it.copy(status = DlStatus.CANCELLED, downloaded = 0, speedBps = 0, contentUri = null, filePath = null) }
+            set(job.id) { it.copy(status = DlStatus.CANCELLED, downloaded = 0, speedBps = 0, contentUri = null, filePath = null, segmentsDone = 0) }
         } else {
             set(job.id) { it.copy(status = DlStatus.PAUSED, speedBps = 0) }
         }
@@ -418,6 +506,43 @@ object DownloadCenter {
         if (!latch.await(90, TimeUnit.SECONDS)) throw IOException("Connection timed out")
         error?.let { throw IOException(it.message ?: "Network error", it) }
         return response ?: throw IOException("No response")
+    }
+
+    /** Whole-body GET for HLS playlists/segments/keys, optionally a byte range. */
+    private fun fetchBytes(item: DownloadItem, url: String, range: HlsPlaylist.ByteRange?): ByteArray {
+        val req = WebRequest.Builder(url).method("GET").apply {
+            range?.let { header("Range", "bytes=${it.offset}-${it.offset + it.length - 1}") }
+            item.referrer?.takeIf { it.startsWith("http") }?.let { referrer(it) }
+        }.build()
+        val flags = if (item.isPrivate) GeckoWebExecutor.FETCH_FLAGS_PRIVATE else GeckoWebExecutor.FETCH_FLAGS_NONE
+        val latch = CountDownLatch(1)
+        var response: WebResponse? = null
+        var error: Throwable? = null
+        main.post {
+            try {
+                GeckoWebExecutor(Engine.runtime(app)).fetch(req, flags).accept(
+                    { r -> response = r; latch.countDown() },
+                    { e -> error = e; latch.countDown() })
+            } catch (e: Throwable) { error = e; latch.countDown() }
+        }
+        if (!latch.await(90, TimeUnit.SECONDS)) throw IOException("Connection timed out")
+        error?.let { throw IOException(it.message ?: "Network error", it) }
+        val resp = response ?: throw IOException("No response")
+        val code = resp.statusCode
+        if (code != 0 && code !in 200..299) { runCatching { resp.body?.close() }; throw IOException("HTTP $code") }
+        val body = resp.body ?: throw IOException("Empty response")
+        runCatching { resp.setReadTimeoutMillis(60_000) }
+        jobInput(item.id, body)
+        try {
+            return body.use { HlsDownloader.readAll(it) }
+        } finally {
+            jobInput(item.id, null)
+        }
+    }
+
+    /** Lets pause/cancel close the stream currently being read (segments are fetched in parallel; last one wins). */
+    private fun jobInput(id: Long, input: InputStream?) {
+        jobs[id]?.input = input
     }
 
     // ------------------------------------------------------------------ files

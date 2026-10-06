@@ -39,12 +39,13 @@ object MediaSaveSheet {
                 return@Adapter
             }
             val nameHint = media.title.ifBlank { null }
-            DownloadCenter.enqueue(
-                url = media.url,
-                isPrivate = isPrivate,
-                referrer = pageUrl.ifBlank { media.pageUrl }.ifBlank { null },
-                mime = media.mime,
-            )
+            val referrer = pageUrl.ifBlank { media.pageUrl }.ifBlank { null }
+            if (media.kind == DetectedMedia.Kind.HLS) {
+                // 2.3.6: HLS playlists are downloaded segment-by-segment and joined into one file.
+                DownloadCenter.enqueueHls(media.url, isPrivate, referrer, nameHint)
+            } else {
+                DownloadCenter.enqueue(url = media.url, isPrivate = isPrivate, referrer = referrer, mime = media.mime)
+            }
             val where = if (isPrivate) "Private downloads" else "Downloads"
             Toast.makeText(activity, "Saving to $where", Toast.LENGTH_SHORT).show()
             dialog.dismiss()

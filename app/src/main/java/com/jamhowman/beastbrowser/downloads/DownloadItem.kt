@@ -30,9 +30,18 @@ data class DownloadItem(
     val referrer: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val finishedAt: Long = 0,
+    /** HLS (2.3.6): segments written so far / in the media playlist. */
+    val segmentsDone: Int = 0,
+    val segmentsTotal: Int = 0,
+    val isHls: Boolean = false,
 ) {
     /** 0..100, or -1 when indeterminate. */
-    val percent: Int get() = if (total > 0) ((downloaded * 100) / total).toInt().coerceIn(0, 100) else if (status == DlStatus.DONE) 100 else -1
+    val percent: Int get() = when {
+        total > 0 -> ((downloaded * 100) / total).toInt().coerceIn(0, 100)
+        segmentsTotal > 0 -> ((segmentsDone * 100L) / segmentsTotal).toInt().coerceIn(0, 100)
+        status == DlStatus.DONE -> 100
+        else -> -1
+    }
 
     /** Seconds remaining, or -1 if unknown. */
     val etaSeconds: Long get() = if (status == DlStatus.DOWNLOADING && total > 0 && speedBps > 0) ((total - downloaded).coerceAtLeast(0) / speedBps) else -1
@@ -44,6 +53,7 @@ data class DownloadItem(
         .put("status", status.name).put("downloaded", downloaded).put("total", total)
         .put("error", error).put("contentUri", contentUri).put("filePath", filePath).put("referrer", referrer)
         .put("createdAt", createdAt).put("finishedAt", finishedAt)
+        .put("segmentsDone", segmentsDone).put("segmentsTotal", segmentsTotal).put("isHls", isHls)
 
     companion object {
         fun fromJson(o: JSONObject) = DownloadItem(
@@ -56,6 +66,8 @@ data class DownloadItem(
             filePath = o.optString("filePath").takeIf { it.isNotEmpty() && it != "null" },
             referrer = o.optString("referrer").takeIf { it.isNotEmpty() && it != "null" },
             createdAt = o.optLong("createdAt"), finishedAt = o.optLong("finishedAt"),
+            segmentsDone = o.optInt("segmentsDone", 0), segmentsTotal = o.optInt("segmentsTotal", 0),
+            isHls = o.optBoolean("isHls", false),
         )
     }
 }
@@ -82,13 +94,23 @@ object DlFormat {
         val parts = mutableListOf<String>()
         when (d.status) {
             DlStatus.DOWNLOADING, DlStatus.PAUSED, DlStatus.QUEUED -> {
-                if (d.downloaded > 0 || d.total > 0) parts += bytes(d.downloaded) + if (d.total > 0) " / ${bytes(d.total)}" else ""
+                val segs = if (d.isHls && d.segmentsTotal > 0) "${d.segmentsDone}/${d.segmentsTotal} segments" else null
+                if (segs != null && d.total <= 0) {
+                    parts += segs
+                    if (d.downloaded > 0) parts += bytes(d.downloaded)
+                } else if (d.downloaded > 0 || d.total > 0) {
+                    parts += bytes(d.downloaded) + if (d.total > 0) " / ${bytes(d.total)}" else ""
+                    segs?.let { parts += it }
+                }
                 if (d.status == DlStatus.DOWNLOADING && d.speedBps > 0) parts += "${bytes(d.speedBps)}/s"
                 eta(d.etaSeconds).takeIf { it.isNotEmpty() }?.let { parts += it }
                 if (d.status == DlStatus.QUEUED && parts.isEmpty()) parts += "Waiting…"
                 if (d.status == DlStatus.PAUSED && d.error != null) parts += d.error
             }
-            DlStatus.DONE -> parts += bytes(if (d.total > 0) d.total else d.downloaded)
+            DlStatus.DONE -> {
+                parts += bytes(if (d.total > 0) d.total else d.downloaded)
+                if (d.isHls && d.segmentsTotal > 0) parts += "${d.segmentsTotal} segments"
+            }
             DlStatus.FAILED -> parts += d.error ?: "Something went wrong"
             DlStatus.CANCELLED -> parts += "Removed partial file"
         }
