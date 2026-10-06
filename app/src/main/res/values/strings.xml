@@ -159,6 +159,10 @@
     <string name="pip_back_10">Back 10 seconds</string>
     <string name="pip_forward_10">Forward 10 seconds</string>
     <string name="menu_pip">Picture-in-picture</string>
+    <string name="menu_save_pdf">Save as PDF</string>
+    <string name="pdf_saving">Saving PDF…</string>
+    <string name="pdf_failed">Couldn\'t save this page as a PDF</string>
+    <string name="pdf_nothing">Open a page to save it as a PDF</string>
     <string name="pip_play">Play</string>
     <string name="pip_pause">Pause</string>
     <string name="pip_unavailable">Picture-in-picture isn\'t available on this device</string>

@@ -44,6 +44,14 @@ class NativeBridge(private val nativeApp: String) : WebExtension.MessageDelegate
         Log.w(TAG, "$nativeApp disconnected")
     }
 
+    /** Fire-and-forget [msg] (no id; queued until the extension connects). */
+    fun post(msg: JSONObject) {
+        main.post {
+            val p = port
+            if (p != null) runCatching { p.postMessage(msg) } else queued += msg
+        }
+    }
+
     /** Sends [msg]; [cb] gets the reply, or null on timeout / when the extension isn't connected in time. */
     fun request(msg: JSONObject, timeoutMs: Long = 4000, cb: (JSONObject?) -> Unit) {
         main.post {

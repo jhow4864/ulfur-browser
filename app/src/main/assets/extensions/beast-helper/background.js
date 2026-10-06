@@ -8,6 +8,7 @@ function reply(msg) { try { port && port.postMessage(msg); } catch (e) { } }
 
 async function handle(msg) {
   const { id, type } = msg || {};
+  if (type === "readerReply") { settleReaderRelay(msg); return; }
   try {
     if (type === "allowInsecure") {
       if (!browser.beastHttps) { throw new Error("experiment API unavailable"); }
@@ -45,6 +46,44 @@ function connect() {
   reply({ type: "hello", api: !!browser.beastHttps });
 }
 connect();
+
+/* ======================================================================
+ * Reader view relay. The reader page asks the app directly with runtime.sendNativeMessage("beast_tab"); if that
+ * gets no answer in time it sends {type:"readerRelay", msg} here instead, and we pass it over the beast_helper
+ * port (which already works for HTTPS-Only exceptions). Only Beast Helper's own reader page may use this.
+ * ====================================================================== */
+const READER_RELAY_TIMEOUT_MS = 8000;
+const readerRelays = new Map(); // rid -> { resolve, reject, timer }
+let nextReaderRid = 1;
+
+function isReaderPage(sender) {
+  if (!sender || typeof sender.url !== "string") return false;
+  let base = "";
+  try { base = browser.runtime.getURL("reader/reader.html"); } catch (e) { return false; }
+  return !!base && sender.url.split("#")[0].split("?")[0] === base;
+}
+
+function relayToApp(msg, sender) {
+  if (!port) return Promise.reject(new Error("app not connected"));
+  return new Promise((resolve, reject) => {
+    const rid = nextReaderRid++;
+    const timer = setTimeout(() => { readerRelays.delete(rid); reject(new Error("app did not answer")); }, READER_RELAY_TIMEOUT_MS);
+    readerRelays.set(rid, { resolve, reject, timer });
+    try {
+      port.postMessage({ type: "readerRelay", rid, msg, private: !!(sender.tab && sender.tab.incognito) });
+    } catch (e) {
+      clearTimeout(timer); readerRelays.delete(rid); reject(e);
+    }
+  });
+}
+
+function settleReaderRelay(m) {
+  const r = readerRelays.get(m.rid);
+  if (!r) return;
+  readerRelays.delete(m.rid);
+  clearTimeout(r.timer);
+  if (m.error) r.reject(new Error(String(m.error))); else r.resolve(m.reply);
+}
 
 /* ======================================================================
  * Media sniffer (webRequest). Detections are kept per tab and pushed to that tab's content script,
@@ -180,6 +219,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
       s.drm = true; s.items.clear();
       return Promise.resolve({ ok: true });
     }
+    case "readerRelay":                                  // reader page fallback route to the app (see above)
+      if (!isReaderPage(sender)) return Promise.resolve({ ok: false, error: "not allowed" });
+      return relayToApp(msg.msg, sender);
     case "loadReadability":                              // inject the big parser only when the user opens Reader view
       return browser.tabs.executeScript(tabId, { file: "/reader/Readability.js", frameId: sender.frameId || 0 })
         .then(() => ({ ok: true }), e => ({ ok: false, error: String(e && e.message || e) }));

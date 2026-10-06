@@ -1461,6 +1461,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             MenuItem(if (bookmarked) R.drawable.ic_bookmark else R.drawable.ic_bookmark_border,
                 if (bookmarked) "Bookmarked" else "Bookmark", bookmarked) { toggleBookmark(t) },
             MenuItem(R.drawable.ic_share, "Share") { share(t) },
+            if (onPage) MenuItem(R.drawable.ic_pdf, getString(R.string.menu_save_pdf)) { saveAsPdf(t) } else null,
             MenuItem(R.drawable.ic_find, "Find in page") { openFind() },
             MenuItem(R.drawable.ic_desktop, "Desktop site", t.desktopMode) { toggleDesktop(t) },
             MenuItem(R.drawable.ic_up, zoomLabel(t), t.zoomPercent != 100) { showZoom(t) },
@@ -1953,6 +1954,33 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (t.showingHome) { toast("Nothing to share yet"); return }
         startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
             .putExtra(Intent.EXTRA_SUBJECT, t.title).putExtra(Intent.EXTRA_TEXT, t.url), "Share link"))
+    }
+
+    /**
+     * Saves the page as it looks now as a PDF in Downloads (private and Ghost tabs: the private vault), using
+     * GeckoView's own printer. A Reader view page saves the clean article. The finished file gets the usual
+     * "Downloaded … Open" snackbar from [observeDownloads].
+     */
+    private fun saveAsPdf(t: Tab) {
+        if (t.showingHome) { toast(getString(R.string.pdf_nothing)); return }
+        val pageUrl = ReaderMode.originalUrl(t.url) ?: t.url
+        val name = DownloadCenter.pdfName(t.title, pageUrl)
+        val isPrivate = t.isPrivate
+        toast(getString(R.string.pdf_saving))
+        val failed = { e: Throwable? ->
+            if (e != null) android.util.Log.w("BeastPdf", "saveAsPdf failed", e)
+            toast(getString(R.string.pdf_failed))
+        }
+        try {
+            t.session.saveAsPdf().accept({ input ->
+                if (input == null) { failed(null); return@accept }
+                DownloadCenter.addLocal(input, name, "application/pdf", isPrivate, pageUrl) { item ->
+                    if (item == null) failed(null)
+                }
+            }, { e -> failed(e) })
+        } catch (e: Exception) {
+            failed(e)
+        }
     }
 
     private fun zoomLabel(t: Tab) = if (t.zoomPercent == 100) "Zoom" else "Zoom ${t.zoomPercent}%"

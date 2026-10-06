@@ -14,6 +14,11 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   clutter on that site; ads and trackers are still blocked. Switch it off everywhere in Settings > Shields > Hide
   cookie banners.
 
+**Save as PDF**
+* New "Save as PDF" item in the menu saves the page as it looks now into Downloads/Ulfur, using GeckoView's built-in
+  printer. In Reader view it saves the clean article. Private and Ghost tabs save into the private downloads vault
+  instead, so the file never shows up in Gallery or Files.
+
 **Media Radar and HLS downloads**
 * AES-128 HLS streams are no longer listed by Media Radar or saved by the downloader. Ulfur treats them like
   SAMPLE-AES: it does not fetch the playlist key and does not decrypt anything. Plain MP4/WebM and unencrypted HLS

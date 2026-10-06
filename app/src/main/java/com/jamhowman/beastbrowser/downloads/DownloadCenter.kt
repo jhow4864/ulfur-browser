@@ -221,6 +221,68 @@ object DownloadCenter {
         return item
     }
 
+    /**
+     * A file Ulfur made itself, not fetched from the network (Save as PDF). It is written straight into
+     * Downloads/Ulfur, or into the private vault for private and Ghost tabs, then listed as a finished download, so
+     * it gets the usual "Downloaded … Open" snackbar, notification and Downloads entry. Reading [source] happens
+     * on a download thread; [onDone] runs on the main thread with the finished item, or null if saving failed.
+     */
+    fun addLocal(
+        source: InputStream, name: String, mime: String, isPrivate: Boolean, pageUrl: String,
+        onDone: (DownloadItem?) -> Unit = {},
+    ) {
+        val host = runCatching { Uri.parse(pageUrl).host }.getOrNull()
+        val base = DownloadItem(
+            id = idGen.incrementAndGet(), url = pageUrl, fileName = sanitize(name), mime = mime,
+            domain = Domains.display(host).ifEmpty { runCatching { Uri.parse(pageUrl).scheme }.getOrNull() ?: "" },
+            isPrivate = isPrivate, status = DlStatus.DOWNLOADING,
+        )
+        workers.execute {
+            var item = base
+            try {
+                item = createTarget(base)
+                var written = 0L
+                openOutput(item, 0).use { out ->
+                    source.use { input ->
+                        val buf = ByteArray(64 * 1024)
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            out.write(buf, n)
+                            written += n
+                        }
+                    }
+                }
+                if (written == 0L) throw IOException("Empty file")
+                finalizeTarget(item)
+                val done = item.copy(
+                    status = DlStatus.DONE, downloaded = written, total = written, finishedAt = System.currentTimeMillis(),
+                )
+                _items.update { listOf(done) + it }
+                save()
+                _events.tryEmit(Event.Finished(done))
+                if (done.isPrivate) vaultFinished(done)
+                main.post { onDone(done) }
+            } catch (e: Throwable) {
+                Log.w(TAG, "saving ${base.fileName} failed", e)
+                runCatching { source.close() }
+                if (item !== base) deleteTarget(item)
+                main.post { onDone(null) }
+            }
+        }
+    }
+
+    /**
+     * File name for a page saved as PDF: the page title, or the site's host when there is no title, with ".pdf"
+     * on the end. Unsafe characters and over-long names are handled by [sanitize].
+     */
+    internal fun pdfName(title: String?, url: String?): String {
+        val host = url?.let { runCatching { Uri.parse(it).host }.getOrNull() }?.removePrefix("www.")
+        val base = title?.trim()?.takeIf { it.isNotEmpty() } ?: host?.takeIf { it.isNotEmpty() } ?: "page"
+        val withExt = if (base.endsWith(".pdf", ignoreCase = true)) base else "$base.pdf"
+        return sanitize(withExt)
+    }
+
     private fun submit(job: Job) {
         jobs[job.id] = job
         workers.execute { run(job) }
