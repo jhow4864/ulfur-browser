@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 27+: dark navigation bar icons on the light background (night mode uses values-night instead). -->
+    <style name="Theme.Beast" parent="Theme.Beast.Base">
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>
