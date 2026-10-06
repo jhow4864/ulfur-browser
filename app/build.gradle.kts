@@ -129,7 +129,8 @@ android {
     }
 
     lint {
-        abortOnError = false
+        // Errors fail the build (and CI); warnings don't. Fix new errors rather than baselining them.
+        abortOnError = true
         checkReleaseBuilds = false
     }
 }
