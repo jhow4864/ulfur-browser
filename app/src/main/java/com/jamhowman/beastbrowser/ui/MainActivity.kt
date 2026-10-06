@@ -277,6 +277,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (!handleIntent(intent) && tabs.isEmpty()) newTab()
         if (current == null) tabs.lastOrNull()?.let { selectTab(it) }
         com.jamhowman.beastbrowser.update.Updater.onLaunch(this) // GitHub release check, at most daily
+        if (savedInstanceState == null) CrashReportUi.promptOnLaunch(this) // 2.5.1: opt-in, after a crash only
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -8,10 +8,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreferenceCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.jamhowman.beastbrowser.BuildConfig
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.Engine
+import com.jamhowman.beastbrowser.crash.CrashReporter
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.UiTheme
@@ -64,6 +66,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             findPreference<Preference>("secure_dns")?.summary = SecureDnsFragment.rowSummary(this)
             findPreference<Preference>("site_content")?.summary = SiteContentFragment.rowSummary(this)
             findPreference<Preference>("tracker_tally")?.summary = TrackerTallyFragment.rowSummary(this)
+            refreshCrashReports()
         }
 
         private val backupUi = BackupUi(this)
@@ -114,11 +117,35 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             findPreference<Preference>("clear_now")?.setOnPreferenceClickListener { confirmClear(); true }
             findPreference<Preference>("backup_export")?.setOnPreferenceClickListener { backupUi.startExport(); true }
             findPreference<Preference>("backup_import")?.setOnPreferenceClickListener { backupUi.startImport(); true }
+            // 2.5.1: opt-in crash reports. Turning it off offers to delete what's already saved.
+            findPreference<SwitchPreferenceCompat>("crash_reports")?.setOnPreferenceChangeListener { _, on ->
+                if (on == false) CrashReportUi.offerDeleteOnDisable(requireContext()) { refreshCrashReports() }
+                true
+            }
+            findPreference<Preference>("crash_reports_saved")?.setOnPreferenceClickListener {
+                CrashReportUi.showList(requireContext(), onReport = ::openInBrowser) { refreshCrashReports() }
+                true
+            }
             findPreference<Preference>("check_updates")?.let { com.jamhowman.beastbrowser.update.Updater.bindPreference(this, it) }
             findPreference<Preference>("about")?.apply {
                 summary = "Version ${BuildConfig.VERSION_NAME} · GeckoView ${org.mozilla.geckoview.BuildConfig.MOZ_APP_VERSION}"
                 setOnPreferenceClickListener { showAbout(); true }
             }
+        }
+
+        private fun refreshCrashReports() {
+            val ctx = context ?: return
+            findPreference<Preference>("crash_reports_saved")?.apply {
+                val n = CrashReporter.store(ctx).count()
+                summary = CrashReportUi.summary(ctx, n)
+                isEnabled = n > 0
+            }
+        }
+
+        /** Opens [url] in a new tab of the browser, like the uBlock dashboard row. */
+        private fun openInBrowser(url: String) {
+            requireActivity().setResult(RESULT_OK, Intent().putExtra(MainActivity.EXTRA_URL, url))
+            requireActivity().finish()
         }
 
         private fun confirmClear() {

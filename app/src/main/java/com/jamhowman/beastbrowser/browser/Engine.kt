@@ -58,6 +58,8 @@ object Engine {
             .aboutConfigEnabled(false)
             .loginAutofillEnabled(true)
             .extensionsWebAPIEnabled(false)
+            // No crashHandler(): GeckoView's crash reporter uploads to Mozilla. Ulfur's own reporter
+            // (crash/CrashReporter.kt) is opt-in and keeps reports on the device.
             .apply {
                 // 2.5: Secure DNS (Gecko TRR). URI first so the mode never starts against a stale resolver.
                 val dns = Prefs.secureDns
