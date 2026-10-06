@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light UI (default resource set). Dark overrides live in values-night/. -->
+    <color name="bg">#F4F4F7</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface2">#EEEEF2</color>
+    <color name="surface3">#E2E2E8</color>
+    <color name="stroke">#D0D0D8</color>
+    <color name="text_primary">#121218</color>
+    <color name="text_secondary">#5C5C6A</color>
+    <color name="text_hint">#8E8E9A</color>
+    <color name="private_bg">#F3EDFA</color>
+    <color name="private_stroke">#C9B6E4</color>
+    <color name="warn">#FFB020</color>
+    <color name="gx_red">#FA1E4E</color>
+    <color name="gx_purple">#A63BFF</color>
+    <color name="gx_cyan">#00B8D4</color>
+    <color name="gx_green">#00C853</color>
+    <color name="gx_orange">#FF7A1A</color>
+    <color name="scrim">#99000000</color>
+    <color name="track_muted">#33000000</color>
+</resources>

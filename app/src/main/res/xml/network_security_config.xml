@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- A browser has to be able to open plain http:// sites (after the HTTPS upgrade attempt fails). -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

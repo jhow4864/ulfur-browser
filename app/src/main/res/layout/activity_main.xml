@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- ===== Top bar ===== -->
+        <FrameLayout
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/bg">
+
+            <LinearLayout
+                android:id="@+id/addressRow"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bar_height"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp">
+
+                <LinearLayout
+                    android:id="@+id/addressBar"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/address_height"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_address"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp">
+
+                    <FrameLayout
+                        android:id="@+id/shieldButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/shields">
+
+                        <ImageView
+                            android:id="@+id/shieldIcon"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_shield"
+                            app:tint="?attr/colorPrimary"
+                            tools:ignore="ContentDescription" />
+
+                        <TextView
+                            android:id="@+id/shieldBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="16dp"
+                            android:layout_gravity="end|top"
+                            android:layout_marginTop="2dp"
+                            android:background="@drawable/bg_badge"
+                            android:gravity="center"
+                            android:minWidth="16dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:textColor="#FFFFFF"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:visibility="gone"
+                            tools:text="12"
+                            tools:visibility="visible" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/mediaButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Save video"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <ImageView
+                            android:id="@+id/mediaIcon"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_download"
+                            app:tint="@color/text_secondary"
+                            tools:ignore="ContentDescription" />
+
+                        <TextView
+                            android:id="@+id/mediaBadge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="16dp"
+                            android:layout_gravity="end|top"
+                            android:layout_marginTop="2dp"
+                            android:background="@drawable/bg_badge"
+                            android:gravity="center"
+                            android:minWidth="16dp"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:textColor="#FFFFFF"
+                            android:textSize="9sp"
+                            android:textStyle="bold"
+                            android:visibility="gone"
+                            tools:text="2"
+                            tools:visibility="visible" />
+                    </FrameLayout>
+
+                    <ImageView
+                        android:id="@+id/securityIcon"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="2dp"
+                        android:layout_marginEnd="6dp"
+                        android:src="@drawable/ic_search"
+                        app:tint="@color/text_hint"
+                        tools:ignore="ContentDescription" />
+
+                    <EditText
+                        android:id="@+id/urlInput"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="@string/search_hint"
+                        android:imeOptions="actionGo|flagNoExtractUi"
+                        android:importantForAutofill="no"
+                        android:inputType="textUri"
+                        android:selectAllOnFocus="true"
+                        android:singleLine="true"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_hint"
+                        android:textSize="15sp" />
+
+                    <ImageButton
+                        android:id="@+id/readerButton"
+                        style="@style/BeastIconButton"
+                        android:contentDescription="Reader view"
+                        android:src="@drawable/ic_reader"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                    <ImageButton
+                        android:id="@+id/reloadButton"
+                        style="@style/BeastIconButton"
+                        android:contentDescription="@string/reload"
+                        android:src="@drawable/ic_refresh" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Find-in-page bar (replaces address row) -->
+            <LinearLayout
+                android:id="@+id/findBar"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bar_height"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingEnd="6dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/address_height"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_find"
+                    android:gravity="center_vertical"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="10dp">
+
+                    <EditText
+                        android:id="@+id/findInput"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="@string/find_hint"
+                        android:imeOptions="actionSearch"
+                        android:importantForAutofill="no"
+                        android:inputType="text"
+                        android:singleLine="true"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_hint"
+                        android:textSize="15sp" />
+
+                    <TextView
+                        android:id="@+id/findCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp"
+                        tools:text="2/9" />
+                </LinearLayout>
+
+                <ImageButton android:id="@+id/findPrev" style="@style/BeastIconButton" android:contentDescription="Previous" android:src="@drawable/ic_up" />
+                <ImageButton android:id="@+id/findNext" style="@style/BeastIconButton" android:contentDescription="Next" android:src="@drawable/ic_down" />
+                <ImageButton android:id="@+id/findClose" style="@style/BeastIconButton" android:contentDescription="Close" android:src="@drawable/ic_close" />
+            </LinearLayout>
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:indeterminate="false"
+                android:max="100"
+                android:visibility="invisible"
+                app:indicatorColor="?attr/colorPrimary"
+                app:trackColor="@android:color/transparent"
+                app:trackCornerRadius="2dp"
+                app:trackThickness="2dp" />
+        </FrameLayout>
+
+        <View
+            android:id="@+id/accentLineTop"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <!-- ===== Body ===== -->
+        <FrameLayout
+            android:id="@+id/body"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipe"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <FrameLayout
+                    android:id="@+id/webContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/bg" />
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+            <include
+                android:id="@+id/home"
+                layout="@layout/view_home" />
+
+            <!-- Address-bar / home-search suggestions (overlays page while typing) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/suggestList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/bg"
+                android:clickable="true"
+                android:elevation="6dp"
+                android:focusable="true"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <View
+            android:id="@+id/accentLineBottom"
+            android:layout_width="match_parent"
+            android:layout_height="1dp" />
+
+        <!-- ===== Bottom toolbar ===== -->
+        <LinearLayout
+            android:id="@+id/bottomBar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/bar_height"
+            android:background="@color/bg"
+            android:orientation="horizontal">
+
+            <ImageButton android:id="@+id/btnBack" style="@style/BeastBarButton" android:contentDescription="@string/back" android:src="@drawable/ic_back" />
+            <ImageButton android:id="@+id/btnForward" style="@style/BeastBarButton" android:contentDescription="@string/forward" android:src="@drawable/ic_forward" />
+            <ImageButton android:id="@+id/btnHome" style="@style/BeastBarButton" android:contentDescription="@string/home" android:src="@drawable/ic_home" />
+
+            <FrameLayout
+                android:id="@+id/btnTabs"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/tabs">
+
+                <TextView
+                    android:id="@+id/tabCount"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/bg_tab_count"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    tools:text="3" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
+
+                <ImageButton
+                    android:id="@+id/btnMenu"
+                    style="@style/BeastBarButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/menu"
+                    android:src="@drawable/ic_beast_logo"
+                    app:tint="?attr/colorPrimary" />
+
+                <!-- Download progress ring (visible while a download is active) -->
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/menuDownloadRing"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:clickable="false"
+                    android:focusable="false"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone"
+                    app:indicatorSize="38dp"
+                    app:trackColor="@color/track_muted"
+                    app:trackThickness="2.5dp"
+                    app:indicatorColor="?attr/colorPrimary" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== Tab switcher overlay ===== -->
+    <include
+        android:id="@+id/switcher"
+        layout="@layout/view_tab_switcher" />
+
+    <!-- ===== Fullscreen video ===== -->
+    <FrameLayout
+        android:id="@+id/fullscreen"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone" />
+</FrameLayout>

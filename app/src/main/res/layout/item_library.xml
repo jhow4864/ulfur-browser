@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="4dp">
+
+    <TextView
+        android:id="@+id/itemIcon"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@drawable/bg_menu_icon"
+        android:fontFamily="sans-serif-black"
+        android:gravity="center"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="16sp"
+        tools:text="B" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/itemTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            tools:text="BBC News" />
+
+        <TextView
+            android:id="@+id/itemSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            tools:text="bbc.co.uk · 21:04" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/itemDelete"
+        style="@style/BeastIconButton"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:contentDescription="Delete"
+        android:src="@drawable/ic_delete"
+        app:tint="@color/text_hint" />
+</LinearLayout>

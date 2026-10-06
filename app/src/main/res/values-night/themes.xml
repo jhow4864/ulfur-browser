@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark chrome: keep light status/nav icons off. -->
+    <style name="Theme.Beast" parent="Theme.Beast.Base">
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorPrimaryContainer">#3A0A18</item>
+        <item name="colorOnPrimaryContainer">#FFD9DF</item>
+        <item name="colorSecondaryContainer">#2E1820</item>
+        <item name="colorOnSecondaryContainer">#FFD9DF</item>
+    </style>
+
+    <!-- Accent overlays must stay dark when applyStyle() runs in night mode. -->
+    <style name="ThemeOverlay.Beast.Accent.Red">
+        <item name="colorPrimary">@color/gx_red</item><item name="colorSecondary">@color/gx_red</item>
+        <item name="colorTertiary">@color/gx_red</item><item name="colorAccent">@color/gx_red</item>
+        <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#3A0A18</item><item name="colorSecondaryContainer">#2E1820</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Purple">
+        <item name="colorPrimary">@color/gx_purple</item><item name="colorSecondary">@color/gx_purple</item>
+        <item name="colorTertiary">@color/gx_purple</item><item name="colorAccent">@color/gx_purple</item>
+        <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#2A0F45</item><item name="colorSecondaryContainer">#24183A</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Cyan">
+        <item name="colorPrimary">@color/gx_cyan</item><item name="colorSecondary">@color/gx_cyan</item>
+        <item name="colorTertiary">@color/gx_cyan</item><item name="colorAccent">@color/gx_cyan</item>
+        <item name="colorOnPrimary">#001F26</item><item name="colorOnSecondary">#001F26</item>
+        <item name="colorPrimaryContainer">#003640</item><item name="colorSecondaryContainer">#13282E</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Green">
+        <item name="colorPrimary">@color/gx_green</item><item name="colorSecondary">@color/gx_green</item>
+        <item name="colorTertiary">@color/gx_green</item><item name="colorAccent">@color/gx_green</item>
+        <item name="colorOnPrimary">#00210E</item><item name="colorOnSecondary">#00210E</item>
+        <item name="colorPrimaryContainer">#003A1C</item><item name="colorSecondaryContainer">#142A1E</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Orange">
+        <item name="colorPrimary">@color/gx_orange</item><item name="colorSecondary">@color/gx_orange</item>
+        <item name="colorTertiary">@color/gx_orange</item><item name="colorAccent">@color/gx_orange</item>
+        <item name="colorOnPrimary">#2A1100</item><item name="colorOnSecondary">#2A1100</item>
+        <item name="colorPrimaryContainer">#4A2200</item><item name="colorSecondaryContainer">#2E2016</item>
+    </style>
+</resources>

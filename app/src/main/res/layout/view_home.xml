@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/homeScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp">
+
+            <View
+                android:id="@+id/logoGlow"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_gravity="center" />
+
+            <ImageView
+                android:id="@+id/logo"
+                android:layout_width="68dp"
+                android:layout_height="72dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_beast_logo"
+                app:tint="?attr/colorPrimary"
+                tools:ignore="ContentDescription" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/wordmark"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-18dp"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="0.35"
+            android:text="BEAST"
+            android:textColor="@color/text_primary"
+            android:textSize="30sp" />
+
+        <TextView
+            android:id="@+id/wordmarkSub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.6"
+            android:text="BROWSER"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="11sp" />
+
+        <LinearLayout
+            android:id="@+id/homeSearch"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="28dp"
+            android:background="@drawable/bg_home_search"
+            android:gravity="center_vertical"
+            android:paddingStart="18dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:id="@+id/homeSearchIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_search"
+                app:tint="?attr/colorPrimary"
+                tools:ignore="ContentDescription" />
+
+            <EditText
+                android:id="@+id/homeSearchInput"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Search DuckDuckGo"
+                android:imeOptions="actionGo|flagNoExtractUi"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- Shield stats -->
+        <LinearLayout
+            android:id="@+id/statsCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:id="@+id/statsShield"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_shield"
+                    app:tint="?attr/colorPrimary"
+                    tools:ignore="ContentDescription" />
+
+                <TextView
+                    android:id="@+id/statsHeader"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.12"
+                    android:text="BEAST SHIELDS"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/statsStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="8dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="2dp"
+                    android:text="ACTIVE"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:id="@+id/statBlocked" style="@style/BeastStatValue" tools:text="12,408" />
+                    <TextView style="@style/BeastStatLabel" android:text="Ads &amp; trackers" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:id="@+id/statData" style="@style/BeastStatValue" tools:text="310 MB" />
+                    <TextView style="@style/BeastStatLabel" android:text="Data saved*" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:id="@+id/statTime" style="@style/BeastStatValue" tools:text="10m" />
+                    <TextView style="@style/BeastStatLabel" android:text="Time saved*" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:gravity="center_vertical">
+
+            <View
+                android:id="@+id/speedDialMarker"
+                android:layout_width="3dp"
+                android:layout_height="14dp"
+                android:background="?attr/colorPrimary" />
+
+            <TextView
+                android:id="@+id/speedDialHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.12"
+                android:text="SPEED DIAL"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/speedDial"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <TextView
+            android:id="@+id/estimateNote"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="* estimates: ~40 KB and ~50 ms per blocked request"
+            android:textColor="@color/text_hint"
+            android:textSize="10sp" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

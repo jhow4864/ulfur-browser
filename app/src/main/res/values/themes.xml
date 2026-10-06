@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Beast.Base" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/gx_red</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#FFD9DF</item>
+        <item name="colorOnPrimaryContainer">#3A0A18</item>
+        <item name="colorSecondary">@color/gx_red</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#FFE8EC</item>
+        <item name="colorOnSecondaryContainer">#3A0A18</item>
+        <item name="colorTertiary">@color/gx_red</item>
+        <item name="colorAccent">@color/gx_red</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+        <item name="colorSurfaceVariant">@color/surface2</item>
+        <item name="colorSurfaceContainerLowest">@color/bg</item>
+        <item name="colorSurfaceContainerLow">@color/surface</item>
+        <item name="colorSurfaceContainer">@color/surface</item>
+        <item name="colorSurfaceContainerHigh">@color/surface2</item>
+        <item name="colorSurfaceContainerHighest">@color/surface3</item>
+        <item name="colorOutline">@color/stroke</item>
+        <item name="colorOutlineVariant">@color/stroke</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Beast.BottomSheet</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Beast.Dialog</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+    </style>
+
+    <style name="Theme.Beast" parent="Theme.Beast.Base" />
+
+    <style name="ThemeOverlay.Beast.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Beast.BottomSheet</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+    </style>
+    <style name="Widget.Beast.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/surface</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/surface2</item>
+        <item name="colorSurfaceContainerHigh">@color/surface2</item>
+    </style>
+
+    <!-- Accent overlays: applied at runtime with theme.applyStyle() -->
+    <style name="ThemeOverlay.Beast.Accent" parent="" />
+    <style name="ThemeOverlay.Beast.Accent.Red">
+        <item name="colorPrimary">@color/gx_red</item><item name="colorSecondary">@color/gx_red</item>
+        <item name="colorTertiary">@color/gx_red</item><item name="colorAccent">@color/gx_red</item>
+        <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#FFD9DF</item><item name="colorSecondaryContainer">#FFE8EC</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Purple">
+        <item name="colorPrimary">@color/gx_purple</item><item name="colorSecondary">@color/gx_purple</item>
+        <item name="colorTertiary">@color/gx_purple</item><item name="colorAccent">@color/gx_purple</item>
+        <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#EED9FF</item><item name="colorSecondaryContainer">#F3E8FF</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Cyan">
+        <item name="colorPrimary">@color/gx_cyan</item><item name="colorSecondary">@color/gx_cyan</item>
+        <item name="colorTertiary">@color/gx_cyan</item><item name="colorAccent">@color/gx_cyan</item>
+        <item name="colorOnPrimary">#001F26</item><item name="colorOnSecondary">#001F26</item>
+        <item name="colorPrimaryContainer">#B2EBF2</item><item name="colorSecondaryContainer">#E0F7FA</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Green">
+        <item name="colorPrimary">@color/gx_green</item><item name="colorSecondary">@color/gx_green</item>
+        <item name="colorTertiary">@color/gx_green</item><item name="colorAccent">@color/gx_green</item>
+        <item name="colorOnPrimary">#00210E</item><item name="colorOnSecondary">#00210E</item>
+        <item name="colorPrimaryContainer">#C8E6C9</item><item name="colorSecondaryContainer">#E8F5E9</item>
+    </style>
+    <style name="ThemeOverlay.Beast.Accent.Orange">
+        <item name="colorPrimary">@color/gx_orange</item><item name="colorSecondary">@color/gx_orange</item>
+        <item name="colorTertiary">@color/gx_orange</item><item name="colorAccent">@color/gx_orange</item>
+        <item name="colorOnPrimary">#2A1100</item><item name="colorOnSecondary">#2A1100</item>
+        <item name="colorPrimaryContainer">#FFE0B2</item><item name="colorSecondaryContainer">#FFF3E0</item>
+    </style>
+
+    <style name="BeastBarButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:scaleType">center</item>
+        <item name="tint">@color/text_primary</item>
+    </style>
+    <style name="BeastIconButton">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:scaleType">center</item>
+        <item name="tint">@color/text_secondary</item>
+    </style>
+    <style name="BeastStatValue">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+    <style name="BeastStatLabel">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:layout_marginTop">2dp</item>
+    </style>
+</resources>

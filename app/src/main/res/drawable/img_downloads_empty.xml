@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Empty-state illustration: neon download tray with Beast claw slashes. Accent applied via tint at runtime. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="168dp" android:height="140dp" android:viewportWidth="168" android:viewportHeight="140">
+    <!-- soft floor glow -->
+    <path android:fillColor="#1AFFFFFF" android:pathData="M24,124a60,8 0,1 0,120 0a60,8 0,1 0,-120 0z"/>
+    <!-- tray -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="5"
+        android:strokeLineJoin="round" android:strokeLineCap="round"
+        android:pathData="M30,82 L30,108 Q30,116 38,116 L130,116 Q138,116 138,108 L138,82"/>
+    <!-- arrow -->
+    <path android:fillColor="#00000000" android:strokeColor="#FFFFFFFF" android:strokeWidth="6"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M84,18 L84,88 M60,66 L84,90 L108,66"/>
+    <!-- claw slashes -->
+    <path android:fillColor="#99FFFFFF" android:pathData="M44,34 L52,30 L40,62 L32,66 Z"/>
+    <path android:fillColor="#66FFFFFF" android:pathData="M128,30 L136,34 L130,58 L122,62 Z"/>
+    <path android:fillColor="#40FFFFFF" android:pathData="M142,46 L148,49 L144,66 L138,69 Z"/>
+    <!-- sparkles -->
+    <path android:fillColor="#80FFFFFF" android:pathData="M18,40m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0"/>
+    <path android:fillColor="#80FFFFFF" android:pathData="M150,92m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0"/>
+</vector>

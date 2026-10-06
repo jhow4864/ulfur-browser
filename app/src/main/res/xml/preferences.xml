@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Shields" app:iconSpaceReserved="false">
+        <SwitchPreferenceCompat app:key="block_ads" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Beast Shields"
+            app:summary="Firefox Enhanced Tracking Protection (Strict): ads, analytics, social, cryptominers, fingerprinters, email trackers" />
+        <SwitchPreferenceCompat app:key="ublock" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="uBlock Origin (built in)"
+            app:summary="Full uBO content blocker with its default filter lists, incl. YouTube ad blocking" />
+        <Preference app:key="ublock_dashboard" app:iconSpaceReserved="false"
+            app:title="uBlock Origin dashboard" app:summary="Filter lists, my filters, trusted sites" />
+        <Preference app:key="reset_counter" app:iconSpaceReserved="false" app:title="Reset blocked counter" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Privacy &amp; security" app:iconSpaceReserved="false">
+        <ListPreference app:key="https_mode" app:defaultValue="all" app:iconSpaceReserved="false"
+            app:title="HTTPS-Only mode" app:useSimpleSummaryProvider="true"
+            app:entries="@array/https_mode_names" app:entryValues="@array/https_mode_keys" />
+        <ListPreference app:key="cookie_mode" app:defaultValue="tcp" app:iconSpaceReserved="false"
+            app:title="Cookie protection" app:useSimpleSummaryProvider="true"
+            app:entries="@array/cookie_mode_names" app:entryValues="@array/cookie_mode_keys" />
+        <SwitchPreferenceCompat app:key="dnt_gpc" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Global Privacy Control"
+            app:summary="Sends Sec-GPC: 1 and sets navigator.globalPrivacyControl" />
+        <SwitchPreferenceCompat app:key="fingerprinting" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Fingerprinting protection" app:summary="Firefox's fingerprinting resistance (always on in private tabs)" />
+        <SwitchPreferenceCompat app:key="safe_browsing" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Safe Browsing" app:summary="Warn about known phishing and malware sites" />
+        <SwitchPreferenceCompat app:key="clear_on_exit" app:defaultValue="false" app:iconSpaceReserved="false"
+            app:title="Clear data on exit" app:summary="Wipes history, cookies, site data and cache when you exit Beast" />
+        <Preference app:key="clear_now" app:iconSpaceReserved="false" app:title="Clear browsing data now" />
+        <Preference app:key="passwords" app:iconSpaceReserved="false"
+            app:title="Passwords"
+            app:summary="Encrypted saved logins unlocked with your fingerprint" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Search" app:iconSpaceReserved="false">
+        <ListPreference app:key="search_engine" app:defaultValue="ddg" app:iconSpaceReserved="false"
+            app:title="Search engine" app:useSimpleSummaryProvider="true"
+            app:entries="@array/search_engine_names" app:entryValues="@array/search_engine_keys" />
+        <SwitchPreferenceCompat app:key="search_suggestions" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Search suggestions"
+            app:summary="Live suggestions from your search engine as you type. Never sent from private tabs or for web addresses." />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="Appearance" app:iconSpaceReserved="false">
+        <ListPreference app:key="ui_theme" app:defaultValue="dark" app:iconSpaceReserved="false"
+            app:title="Theme" app:useSimpleSummaryProvider="true"
+            app:entries="@array/ui_theme_names" app:entryValues="@array/ui_theme_keys" />
+        <com.jamhowman.beastbrowser.ui.AccentPreference app:key="accent" app:defaultValue="red"
+            app:title="Accent colour" app:iconSpaceReserved="false" />
+        <SwitchPreferenceCompat app:key="dark_pages" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Prefer dark websites" app:summary="Asks sites for their dark theme (prefers-color-scheme: dark)" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="General" app:iconSpaceReserved="false">
+        <Preference app:key="downloads" app:iconSpaceReserved="false" app:title="Downloads"
+            app:summary="Active and finished downloads (saved to Downloads/Beast)" />
+        <SwitchPreferenceCompat app:key="restore_tabs" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="Restore tabs on start" app:summary="Normal tabs only. Private tabs are never saved" />
+        <Preference app:key="about" app:iconSpaceReserved="false" app:title="About Beast Browser" />
+    </PreferenceCategory>
+</PreferenceScreen>

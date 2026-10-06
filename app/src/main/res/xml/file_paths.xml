@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider roots for opening/sharing downloads. -->
+<paths>
+    <external-path name="downloads" path="Download/" />
+    <external-files-path name="app_downloads" path="Download/" />
+    <files-path name="internal_downloads" path="downloads/" />
+    <files-path name="private_downloads" path="private_downloads/" />
+</paths>

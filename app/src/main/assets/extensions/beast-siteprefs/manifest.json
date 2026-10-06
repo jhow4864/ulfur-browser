@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+  "name": "Beast Site Prefs",
+  "version": "1.0.0",
+  "description": "Applies per-host page zoom remembered by Beast Browser.",
+  "browser_specific_settings": {
+    "gecko": { "id": "beast-siteprefs@jamhowman.com" }
+  },
+  "background": { "scripts": ["background.js"] },
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["content.js"],
+    "run_at": "document_start",
+    "all_frames": false
+  }],
+  "permissions": ["nativeMessaging", "geckoViewAddons", "<all_urls>", "tabs"]
+}

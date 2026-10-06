@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#0E0E12</color>
+    <color name="surface">#16161C</color>
+    <color name="surface2">#1C1C24</color>
+    <color name="surface3">#25252F</color>
+    <color name="stroke">#2C2C37</color>
+    <color name="text_primary">#F2F2F7</color>
+    <color name="text_secondary">#A0A0AE</color>
+    <color name="text_hint">#6E6E7C</color>
+    <color name="private_bg">#1B1328</color>
+    <color name="private_stroke">#3D2A5C</color>
+    <color name="gx_cyan">#00E1FF</color>
+    <color name="gx_green">#2BFF88</color>
+    <color name="scrim">#F20E0E12</color>
+    <color name="track_muted">#33FFFFFF</color>
+</resources>

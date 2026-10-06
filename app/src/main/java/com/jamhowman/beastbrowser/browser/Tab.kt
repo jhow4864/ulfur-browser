@@ -1,0 +1,65 @@
+package com.jamhowman.beastbrowser.browser
+
+import android.graphics.Bitmap
+import org.mozilla.geckoview.GeckoSession
+import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+
+class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession) {
+    var url: String = UrlUtils.HOME
+    var title: String = ""
+    var thumbnail: Bitmap? = null
+    var progress: Int = 100
+    var loading = false
+    var showingHome = true
+    var desktopMode = false
+    /** Page zoom percent for this tab (100 = default). Remembered per host in BrowserDb. */
+    var zoomPercent = 100
+    var parentId: Long? = null
+    var pendingUrl: String? = null
+    var canGoBack = false
+    var canGoForward = false
+    var isSecure = false
+    var scrollY = 0
+    var hasLoaded = false
+    /** Restore HTTPS-only mode once a user-approved http:// page finishes. */
+    var restoreHttpsOnly = false
+
+    /** Gecko's tracking-protection permission for the current page; VALUE_ALLOW == shields down (ETP exception). */
+    var trackingPermission: ContentPermission? = null
+
+    /** Enhanced Tracking Protection blocks on the current page. */
+    val etpBlocked = AtomicInteger(0)
+    val blockedHosts: MutableMap<String, Int> = ConcurrentHashMap()
+    /** uBlock Origin's per-tab badge count for the current page. */
+    var uboCount = 0
+
+    val blockedOnPage: Int get() = etpBlocked.get() + uboCount
+
+    /** Set right after we change the ETP exception (the cached ContentPermission is stale until the next load). */
+    var etpDownOverride: Boolean? = null
+    /** ETP exception for this site (tracking protection allowed). */
+    val shieldsDown: Boolean
+        get() = etpDownOverride ?: (trackingPermission?.value == ContentPermission.VALUE_ALLOW)
+
+    /** uBO's per-site switch for the current host (null = unknown / uBO not available). */
+    var uboSiteOn: Boolean? = null
+    var uboSiteHost: String? = null
+    /** Shields counted as down if either ETP or uBO is paused for this site. */
+    val siteShieldsDown: Boolean
+        get() = shieldsDown || uboSiteOn == false
+
+    fun resetPageStats() {
+        etpBlocked.set(0)
+        blockedHosts.clear()
+        uboCount = 0
+    }
+
+    val displayTitle: String
+        get() = when {
+            showingHome -> "Speed Dial"
+            title.isNotBlank() -> title
+            else -> UrlUtils.host(url) ?: url
+        }
+}

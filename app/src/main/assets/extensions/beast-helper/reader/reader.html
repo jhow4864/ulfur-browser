@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-font="sans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src https: http: data:; media-src https: http:; font-src 'self'">
+  <title>Reader view</title>
+  <link rel="stylesheet" href="reader.css">
+</head>
+<body>
+  <header id="bar">
+    <button id="close" class="icon" aria-label="Close Reader view" title="Close">
+      <svg viewBox="0 0 24 24"><path d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+    </button>
+    <div id="site" class="site"></div>
+    <button id="save" class="pill" aria-label="Save to reading list">
+      <svg viewBox="0 0 24 24"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z"/></svg>
+      <span id="saveLabel">Save</span>
+    </button>
+    <button id="aa" class="icon" aria-label="Text settings" aria-expanded="false" title="Text settings">Aa</button>
+  </header>
+
+  <div id="panel" hidden>
+    <div class="row">
+      <button id="smaller" class="seg" aria-label="Smaller text">A−</button>
+      <span id="sizeVal" class="val">100%</span>
+      <button id="bigger" class="seg" aria-label="Larger text">A+</button>
+    </div>
+    <div class="row">
+      <button data-font="sans" class="seg font sans">Sans</button>
+      <button data-font="serif" class="seg font serif">Serif</button>
+    </div>
+    <div class="row themes">
+      <button data-theme="dark" class="swatch dark" aria-label="Dark theme"></button>
+      <button data-theme="sepia" class="swatch sepia" aria-label="Sepia theme"></button>
+      <button data-theme="light" class="swatch light" aria-label="Light theme"></button>
+    </div>
+  </div>
+
+  <main id="main">
+    <article id="article" hidden>
+      <p id="meta" class="meta"></p>
+      <h1 id="title"></h1>
+      <p id="byline" class="byline"></p>
+      <div id="content"></div>
+      <footer class="end">
+        <a id="original" class="original" href="#" rel="noreferrer">View original page</a>
+      </footer>
+    </article>
+    <div id="status" class="status">Loading…</div>
+  </main>
+  <div id="toast" role="status" hidden></div>
+  <script src="reader.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+  {
+    "namespace": "beastHttps",
+    "functions": [
+      {
+        "name": "allowInsecure",
+        "type": "function",
+        "async": true,
+        "description": "Exempt exactly one host from HTTPS-Only mode for the rest of the browsing session.",
+        "parameters": [
+          { "name": "host", "type": "string" },
+          { "name": "isPrivate", "type": "boolean" }
+        ]
+      },
+      {
+        "name": "isExempt",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          { "name": "host", "type": "string" },
+          { "name": "isPrivate", "type": "boolean" }
+        ]
+      }
+    ]
+  }
+]

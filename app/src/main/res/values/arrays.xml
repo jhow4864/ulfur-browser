@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="search_engine_names">
+        <item>DuckDuckGo</item><item>Brave Search</item><item>Startpage</item><item>Google</item>
+    </string-array>
+    <string-array name="search_engine_keys">
+        <item>ddg</item><item>brave</item><item>startpage</item><item>google</item>
+    </string-array>
+    <string-array name="https_mode_names">
+        <item>On in all tabs</item><item>On in private tabs only</item><item>Off</item>
+    </string-array>
+    <string-array name="https_mode_keys">
+        <item>all</item><item>private</item><item>off</item>
+    </string-array>
+    <string-array name="cookie_mode_names">
+        <item>Total Cookie Protection (isolate cross-site cookies, block trackers)</item>
+        <item>Block all third-party cookies</item>
+        <item>Block tracking cookies only</item>
+    </string-array>
+    <string-array name="cookie_mode_keys">
+        <item>tcp</item><item>block3p</item><item>trackers</item>
+    </string-array>
+    <string-array name="ui_theme_names">
+        <item>Dark</item>
+        <item>Light</item>
+        <item>System</item>
+    </string-array>
+    <string-array name="ui_theme_keys">
+        <item>dark</item>
+        <item>light</item>
+        <item>system</item>
+    </string-array>
+</resources>

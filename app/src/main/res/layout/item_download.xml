@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/dlCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/bg_download_card"
+    android:foreground="?attr/selectableItemBackground"
+    android:orientation="vertical"
+    android:paddingStart="14dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="4dp"
+    android:paddingBottom="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/dlType"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_file_tile"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="11sp"
+            tools:text="PDF" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/dlName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:fontFamily="sans-serif-medium"
+                android:singleLine="true"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                tools:text="sample-report.pdf" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/dlPrivate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_chip"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
+                    android:text="PRIVATE"
+                    android:textColor="@color/gx_purple"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/dlDomain"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="example.com" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/dlPrimary"
+            style="@style/BeastIconButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="Pause"
+            android:src="@drawable/ic_pause" />
+
+        <ImageButton
+            android:id="@+id/dlSecondary"
+            style="@style/BeastIconButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="Cancel"
+            android:src="@drawable/ic_close" />
+
+        <ImageButton
+            android:id="@+id/dlMore"
+            style="@style/BeastIconButton"
+            android:layout_width="36dp"
+            android:layout_height="40dp"
+            android:contentDescription="More actions"
+            android:src="@drawable/ic_more" />
+    </LinearLayout>
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/dlProgress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="10dp"
+        android:max="100"
+        app:indicatorColor="?attr/colorPrimary"
+        app:trackColor="@color/surface3"
+        app:trackCornerRadius="3dp"
+        app:trackThickness="5dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/dlStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip"
+            android:paddingStart="8dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="1dp"
+            android:textColor="@color/text_primary"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            tools:text="DOWNLOADING" />
+
+        <TextView
+            android:id="@+id/dlDetail"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            tools:text="12.4 MB / 48.0 MB · 2.3 MB/s · 16s left" />
+    </LinearLayout>
+</LinearLayout>

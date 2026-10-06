@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/bg_download_card"
+    android:foreground="?attr/selectableItemBackground"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="4dp"
+    android:paddingBottom="14dp">
+
+    <View
+        android:id="@+id/readingDot"
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginTop="7dp"
+        android:layout_marginEnd="12dp" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/readingSite"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.08"
+            android:singleLine="true"
+            android:textAllCaps="true"
+            android:textSize="11sp"
+            tools:text="example.org · 6 min read" />
+
+        <TextView
+            android:id="@+id/readingTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="2"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp"
+            tools:text="Article title" />
+
+        <TextView
+            android:id="@+id/readingExcerpt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:lineSpacingExtra="1dp"
+            android:maxLines="2"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            tools:text="Excerpt" />
+
+        <TextView
+            android:id="@+id/readingMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:singleLine="true"
+            android:textColor="@color/text_hint"
+            android:textSize="12sp"
+            tools:text="Saved 4 Oct · Unread" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/readingDelete"
+        style="@style/BeastIconButton"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:contentDescription="Remove from reading list"
+        android:src="@drawable/ic_delete"
+        app:tint="@color/text_hint" />
+</LinearLayout>

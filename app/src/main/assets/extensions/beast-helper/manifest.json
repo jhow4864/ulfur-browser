@@ -1,0 +1,56 @@
+{
+  "manifest_version": 2,
+  "name": "Beast Helper",
+  "version": "1.1.0",
+  "description": "Built-in helper for Beast Browser: per-site HTTPS-Only exceptions, Reader view, media detection.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "beast-helper@jamhowman.com"
+    }
+  },
+  "background": {
+    "scripts": [
+      "media/sniffer-core.js",
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "nativeMessaging",
+    "geckoViewAddons",
+    "nativeMessagingFromContent",
+    "webRequest",
+    "webRequestBlocking",
+    "tabs",
+    "<all_urls>"
+  ],
+  "experiment_apis": {
+    "beastHttps": {
+      "schema": "schema.json",
+      "parent": {
+        "scopes": [
+          "addon_parent"
+        ],
+        "script": "api.js",
+        "paths": [
+          [
+            "beastHttps"
+          ]
+        ]
+      }
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "reader/Readability-readerable.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ]
+}
