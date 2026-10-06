@@ -3,26 +3,33 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
-## Unreleased
+## 2.7.0 (versionCode 18)
 
-**Shields**
-* Cookie banners are now hidden by default, using uBlock Origin's own "EasyList/uBO – Cookie Notices" lists
-  (switched off in stock uBO). It hides the banner rather than clicking accept, so sites treat you as never having
-  agreed. A few sites lock scrolling or hold back videos, maps or comments until you answer the banner.
-* New "Hide cookie banners on this site" switch in the Shields sheet lets banners through on one site while the rest
-  of Shields stays up. It uses uBlock Origin's per-site cosmetic filtering switch, so uBO also stops hiding other page
-  clutter on that site; ads and trackers are still blocked. Switch it off everywhere in Settings > Shields > Hide
-  cookie banners.
+**New features**
+* **Save as PDF.** A new menu item saves the page as it looks right now as a PDF in Downloads/Ulfur, and you get the
+  usual "Downloaded … Open" message. In Reader view it saves just the clean article. Private and Ghost tabs save
+  into the private vault instead, so the file never shows up in Gallery or Files.
+* **Cookie banners hidden.** Shields now hides cookie consent banners by default, using uBlock Origin's own
+  cookie-notice lists. You can turn this off in Settings › Shields › Hide cookie banners.
+* If a site acts up because its banner is hidden, open Shields on that page and turn off **Hide cookie banners on
+  this site**. The page reloads with the banner back, and ad and tracker blocking stays on. uBlock Origin's other
+  cosmetic cleanup also pauses on that site, and a few banners may stay hidden where the list blocks the consent
+  script itself.
+* **Private vault empty screen.** The empty private downloads vault now has an illustrated file-and-padlock picture
+  in the vault's violet, matching Ulfur's other empty screens.
 
-**Save as PDF**
-* New "Save as PDF" item in the menu saves the page as it looks now into Downloads/Ulfur, using GeckoView's built-in
-  printer. In Reader view it saves the clean article. Private and Ghost tabs save into the private downloads vault
-  instead, so the file never shows up in Gallery or Files.
+**Fixes**
+* **Reader view no longer gets stuck on Loading….** In 2.6.0, Reader view could sit on Loading… on every site
+  (BBC News and flashscore.com, for example). The article now opens within a few seconds. If it really can't be
+  shown, you get an error and a link back to the original page instead of an endless Loading….
 
-**Media Radar and HLS downloads**
-* AES-128 HLS streams are no longer listed by Media Radar or saved by the downloader. Ulfur treats them like
-  SAMPLE-AES: it does not fetch the playlist key and does not decrypt anything. Plain MP4/WebM and unencrypted HLS
-  still work. Ulfur 2.6.0 and earlier still list and save AES-128 HLS; this change applies from this release on.
+**Changes**
+* **Encrypted HLS streams.** Media Radar no longer lists AES-128 HLS streams, and the downloader won't save them.
+  Ulfur treats them like SAMPLE-AES: it doesn't fetch the key and doesn't decrypt anything. Plain MP4/WebM and
+  unencrypted HLS still work as before.
+* Ulfur is an independent browser built on Mozilla's GeckoView. It isn't made by, affiliated with or endorsed by
+  Mozilla. The README, third-party notices and Media Radar docs now say this and describe what Media Radar does
+  more accurately.
 
 **Corrections to earlier notes**
 * The 2.3.6 note below says HLS downloads included "AES-128-encrypted ones (DRM is never supported)". That was
