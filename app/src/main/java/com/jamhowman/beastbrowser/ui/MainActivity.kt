@@ -707,7 +707,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             val next = realmCurrent[r]?.takeIf { it in tabs } ?: tabs.lastOrNull()
             if (next != null) selectTab(next) else newTab()
         }
-        syncPalette()
+        syncPalette(force = true) // realm label, seal and tooltip too, even when both realms share a palette
         updateHomeStats()
         if (b.switcher.root.isVisible) {
             syncSwitcherMode()
@@ -1044,14 +1044,15 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun currentPalette(): ThemePalette =
         AppTheme.palette(this, realm, private = realm.alwaysPrivate || current?.isPrivate == true)
 
-    /** Re-tints in place when the theme, realm or private state changed the palette. True if it did. */
-    private fun syncPalette(): Boolean {
+    /** Re-tints in place when the theme, realm or private state changed the palette (or always, with [force]). */
+    private fun syncPalette(force: Boolean = false) {
         val p = currentPalette()
-        if (p == accent) return false
-        accent = p
-        AppTheme.applyOverlays(theme, p)
+        if (p == accent && !force) return
+        if (p != accent) {
+            accent = p
+            AppTheme.applyOverlays(theme, p)
+        }
         applyAccent()
-        return true
     }
 
     private fun applyAccent() {
