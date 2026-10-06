@@ -14,7 +14,7 @@
     <style name="ThemeOverlay.Beast.Accent.Red">
         <item name="colorPrimary">@color/gx_red</item><item name="colorSecondary">@color/gx_red</item>
         <item name="colorTertiary">@color/gx_red</item><item name="colorAccent">@color/gx_red</item>
-        <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
         <item name="colorPrimaryContainer">#3A0A18</item><item name="colorSecondaryContainer">#2E1820</item>
     </style>
     <style name="ThemeOverlay.Beast.Accent.Purple">

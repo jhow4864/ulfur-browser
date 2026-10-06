@@ -2,11 +2,11 @@
 <resources>
     <style name="Theme.Beast.Base" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/gx_red</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimary">#0E0E12</item>
         <item name="colorPrimaryContainer">#FFD9DF</item>
         <item name="colorOnPrimaryContainer">#3A0A18</item>
         <item name="colorSecondary">@color/gx_red</item>
-        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorOnSecondary">#0E0E12</item>
         <item name="colorSecondaryContainer">#FFE8EC</item>
         <item name="colorOnSecondaryContainer">#3A0A18</item>
         <item name="colorTertiary">@color/gx_red</item>
@@ -52,7 +52,7 @@
     <style name="ThemeOverlay.Beast.Accent.Red">
         <item name="colorPrimary">@color/gx_red</item><item name="colorSecondary">@color/gx_red</item>
         <item name="colorTertiary">@color/gx_red</item><item name="colorAccent">@color/gx_red</item>
-        <item name="colorOnPrimary">#FFFFFF</item><item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorOnPrimary">#0E0E12</item><item name="colorOnSecondary">#0E0E12</item>
         <item name="colorPrimaryContainer">#FFD9DF</item><item name="colorSecondaryContainer">#FFE8EC</item>
     </style>
     <style name="ThemeOverlay.Beast.Accent.Purple">
