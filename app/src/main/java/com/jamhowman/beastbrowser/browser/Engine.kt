@@ -16,6 +16,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import com.jamhowman.beastbrowser.BuildConfig
 import com.jamhowman.beastbrowser.passwords.VaultStorageDelegate
+import com.jamhowman.beastbrowser.reader.ReaderMode
 import androidx.fragment.app.FragmentActivity
 
 /** Process-wide GeckoRuntime + the built-in uBlock Origin extension. */
@@ -30,8 +31,13 @@ object Engine {
 
     /** Port to the Beast bridge module inside uBO (per-site trusted switch). */
     val uboBridge = NativeBridge("beast_ubo")
-    /** Port to the Beast Helper extension (per-host HTTPS-Only exceptions). */
-    val helperBridge = NativeBridge("beast_helper")
+    /**
+     * Port to the Beast Helper extension (per-host HTTPS-Only exceptions). Also carries Reader view requests the
+     * background script relays for the reader page when its own native message gets no answer.
+     */
+    val helperBridge = NativeBridge("beast_helper").also { b ->
+        b.events += { o -> if (o.optString("type") == "readerRelay") ReaderMode.handleRelayed(o, b::post) }
+    }
     /** Port to the site-prefs extension (per-host page zoom). */
     val sitePrefsBridge = NativeBridge("beast_siteprefs")
     private var helper: WebExtension? = null
