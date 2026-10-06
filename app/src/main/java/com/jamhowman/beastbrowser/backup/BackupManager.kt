@@ -41,18 +41,23 @@ object BackupManager {
         val themeChanged: Boolean = false,
     )
 
+    // Boxed classes: SharedPreferences hands back java.lang.Boolean, and Boolean::class.java is the primitive
+    // `boolean` class, whose isInstance() is always false (so before 2.5 no switch ever made it into a backup).
+    private val B: Class<*> = Boolean::class.javaObjectType
+    private val S: Class<*> = String::class.java
+
     /** User settings that travel in a backup (pref key → type). Session, realm and counter state never do. */
     val SETTINGS: Map<String, Class<*>> = mapOf(
-        "block_ads" to Boolean::class.java, "ublock" to Boolean::class.java, "cosmetic" to Boolean::class.java,
-        "dnt_gpc" to Boolean::class.java, "fingerprinting" to Boolean::class.java, "safe_browsing" to Boolean::class.java,
-        "clear_on_exit" to Boolean::class.java, "search_suggestions" to Boolean::class.java,
-        "dark_pages" to Boolean::class.java, "restore_tabs" to Boolean::class.java,
-        "pip" to Boolean::class.java, "force_dark" to Boolean::class.java,
-        "autoplay" to String::class.java,
-        "doh_provider" to String::class.java, "doh_mode" to String::class.java, "doh_custom_url" to String::class.java,
-        "doh_nextdns_id" to String::class.java,
-        "https_mode" to String::class.java, "cookie_mode" to String::class.java, "search_engine" to String::class.java,
-        "ui_theme" to String::class.java, "accent" to String::class.java, "accent_work" to String::class.java,
+        "block_ads" to B, "ublock" to B, "cosmetic" to B,
+        "dnt_gpc" to B, "fingerprinting" to B, "safe_browsing" to B,
+        "clear_on_exit" to B, "search_suggestions" to B,
+        "dark_pages" to B, "restore_tabs" to B,
+        "pip" to B, "force_dark" to B,
+        "autoplay" to S,
+        "doh_provider" to S, "doh_mode" to S, "doh_custom_url" to S,
+        "doh_nextdns_id" to S,
+        "https_mode" to S, "cookie_mode" to S, "search_engine" to S,
+        "ui_theme" to S, "accent" to S, "accent_work" to S,
     )
 
     /** [Sections.logins] needs the vault unlocked; otherwise logins are left out (null). */
