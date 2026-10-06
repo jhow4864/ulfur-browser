@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark chrome: keep light status/nav icons off. -->
+    <!-- Dark chrome: keep light status icons off (nav icons stay light because Base no longer sets windowLightNavigationBar). -->
     <style name="Theme.Beast" parent="Theme.Beast.Base">
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="colorPrimaryContainer">#3A0A18</item>
         <item name="colorOnPrimaryContainer">#FFD9DF</item>
         <item name="colorSecondaryContainer">#2E1820</item>
