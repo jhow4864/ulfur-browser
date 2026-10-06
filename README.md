@@ -97,6 +97,8 @@ forced a one-time reinstall.)
 A release-signed APK cannot be installed over a debug-signed one (or the reverse); uninstall first.
 
 ## Licences
+Full list and source locations: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 * uBlock Origin is GPL-3.0 (c) Raymond Hill and contributors (https://github.com/gorhill/uBlock). Ulfur's
   `beast-bridge.js` addition is GPL-3.0 as well. If you distribute an APK that contains uBO, you must follow the GPLv3
   for that component, which includes offering its source (included here).
