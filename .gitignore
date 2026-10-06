@@ -10,3 +10,4 @@ beast-keys/
 *.jks
 *.keystore
 keystore.properties
+.kotlin/
