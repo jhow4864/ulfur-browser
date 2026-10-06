@@ -76,6 +76,8 @@ import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Realm
 import com.jamhowman.beastbrowser.data.TabGroup
+import com.jamhowman.beastbrowser.data.TrackerCategory
+import com.jamhowman.beastbrowser.data.TrackerTallyDb
 import com.jamhowman.beastbrowser.search.SearchSuggest
 import com.jamhowman.beastbrowser.search.SuggestItem
 import com.jamhowman.beastbrowser.search.SuggestKind
@@ -127,6 +129,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private lateinit var runtime: GeckoRuntime
     private lateinit var geckoView: GeckoView
     private lateinit var db: BrowserDb
+    /** Roadmap 10: weekly tracker tally, on this phone only. */
+    private val tally by lazy { TrackerTallyDb.get(this) }
     private lateinit var prompts: Prompts
     private lateinit var tileAdapter: SpeedDialAdapter
     private lateinit var tabAdapter: TabCardAdapter
@@ -391,6 +395,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     override fun onPause() {
         super.onPause()
         Stats.save()
+        tally.flushAsync()
         saveTabs()
     }
 
@@ -1907,6 +1912,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun wipeData() {
         Engine.clearSiteData(this)
         db.clearHistory()
+        tally.clear() // per-site counts are browsing data too
         Prefs.pendingWipe = false
     }
 
@@ -2047,6 +2053,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         updateMediaBadge()
             if (tab.showingHome) updateHomeStats()
         }
+    }
+
+    override fun onTrackerBlocked(tab: Tab, site: String, category: TrackerCategory) {
+        tally.record(site, category)
     }
 
     override fun onVisited(tab: Tab, url: String) {

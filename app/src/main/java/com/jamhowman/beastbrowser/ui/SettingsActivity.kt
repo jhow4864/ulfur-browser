@@ -16,6 +16,7 @@ import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.UiTheme
 import com.jamhowman.beastbrowser.data.Stats
+import com.jamhowman.beastbrowser.data.TrackerTallyDb
 import com.jamhowman.beastbrowser.databinding.ActivitySettingsBinding
 
 class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
@@ -125,7 +126,10 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             MaterialAlertDialogBuilder(requireContext()).setTitle("Clear browsing data")
                 .setMultiChoiceItems(labels, checked) { _, i, on -> checked[i] = on }
                 .setPositiveButton("Clear") { _, _ ->
-                    if (checked[0]) BrowserDb.get(requireContext()).clearHistory()
+                    if (checked[0]) {
+                        BrowserDb.get(requireContext()).clearHistory()
+                        TrackerTallyDb.get(requireContext()).clear() // roadmap 10: per-site counts go with history
+                    }
                     Engine.clearSiteData(requireContext(), cookies = checked[1], cache = checked[2])
                     android.widget.Toast.makeText(requireContext(), "Cleared", android.widget.Toast.LENGTH_SHORT).show()
                 }
