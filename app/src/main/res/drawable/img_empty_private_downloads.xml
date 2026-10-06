@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.5.1: illustrated empty state for the private downloads vault (file + down arrow, locked badge). Tinted like the other img_empty_* art. -->
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:height="140dp"
+    android:width="168dp"
+    android:viewportWidth="168"
+    android:viewportHeight="140">
+    <path android:fillColor="#1affffff" android:pathData="M24,124a60,8 0,1 0,120 0a60,8 0,1 0,-120 0z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M96,118 L62,118 Q56,118 56,112 L56,36 Q56,30 62,30 L96,30 L116,50 L116,68"
+        android:strokeColor="#ffffffff"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M96,31 L96,50 L115,50"
+        android:strokeColor="#99ffffff"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M84,56 L84,92 M72,80 L84,92 L96,80"
+        android:strokeColor="#ffffffff"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M111,93 L111,86 Q111,77 120,77 Q129,77 129,86 L129,93"
+        android:strokeColor="#ffffffff"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#ffffffff"
+        android:fillType="evenOdd"
+        android:pathData="M108,93 L132,93 Q136,93 136,97 L136,116 Q136,120 132,120 L108,120 Q104,120 104,116 L104,97 Q104,93 108,93 Z M120,103m-3.5,0a3.5,3.5 0,1 0,7 0a3.5,3.5 0,1 0,-7 0 Z M118.5,105 L121.5,105 L122,112 L118,112 Z" />
+    <path android:fillColor="#99ffffff" android:pathData="M36,40 L44,36 L36,62 L28,66 Z" />
+    <path android:fillColor="#66ffffff" android:pathData="M22,54 L28,51 L22,70 L16,73 Z" />
+</vector>

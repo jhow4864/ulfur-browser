@@ -85,10 +85,10 @@
 
             <ImageView
                 android:id="@+id/emptyArt"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
+                android:layout_width="168dp"
+                android:layout_height="140dp"
                 android:importantForAccessibility="no"
-                android:src="@drawable/ic_lock" />
+                android:src="@drawable/img_empty_private_downloads" />
 
             <TextView
                 android:layout_width="wrap_content"
