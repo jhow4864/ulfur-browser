@@ -32,7 +32,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             val s = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(s.left, s.top, s.right, s.bottom); insets
         }
-        // 2.5: sub-screens (Secure DNS, Site content) live on the back stack; back pops them first.
+        // 2.5: sub-screens (Secure DNS, Site content, tracker tally) live on the back stack; back pops them first.
         b.toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.backStackEntryCount == 0) b.toolbar.setTitle(R.string.settings)
@@ -63,6 +63,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             // Sub-screens change these; refresh their rows' summaries when coming back.
             findPreference<Preference>("secure_dns")?.summary = SecureDnsFragment.rowSummary(this)
             findPreference<Preference>("site_content")?.summary = SiteContentFragment.rowSummary(this)
+            findPreference<Preference>("tracker_tally")?.summary = TrackerTallyFragment.rowSummary(this)
         }
 
         private val backupUi = BackupUi(this)

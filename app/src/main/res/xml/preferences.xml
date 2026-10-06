@@ -11,6 +11,8 @@
         <Preference app:key="ublock_dashboard" app:iconSpaceReserved="false"
             app:title="uBlock Origin dashboard" app:summary="Filter lists, my filters, trusted sites" />
         <Preference app:key="reset_counter" app:iconSpaceReserved="false" app:title="Reset blocked counter" />
+        <Preference app:key="tracker_tally" app:iconSpaceReserved="false" app:title="@string/pref_tally_title"
+            app:fragment="com.jamhowman.beastbrowser.ui.TrackerTallyFragment" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="Privacy &amp; security" app:iconSpaceReserved="false">
