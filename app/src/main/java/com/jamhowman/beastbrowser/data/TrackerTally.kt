@@ -21,7 +21,10 @@ enum class TrackerCategory(val key: String, @StringRes val label: Int) {
     CONTENT("content", R.string.tally_cat_content),
     COOKIES("cookies", R.string.tally_cat_cookies),
     OTHER("other", R.string.tally_cat_other),
-    /** Increase of uBlock Origin's per-page badge ([TrackerTally.uboIncrease]); never returned by [from]. */
+    /**
+     * uBlock Origin's newly counted blocks, the same number the all-time total gets
+     * ([com.jamhowman.beastbrowser.browser.UboBadge.newBlocks]); never returned by [from].
+     */
     UBLOCK("ublock", R.string.tally_cat_ublock);
 
     companion object {
@@ -92,18 +95,6 @@ object TrackerTally {
 
     /** The only gate in front of the store: private (and Ghost) tabs are never recorded. */
     fun siteToRecord(isPrivate: Boolean, pageUrl: String?): String? = if (isPrivate) null else siteOf(pageUrl)
-
-    /**
-     * Blocks to add when uBlock Origin's per-page badge for a tab goes from [previous] (the last value already
-     * counted) to [badge]. Within a page the badge only climbs, so a rise counts the difference and the same
-     * number again (repeated updates, late updates for the previous page) counts nothing. A drop means uBO
-     * started a new page or a reload, which begins at zero, so the new number counts in full. Never negative.
-     */
-    fun uboIncrease(previous: Int, badge: Int): Int = when {
-        badge <= 0 -> 0
-        badge >= previous -> badge - previous
-        else -> badge
-    }
 
     /** Rows dated on or before this day are pruned. */
     fun pruneBefore(today: Long): Long = today - RETENTION_DAYS

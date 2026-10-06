@@ -8,7 +8,8 @@ package com.jamhowman.beastbrowser.browser
  */
 object UboBadge {
     /**
-     * Blocks to add to the all-time total when a tab's badge goes from [lastCounted] to [badge]. Within a page the
+     * Blocks to add to the all-time total, and to the weekly tracker tally's uBlock line (roadmap 10, skipped for
+     * private tabs), when a tab's badge goes from [lastCounted] to [badge]. Within a page the
      * badge only climbs, so a rise adds the difference and the same number again (a repeated update, or a late
      * update for the previous page) adds nothing. A drop means uBO started a new page or a reload, which begins at
      * zero, so the new number counts in full. Never negative.

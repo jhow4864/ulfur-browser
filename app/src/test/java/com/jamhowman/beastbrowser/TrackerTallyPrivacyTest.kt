@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,5 +42,15 @@ class TrackerTallyPrivacyTest {
         // uBlock Origin's line goes through the same private-tab gate before onTrackerBlocked.
         assertTrue(ui.contains("TrackerTally.siteToRecord(tab.isPrivate || tab.session.settings.usePrivateMode, tab.url) ?: return\n        onTrackerBlocked(tab, site, TrackerCategory.UBLOCK, gained)"))
         assertTrue(Regex("""onTrackerBlocked\(""").findAll(ui).count() == 2) // the override + the uBO path
+    }
+
+    @Test fun uboTallyReusesTheAllTimeCountingRule() {
+        val ui = src("ui/MainActivity.kt")
+        // One rule (UboBadge.newBlocks), one memory (Tab.uboCounted): the tally gets the very number the total got.
+        assertTrue(ui.contains("val gained = UboBadge.newBlocks(tab.uboCounted, n)\n                Stats.total.addAndGet(gained.toLong())"))
+        assertTrue(ui.contains("tab.uboCounted = n\n                tallyUbo(tab, gained)"))
+        assertEquals(1, Regex("""UboBadge\.newBlocks\(""").findAll(ui).count())
+        assertFalse("no second uBO counting rule", src("data/TrackerTally.kt").contains("fun uboIncrease"))
+        assertFalse("no second uBO memory on Tab", src("browser/Tab.kt").contains("uboTallied"))
     }
 }

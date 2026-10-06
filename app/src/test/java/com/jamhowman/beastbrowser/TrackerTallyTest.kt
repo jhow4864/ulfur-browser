@@ -10,7 +10,10 @@ import org.junit.Test
 import org.mozilla.geckoview.ContentBlocking.AntiTracking
 import org.mozilla.geckoview.ContentBlocking.CookieBehavior
 
-/** Roadmap 10: tally rules (site key, private gate, categories, weekly aggregation, retention). Pure JVM. */
+/**
+ * Roadmap 10: tally rules (site key, private gate, categories, weekly aggregation, retention). Pure JVM.
+ * The uBlock line's counting rule is main's [com.jamhowman.beastbrowser.browser.UboBadge.newBlocks]: see UboBadgeTest.
+ */
 class TrackerTallyTest {
     private val today = 20_000L
 
@@ -61,32 +64,6 @@ class TrackerTallyTest {
             assertTrue("$at/$cb", TrackerCategory.from(at, cb) != TrackerCategory.UBLOCK)
         }
         assertEquals("ublock", TrackerCategory.UBLOCK.key)
-    }
-
-    @Test fun uboIncreaseCountsRisesOnly() {
-        assertEquals(3, TrackerTally.uboIncrease(0, 3))
-        assertEquals(2, TrackerTally.uboIncrease(3, 5))
-        assertEquals(0, TrackerTally.uboIncrease(5, 5))  // same number again
-        assertEquals(0, TrackerTally.uboIncrease(5, 0))  // badge cleared on navigation
-        assertEquals(0, TrackerTally.uboIncrease(0, 0))
-        assertEquals(2, TrackerTally.uboIncrease(5, 2))  // dropped: a new page that already blocked 2
-        assertEquals(0, TrackerTally.uboIncrease(5, -1)) // defensive
-    }
-
-    /** Replays a badge stream for one tab the way MainActivity does (previous = last value seen). */
-    private fun replay(vararg badges: Int): Int {
-        var last = 0
-        var total = 0
-        for (b in badges) { total += TrackerTally.uboIncrease(last, b); last = b }
-        return total
-    }
-
-    @Test fun uboStreamsAreNotDoubleCounted() {
-        assertEquals(7, replay(1, 1, 3, 3, 7, 7, 7))           // repeated updates of the same number
-        assertEquals(7 + 7, replay(1, 3, 7, 0, 2, 7))          // reload: badge restarts, the page blocks 7 again
-        assertEquals(7 + 4, replay(2, 7, 4))                   // next page reported straight away with 4
-        assertEquals(7, replay(3, 7, 7, 7))                    // late updates for the old page after navigation
-        assertEquals(1200 + 5, replay(999, 1200, 0, 5))        // "1.2k" style badges still only add the rise
     }
 
     @Test fun categoryKeysRoundTripAndUnknownIsOther() {

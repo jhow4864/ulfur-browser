@@ -1978,10 +1978,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             override fun onBrowserAction(extension: WebExtension, session: GeckoSession?, action: WebExtension.Action) {
                 uboActions[tab.id] = action
                 val n = parseBadge(action.badgeText)
-                Stats.total.addAndGet(UboBadge.newBlocks(tab.uboCounted, n).toLong())
+                val gained = UboBadge.newBlocks(tab.uboCounted, n)
+                Stats.total.addAndGet(gained.toLong())
                 tab.uboCount = UboBadge.pageCount(tab.uboCount, tab.uboCounted, n)
                 tab.uboCounted = n
-                tallyUbo(tab, n)
+                tallyUbo(tab, gained)
                 onBlockedChanged(tab)
             }
             override fun onTogglePopup(extension: WebExtension, action: WebExtension.Action) = showExtensionPopup()
@@ -2095,10 +2096,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         tally.record(site, category, count.toLong())
     }
 
-    /** Roadmap 10: uBlock Origin's badge increase goes into the weekly tally as its own line, never from private tabs. */
-    private fun tallyUbo(tab: Tab, badge: Int) {
-        val gained = TrackerTally.uboIncrease(tab.uboTallied, badge)
-        tab.uboTallied = badge
+    /**
+     * Roadmap 10: uBlock Origin's newly counted blocks ([UboBadge.newBlocks], the same number just added to the
+     * all-time total) go into the weekly tally as their own line, never from private tabs.
+     */
+    private fun tallyUbo(tab: Tab, gained: Int) {
         if (gained <= 0) return
         val site = TrackerTally.siteToRecord(tab.isPrivate || tab.session.settings.usePrivateMode, tab.url) ?: return
         onTrackerBlocked(tab, site, TrackerCategory.UBLOCK, gained)
