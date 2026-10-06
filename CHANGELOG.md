@@ -3,6 +3,16 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## 2.7.1 (versionCode 19)
+
+**New look**
+* **New Ulfur logo.** The wolf is now a wolf howling against the moon. It replaces the old wolf everywhere: the app icon
+  (including Android's themed icons), the animated wolf on the new-tab page, the dim Ghost wolf, the PRIVATE label and
+  the small logo in tabs and Settings. It takes on your theme's colours in all eight themes, and the breathing,
+  loading ring and eye flash work as before.
+
+Nothing else has changed since 2.7.0.
+
 ## 2.7.0 (versionCode 18)
 
 **New features**
