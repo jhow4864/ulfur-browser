@@ -90,6 +90,8 @@
     <string name="shield_level_many">Shields: %1$s blocked on this page, a tracker-heavy site</string>
     <string name="shield_level_down">Shields down on this site</string>
     <string name="pref_tally_title">Weekly tracker tally</string>
+    <string name="pref_cookie_banners_title">Hide cookie banners</string>
+    <string name="pref_cookie_banners_summary">Uses uBlock Origin\'s cookie notice lists. If a site stays frozen or a video or map won\'t load, turn Shields off for that site</string>
     <string name="pref_tally_summary_empty">Nothing blocked in the last 7 days</string>
     <string name="pref_tally_summary">%1$s blocked in the last 7 days</string>
     <string name="tally_section_week">Last 7 days</string>

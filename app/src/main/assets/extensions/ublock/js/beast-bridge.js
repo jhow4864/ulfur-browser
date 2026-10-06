@@ -8,6 +8,9 @@
     messaging port, and pushes a notification to the app whenever the switch is
     flipped from anywhere (uBO panel, dashboard "Trusted sites", or the app).
 
+    Ulfur 2.7: also switches uBO's stock cookie-notice lists on/off for the
+    app's "Hide cookie banners" setting (getCookieLists / setCookieLists).
+
 *******************************************************************************/
 
 import µb from './background.js';
@@ -16,6 +19,22 @@ import './ublock.js';
 const NATIVE_APP = 'beast_ubo';
 let port = null;
 let retryDelay = 1000;
+
+// "EasyList/uBO – Cookie Notices" in uBO's Annoyances group (uBO marks it preferred over the AdGuard pair).
+const COOKIE_LISTS = [ 'fanboy-cookiemonster', 'ublock-cookies-easylist' ];
+
+const cookieListsOn = ( ) =>
+    COOKIE_LISTS.every(k => µb.selectedFilterLists.includes(k));
+
+const setCookieLists = async want => {
+    await µb.isReadyPromise;                     // selectedFilterLists is only complete once uBO has started
+    if ( cookieListsOn() === want ) { return; }
+    const toSelect = want
+        ? COOKIE_LISTS
+        : µb.selectedFilterLists.filter(k => COOKIE_LISTS.includes(k) === false);
+    µb.applyFilterListSelection({ toSelect, merge: want });
+    await µb.loadFilterLists();
+};
 
 const siteState = url => {
     try { return µb.getNetFilteringSwitch(url) !== false; } catch { return true; }
@@ -44,7 +63,7 @@ const originalSaveWhitelist = µb.saveWhitelist;
     return r;
 };
 
-const onMessage = msg => {
+const onMessage = async msg => {
     if ( msg instanceof Object === false ) { return; }
     const { id, type, url } = msg;
     try {
@@ -60,6 +79,14 @@ const onMessage = msg => {
             notify({ id, ok: true, enabled: siteState(url) });
             break;
         }
+        case 'getCookieLists':
+            await µb.isReadyPromise;
+            notify({ id, ok: true, enabled: cookieListsOn() });
+            break;
+        case 'setCookieLists':
+            await setCookieLists(msg.enabled === true);
+            notify({ id, ok: true, enabled: cookieListsOn() });
+            break;
         case 'ping':
             notify({ id, ok: true, version: browser.runtime.getManifest().version });
             break;

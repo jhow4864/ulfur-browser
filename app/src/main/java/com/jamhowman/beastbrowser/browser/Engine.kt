@@ -28,8 +28,10 @@ object Engine {
     const val SITEPREFS_ID = "beast-siteprefs@jamhowman.com"
     const val SITEPREFS_LOCATION = "resource://android/assets/extensions/beast-siteprefs/"
 
-    /** Port to the Beast bridge module inside uBO (per-site trusted switch). */
-    val uboBridge = NativeBridge("beast_ubo")
+    /** Port to the Beast bridge module inside uBO (per-site trusted switch, cookie-notice lists). */
+    val uboBridge = NativeBridge("beast_ubo").also { b ->
+        b.events += { o -> if (o.optString("type") == "hello") syncCookieBanners() }
+    }
     /** Port to the Beast Helper extension (per-host HTTPS-Only exceptions). */
     val helperBridge = NativeBridge("beast_helper")
     /** Port to the site-prefs extension (per-host page zoom). */
@@ -156,6 +158,22 @@ object Engine {
             val enabled = ext.metaData.enabled
             if (Prefs.ublockEnabled && !enabled) ctl.enable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
             if (!Prefs.ublockEnabled && enabled) ctl.disable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
+        }
+        syncCookieBanners()
+    }
+
+    /**
+     * 2.7: Settings > Shields > Hide cookie banners. Pushes [Prefs.cookieBanners] to uBO's cookie-notice lists when it
+     * differs from what was last applied (first run after install or upgrade: on). Called on resume and whenever the
+     * uBO bridge (re)connects; recorded only once uBO confirms, so a failed attempt is retried next time.
+     */
+    fun syncCookieBanners() {
+        if (!Prefs.ublockEnabled || !uboBridge.isConnected) return
+        val want = Prefs.cookieBanners
+        if (Prefs.cookieBannersApplied == want) return
+        uboBridge.request(JSONObject().put("type", "setCookieLists").put("enabled", want), 30_000) { r ->
+            if (r?.optBoolean("ok") == true && r.optBoolean("enabled") == want) Prefs.cookieBannersApplied = want
+            else Log.w(TAG, "cookie lists not applied: ${r?.optString("error")}")
         }
     }
 

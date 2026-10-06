@@ -52,7 +52,7 @@ object BackupManager {
      * neither does the 2.5.1 crash-report opt-in (`crash_reports`): that consent is given per device.
      */
     val SETTINGS: Map<String, Class<*>> = mapOf(
-        "block_ads" to B, "ublock" to B, "cosmetic" to B,
+        "block_ads" to B, "ublock" to B, "cosmetic" to B, "cookie_banners" to B,
         "dnt_gpc" to B, "fingerprinting" to B, "safe_browsing" to B,
         "clear_on_exit" to B, "search_suggestions" to B,
         "dark_pages" to B, "restore_tabs" to B,

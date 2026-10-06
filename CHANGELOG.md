@@ -5,6 +5,12 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 
 ## Unreleased
 
+**Shields**
+* Cookie banners are now hidden by default, using uBlock Origin's own "EasyList/uBO – Cookie Notices" lists
+  (switched off in stock uBO). It hides the banner rather than clicking accept, so sites treat you as never having
+  agreed. A few sites lock scrolling or hold back videos, maps or comments until you answer the banner; turn Shields
+  off for that site, or switch it off everywhere in Settings > Shields > Hide cookie banners.
+
 **Media Radar and HLS downloads**
 * AES-128 HLS streams are no longer listed by Media Radar or saved by the downloader. Ulfur treats them like
   SAMPLE-AES: it does not fetch the playlist key and does not decrypt anything. Plain MP4/WebM and unencrypted HLS
