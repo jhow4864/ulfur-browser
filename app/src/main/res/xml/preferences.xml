@@ -17,6 +17,8 @@
         <ListPreference app:key="https_mode" app:defaultValue="all" app:iconSpaceReserved="false"
             app:title="HTTPS-Only mode" app:useSimpleSummaryProvider="true"
             app:entries="@array/https_mode_names" app:entryValues="@array/https_mode_keys" />
+        <Preference app:key="secure_dns" app:iconSpaceReserved="false" app:title="@string/pref_doh_title"
+            app:fragment="com.jamhowman.beastbrowser.ui.SecureDnsFragment" />
         <ListPreference app:key="cookie_mode" app:defaultValue="tcp" app:iconSpaceReserved="false"
             app:title="Cookie protection" app:useSimpleSummaryProvider="true"
             app:entries="@array/cookie_mode_names" app:entryValues="@array/cookie_mode_keys" />

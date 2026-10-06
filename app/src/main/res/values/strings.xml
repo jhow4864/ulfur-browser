@@ -101,6 +101,46 @@
     <string name="pip_play">Play</string>
     <string name="pip_pause">Pause</string>
     <string name="pip_unavailable">Picture-in-picture isn\'t available on this device</string>
+    <!-- 2.5: Secure DNS (DNS over HTTPS); wording from Designer's mockups-2.5/SPEC.md (a) -->
+    <string name="pref_doh_title">Secure DNS</string>
+    <string name="pref_doh_summary_off">Off</string>
+    <string name="pref_doh_summary_automatic">Automatic · %1$s</string>
+    <string name="pref_doh_summary_strict">Strict · %1$s</string>
+    <string name="pref_doh_custom_summary_missing">Custom URL not set, so normal DNS is used</string>
+    <string name="pref_doh_nextdns_summary_missing">NextDNS config ID not set, so normal DNS is used</string>
+    <string name="doh_intro"><b>Every site starts with a lookup.</b> Your phone asks for the site\'s address first, and normally anyone on your Wi-Fi or mobile network can read that request. Secure DNS encrypts it.</string>
+    <string name="doh_section_protection">Protection</string>
+    <string name="doh_section_provider">Provider</string>
+    <string name="doh_mode_title">Protection</string>
+    <string name="doh_mode_off">Off</string>
+    <string name="doh_mode_automatic">Automatic (recommended)</string>
+    <string name="doh_mode_strict">Strict</string>
+    <string name="doh_mode_off_summary">Use your phone\'s normal DNS (and Android Private DNS, if you set it up).</string>
+    <string name="doh_mode_automatic_summary">Use DNS over HTTPS when it\'s available. If it fails, use normal DNS so pages still load.</string>
+    <string name="doh_mode_strict_summary">Only use DNS over HTTPS. If your provider can\'t be reached, pages won\'t load.</string>
+    <string name="doh_provider_title">Provider</string>
+    <string name="doh_cloudflare" translatable="false">Cloudflare</string>
+    <string name="doh_quad9" translatable="false">Quad9</string>
+    <string name="doh_nextdns" translatable="false">NextDNS</string>
+    <string name="doh_adguard" translatable="false">AdGuard</string>
+    <string name="doh_custom">Custom URL</string>
+    <string name="doh_cloudflare_summary">Fast, worldwide network</string>
+    <string name="doh_quad9_summary">Non-profit. Blocks known malicious sites</string>
+    <string name="doh_nextdns_summary">Use your own NextDNS filters</string>
+    <string name="doh_adguard_summary">Blocks ads and trackers</string>
+    <string name="doh_custom_summary">Any DNS over HTTPS server</string>
+    <string name="doh_nextdns_id_title">Config ID</string>
+    <string name="doh_nextdns_id_dialog">The 6-character ID from your NextDNS setup page (for example abc123). You can also paste the https://dns.nextdns.io/… link.</string>
+    <string name="doh_nextdns_id_error">NextDNS config IDs are 6 letters or numbers.</string>
+    <string name="pref_doh_custom_title">Custom URL</string>
+    <string name="pref_doh_custom_dialog">Must start with https://</string>
+    <string name="doh_custom_hint" translatable="false">https://dns.example.net/dns-query</string>
+    <string name="doh_footer">Applies to every tab, including Private and Ghost. If sites stop loading on a work or hotel network, switch to Automatic.</string>
+    <string name="doh_error_empty">Enter the resolver\'s address.</string>
+    <string name="doh_error_not_https">The address must start with https://</string>
+    <string name="doh_error_no_host">That address doesn\'t have a valid server name.</string>
+    <string name="doh_error_malformed">That isn\'t a valid web address. Check for spaces or typos.</string>
+    <string name="doh_error_too_long">That address is too long.</string>
     <!-- Backup & restore (Settings) -->
     <string name="pref_category_backup">Backup &amp; restore</string>
     <string name="pref_backup_export_title">Export encrypted backup</string>

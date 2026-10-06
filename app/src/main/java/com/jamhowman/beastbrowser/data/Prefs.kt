@@ -33,6 +33,13 @@ object Prefs {
     var pipHintCount: Int
         get() = sp.getInt("pip_hint_count", 0)
         set(v) = sp.edit { putInt("pip_hint_count", v) }
+    /** 2.5: Secure DNS ([SecureDns]). Raw keys (null = never chosen); [SecureDns.choice] applies defaults/fallbacks. */
+    val dohMode: String? get() = sp.getString("doh_mode", null)
+    val dohProvider: String? get() = sp.getString("doh_provider", null)
+    val dohNextDnsId get() = sp.getString("doh_nextdns_id", "") ?: ""
+    val dohCustomUrl get() = sp.getString("doh_custom_url", "") ?: ""
+    val secureDnsChoice: SecureDns.Choice get() = SecureDns.choice(dohMode, dohProvider)
+    val secureDns: SecureDns.Config get() = SecureDns.config(dohMode, dohProvider, dohNextDnsId, dohCustomUrl)
     val searchSuggestions get() = sp.getBoolean("search_suggestions", true)
     val searchEngine get() = SearchEngine.from(sp.getString("search_engine", null))
     /** Accent of the current [realm] (2.3.8: per-realm accents). */

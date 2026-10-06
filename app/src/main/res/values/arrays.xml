@@ -30,4 +30,23 @@
         <item>light</item>
         <item>system</item>
     </string-array>
+    <!-- 2.5: Secure DNS (data/SecureDns.kt keys; Mullvad left out on purpose: its DoH shuts down 2 Nov 2026) -->
+    <string-array name="doh_mode_names">
+        <item>@string/doh_mode_off</item>
+        <item>@string/doh_mode_automatic</item>
+        <item>@string/doh_mode_strict</item>
+    </string-array>
+    <string-array name="doh_mode_keys">
+        <item>off</item><item>default</item><item>max</item>
+    </string-array>
+    <string-array name="doh_provider_names">
+        <item>@string/doh_cloudflare</item>
+        <item>@string/doh_quad9</item>
+        <item>@string/doh_nextdns</item>
+        <item>@string/doh_adguard</item>
+        <item>@string/doh_custom</item>
+    </string-array>
+    <string-array name="doh_provider_keys">
+        <item>cloudflare</item><item>quad9</item><item>nextdns</item><item>adguard</item><item>custom</item>
+    </string-array>
 </resources>

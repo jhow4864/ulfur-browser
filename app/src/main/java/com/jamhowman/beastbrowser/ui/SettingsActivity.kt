@@ -18,26 +18,51 @@ import com.jamhowman.beastbrowser.data.UiTheme
 import com.jamhowman.beastbrowser.data.Stats
 import com.jamhowman.beastbrowser.databinding.ActivitySettingsBinding
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
+    private lateinit var b: ActivitySettingsBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         theme.applyStyle(Prefs.accent.overlay, true)
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val b = ActivitySettingsBinding.inflate(layoutInflater)
+        b = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(b.root)
         ViewCompat.setOnApplyWindowInsetsListener(b.root) { v, insets ->
             val s = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(s.left, s.top, s.right, s.bottom); insets
         }
-        b.toolbar.setNavigationOnClickListener { finish() }
+        // 2.5: sub-screens (Secure DNS, Site content) live on the back stack; back pops them first.
+        b.toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) b.toolbar.setTitle(R.string.settings)
+        }
+        savedInstanceState?.getCharSequence(STATE_TITLE)?.let { b.toolbar.title = it }
         accentLine(b.settingsAccentLine, Prefs.accent.color, 0x99)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().replace(R.id.settingsContainer, SettingsFragment()).commit()
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putCharSequence(STATE_TITLE, b.toolbar.title)
+    }
+
+    override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {
+        val name = pref.fragment ?: return false
+        val f = supportFragmentManager.fragmentFactory.instantiate(classLoader, name).apply { arguments = pref.extras }
+        supportFragmentManager.beginTransaction().replace(R.id.settingsContainer, f).addToBackStack(pref.key).commit()
+        b.toolbar.title = pref.title
+        return true
+    }
+
     class SettingsFragment : PreferenceFragmentCompat() {
+        override fun onResume() {
+            super.onResume()
+            // Sub-screens change these; refresh their rows' summaries when coming back.
+            findPreference<Preference>("secure_dns")?.summary = SecureDnsFragment.rowSummary(this)
+        }
+
         private val backupUi = BackupUi(this)
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -118,4 +143,6 @@ class SettingsActivity : AppCompatActivity() {
                 .setPositiveButton(android.R.string.ok, null).show()
         }
     }
+
+    private companion object { const val STATE_TITLE = "title" }
 }

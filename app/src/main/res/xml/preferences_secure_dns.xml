@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.5 Secure DNS screen (Designer SPEC (a)), built from stock preferences. -->
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+    <Preference app:key="doh_intro" app:iconSpaceReserved="false" app:selectable="false"
+        app:summary="@string/doh_intro" />
+
+    <PreferenceCategory app:key="doh_protection" app:title="@string/doh_section_protection" app:iconSpaceReserved="false">
+        <!-- Not persisted by the widget: SecureDnsFragment writes doh_mode itself so SecureDns.DEFAULT_MODE stays the
+             single source of the default for people who never chose. -->
+        <ListPreference app:key="doh_mode" app:persistent="false" app:iconSpaceReserved="false"
+            app:title="@string/doh_mode_title"
+            app:entries="@array/doh_mode_names" app:entryValues="@array/doh_mode_keys" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:key="doh_provider_category" app:title="@string/doh_section_provider" app:iconSpaceReserved="false">
+        <ListPreference app:key="doh_provider" app:persistent="false" app:iconSpaceReserved="false"
+            app:title="@string/doh_provider_title"
+            app:entries="@array/doh_provider_names" app:entryValues="@array/doh_provider_keys" />
+        <EditTextPreference app:key="doh_nextdns_id" app:defaultValue="" app:iconSpaceReserved="false"
+            app:isPreferenceVisible="false" app:title="@string/doh_nextdns_id_title"
+            app:dialogTitle="@string/doh_nextdns_id_title" app:dialogMessage="@string/doh_nextdns_id_dialog" />
+        <EditTextPreference app:key="doh_custom_url" app:defaultValue="" app:iconSpaceReserved="false"
+            app:isPreferenceVisible="false" app:title="@string/pref_doh_custom_title"
+            app:dialogTitle="@string/pref_doh_custom_title" app:dialogMessage="@string/pref_doh_custom_dialog" />
+    </PreferenceCategory>
+
+    <Preference app:key="doh_footer" app:iconSpaceReserved="false" app:selectable="false"
+        app:summary="@string/doh_footer" />
+</PreferenceScreen>

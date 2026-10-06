@@ -48,6 +48,8 @@ object BackupManager {
         "clear_on_exit" to Boolean::class.java, "search_suggestions" to Boolean::class.java,
         "dark_pages" to Boolean::class.java, "restore_tabs" to Boolean::class.java,
         "pip" to Boolean::class.java,
+        "doh_provider" to String::class.java, "doh_mode" to String::class.java, "doh_custom_url" to String::class.java,
+        "doh_nextdns_id" to String::class.java,
         "https_mode" to String::class.java, "cookie_mode" to String::class.java, "search_engine" to String::class.java,
         "ui_theme" to String::class.java, "accent" to String::class.java, "accent_work" to String::class.java,
     )

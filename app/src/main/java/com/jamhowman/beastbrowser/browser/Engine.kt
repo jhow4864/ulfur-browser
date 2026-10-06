@@ -3,6 +3,7 @@ package com.jamhowman.beastbrowser.browser
 import android.content.Context
 import android.util.Log
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.SecureDns
 import org.mozilla.geckoview.ContentBlocking
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoRuntimeSettings
@@ -35,6 +36,8 @@ object Engine {
     private var sitePrefs: WebExtension? = null
 
     private var runtime: GeckoRuntime? = null
+    /** Last Secure DNS config handed to Gecko (TRR prefs are only rewritten when it changes). */
+    private var appliedDns: SecureDns.Config? = null
     var ublock: WebExtension? = null
         private set
     var ublockError: String? = null
@@ -53,6 +56,13 @@ object Engine {
             .aboutConfigEnabled(false)
             .loginAutofillEnabled(true)
             .extensionsWebAPIEnabled(false)
+            .apply {
+                // 2.5: Secure DNS (Gecko TRR). URI first so the mode never starts against a stale resolver.
+                val dns = Prefs.secureDns
+                dns.uri?.let { trustedRecursiveResolverUri(it) }
+                trustedRecursiveResolverMode(dns.trrMode)
+                appliedDns = dns
+            }
             .build()
         val r = GeckoRuntime.create(context.applicationContext, settings)
         r.settings.setFingerprintingProtection(Prefs.fingerprinting)
@@ -130,12 +140,23 @@ object Engine {
         r.settings.setGlobalPrivacyControl(Prefs.sendDntGpc)
         r.settings.setPreferredColorScheme(colorScheme())
         r.settings.setFingerprintingProtection(Prefs.fingerprinting)
+        applySecureDns(r.settings)
         ublock?.let { ext ->
             val ctl = r.webExtensionController
             val enabled = ext.metaData.enabled
             if (Prefs.ublockEnabled && !enabled) ctl.enable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
             if (!Prefs.ublockEnabled && enabled) ctl.disable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
         }
+    }
+
+    /** 2.5: DNS over HTTPS via GeckoRuntimeSettings.setTrustedRecursiveResolverUri / setTrustedRecursiveResolverMode. */
+    private fun applySecureDns(s: GeckoRuntimeSettings) {
+        val dns = Prefs.secureDns
+        if (dns == appliedDns) return
+        dns.uri?.let { if (it != appliedDns?.uri) s.setTrustedRecursiveResolverUri(it) }
+        if (dns.trrMode != appliedDns?.trrMode) s.setTrustedRecursiveResolverMode(dns.trrMode)
+        appliedDns = dns
+        Log.i(TAG, "Secure DNS: mode ${dns.trrMode}" + (dns.uri?.let { " via ${UrlUtils.host(it)}" } ?: ""))
     }
 
     /**
