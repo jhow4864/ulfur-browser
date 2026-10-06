@@ -38,6 +38,10 @@ object PasswordVault {
     @Volatile private var unlocked: List<SavedLogin> = emptyList()
     @Volatile private var isOpen = false
     @Volatile private var lastTouchMs = 0L
+    /** The vault as last decrypted or written, to work out what is unsaved when it locks. Cleared on lock. */
+    @Volatile private var written: List<SavedLogin> = emptyList()
+    /** Changes that were pending when the vault locked; replayed on the next unlock. Lost only if the app dies. */
+    @Volatile private var carriedOver: UnsavedChanges = UnsavedChanges.NONE
 
     private val listeners = CopyOnWriteArrayList<() -> Unit>()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -69,22 +73,46 @@ object PasswordVault {
     }
 
     fun lock() {
-        val discardedUnsaved = pendingPersist && isOpen
+        val keepUnsaved = pendingPersist && isOpen
+        if (keepUnsaved) {
+            // Keep only what changed (not the whole decrypted vault) so the next unlock can save it.
+            carriedOver = carriedOver.then(UnsavedChanges.between(written, unlocked))
+        }
         mainHandler.removeCallbacks(idleLockRunnable)
         unlocked = emptyList()
+        written = emptyList()
         isOpen = false
         lastTouchMs = 0L
         pendingPersist = false
         notifyListeners()
-        if (discardedUnsaved && initialized) {
+        if (keepUnsaved && !carriedOver.isEmpty && initialized) {
             mainHandler.post {
                 Toast.makeText(
                     app,
-                    "Unsaved password changes were discarded — confirm fingerprint next time to keep them",
+                    "Password changes aren't saved yet. They'll be saved after your next unlock and fingerprint confirm",
                     Toast.LENGTH_LONG,
                 ).show()
             }
         }
+    }
+
+    /** True if changes from before the last lock are waiting for the next unlock. */
+    fun hasCarriedOverChanges(): Boolean = !carriedOver.isEmpty
+
+    /**
+     * Opens the vault with its freshly decrypted contents, replaying any [carriedOver] changes on top. If there were
+     * any, the vault is marked as needing a write so callers' usual [flushPending] saves them.
+     */
+    internal fun openDecrypted(decrypted: List<SavedLogin>) {
+        written = decrypted
+        val changes = carriedOver
+        carriedOver = UnsavedChanges.NONE
+        unlocked = changes.applyTo(decrypted)
+        isOpen = true
+        pendingPersist = !changes.isEmpty
+        touch()
+        writeMeta(if (pendingPersist) decrypted else unlocked)
+        notifyListeners()
     }
 
     /**
@@ -95,6 +123,8 @@ object PasswordVault {
         if (!initialized) return
         mainHandler.removeCallbacks(idleLockRunnable)
         unlocked = emptyList()
+        written = emptyList()
+        carriedOver = UnsavedChanges.NONE
         isOpen = false
         lastTouchMs = 0L
         pendingPersist = false
@@ -157,15 +187,11 @@ object PasswordVault {
                                 val raw = file.readBytes()
                                 val ct = raw.copyOfRange(VaultCrypto.IV_SIZE, raw.size)
                                 val plain = VaultCrypto.decrypt(c, ct)
-                                unlocked = parseVault(String(plain, Charsets.UTF_8))
+                                openDecrypted(parseVault(String(plain, Charsets.UTF_8)))
                             } else {
-                                unlocked = emptyList()
                                 persistWithCipher(c, emptyList())
+                                openDecrypted(emptyList())
                             }
-                            isOpen = true
-                            touch()
-                            writeMeta(unlocked)
-                            notifyListeners()
                             onResult(true, null)
                         } catch (e: Exception) {
                             // Never log the throwable: org.json exceptions embed the (decrypted) input text.
@@ -460,6 +486,7 @@ object PasswordVault {
             f.writeBytes(out)
             tmp.delete()
         }
+        written = list
         pendingPersist = false
         writeMeta(list)
     }

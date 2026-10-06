@@ -53,6 +53,11 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
     var uboCount = 0
 
     val blockedOnPage: Int get() = etpBlocked.get() + uboCount
+    /**
+     * Last uBO badge number already added to the all-time blocked total ([UboBadge.newBlocks]). Deliberately not
+     * reset with the page stats: a late update repeating the previous page's number must not be counted twice.
+     */
+    var uboCounted = 0
 
     /** Set right after we change the ETP exception (the cached ContentPermission is stale until the next load). */
     var etpDownOverride: Boolean? = null

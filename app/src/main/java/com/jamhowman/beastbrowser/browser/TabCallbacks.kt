@@ -1,5 +1,6 @@
 package com.jamhowman.beastbrowser.browser
 
+import com.jamhowman.beastbrowser.crash.CrashReporter
 import com.jamhowman.beastbrowser.media.MediaSniffer
 
 import com.jamhowman.beastbrowser.data.Prefs
@@ -111,7 +112,11 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     override fun onContextMenu(session: GeckoSession, screenX: Int, screenY: Int, element: ContentDelegate.ContextElement) =
         host.onContextMenu(tab, element)
     override fun onExternalResponse(session: GeckoSession, response: WebResponse) = host.onDownload(tab, response)
-    override fun onCrash(session: GeckoSession) = host.onCrashed(tab)
+    override fun onCrash(session: GeckoSession) {
+        CrashReporter.recordContentCrash() // 2.5.1: opt-in, local only, nothing about the tab
+        host.onCrashed(tab)
+    }
+    // Killed by Android (usually low memory): not a crash, so no report.
     override fun onKill(session: GeckoSession) = host.onCrashed(tab)
 
     // ---------------------------------------------------------------- media session (2.5: picture-in-picture)

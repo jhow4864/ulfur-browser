@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -20,6 +21,8 @@ enum class DlAction { PAUSE, RESUME, CANCEL, RETRY, OPEN, SHARE, DELETE, MORE }
 /** Download cards. Progress-only changes rebind in place (no flicker) via a payload. */
 class DownloadAdapter(
     private val accent: ThemePalette,
+    /** Private vault only (2.5.1): long-press enters selection mode. Null keeps the old behaviour. */
+    private val onLongPress: ((DownloadItem) -> Unit)? = null,
     private val onAction: (DownloadItem, DlAction, android.view.View) -> Unit,
 ) : ListAdapter<DownloadItem, DownloadAdapter.VH>(Diff) {
 
@@ -29,6 +32,17 @@ class DownloadAdapter(
 
     override fun getItemId(position: Int) = getItem(position).id
 
+    /** Ids picked in selection mode; empty means normal mode. Taps toggle via [onLongPress]'s owner. */
+    var selected: Set<Long> = emptySet()
+        set(value) {
+            if (field == value) return
+            val changed = (field - value) + (value - field)
+            field = value
+            currentList.forEachIndexed { i, d -> if (d.id in changed || value.isEmpty()) notifyItemChanged(i, "select") }
+        }
+
+    val selecting: Boolean get() = selected.isNotEmpty()
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val b = ItemDownloadBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         b.dlProgress.setIndicatorColor(accent.color)
@@ -37,7 +51,11 @@ class DownloadAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int, payloads: MutableList<Any>) {
-        if (payloads.isNotEmpty()) bindProgress(holder, getItem(position)) else onBindViewHolder(holder, position)
+        when {
+            payloads.isEmpty() -> onBindViewHolder(holder, position)
+            payloads.all { it == "select" } -> bindSelection(holder, getItem(position))
+            else -> { bindProgress(holder, getItem(position)); bindSelection(holder, getItem(position)) }
+        }
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -48,7 +66,14 @@ class DownloadAdapter(
         b.dlDomain.text = d.domain
         b.dlPrivate.isVisible = d.isPrivate
         b.dlType.text = d.extension.ifEmpty { "FILE" }
-        b.root.setOnClickListener { if (d.status == DlStatus.DONE) onAction(d, DlAction.OPEN, it) else onAction(d, DlAction.MORE, b.dlMore) }
+        b.root.setOnClickListener {
+            when {
+                selecting -> onLongPress?.invoke(d)   // toggle while selecting
+                d.status == DlStatus.DONE -> onAction(d, DlAction.OPEN, it)
+                else -> onAction(d, DlAction.MORE, b.dlMore)
+            }
+        }
+        b.root.setOnLongClickListener { onLongPress?.let { cb -> cb(d); true } ?: false }
         b.dlMore.setOnClickListener { onAction(d, DlAction.MORE, it) }
 
         val (primary, secondary) = when (d.status) {
@@ -62,6 +87,25 @@ class DownloadAdapter(
         bindButton(b.dlSecondary, secondary, d, highlight = false)
         b.dlName.setTextColor(ctx.getColor(if (d.status == DlStatus.CANCELLED) R.color.text_hint else R.color.text_primary))
         bindProgress(holder, d)
+        bindSelection(holder, d)
+    }
+
+    /**
+     * Selected rows: the palette's selected-container fill (surfaceTint; Blood Moon dark = #371924, as in mockups-2.5.1
+     * move-2-select) with a 60% accent border, so it follows the theme and light/dark mode.
+     */
+    private fun bindSelection(holder: VH, d: DownloadItem) {
+        val b = holder.b
+        val on = d.id in selected
+        b.root.isActivated = on
+        b.dlMore.isVisible = !selecting
+        b.dlPrimary.isEnabled = !selecting; b.dlSecondary.isEnabled = !selecting
+        b.root.background = if (on) GradientDrawable().apply {
+            val dp = b.root.resources.displayMetrics.density
+            cornerRadius = 18f * dp
+            setColor(accent.surfaceTint)
+            setStroke((1.5f * dp).toInt(), accent.withAlpha(0x99))
+        } else AppCompatResources.getDrawable(b.root.context, R.drawable.bg_download_card)
     }
 
     private fun bindButton(btn: android.widget.ImageButton, action: DlAction?, d: DownloadItem, highlight: Boolean) {
@@ -104,7 +148,7 @@ class DownloadAdapter(
         p.setIndicatorColor(barColor)
 
         b.dlStatus.text = d.status.label.uppercase()
-        val chip = (ctx.getDrawable(R.drawable.bg_chip)!!.mutate() as GradientDrawable)
+        val chip = (AppCompatResources.getDrawable(ctx, R.drawable.bg_chip)!!.mutate() as GradientDrawable)
         val (chipBg, chipFg) = when (d.status) {
             DlStatus.DOWNLOADING -> accent.color to accent.onColor
             DlStatus.DONE -> accent.withAlpha(0x33) to accent.accentText
