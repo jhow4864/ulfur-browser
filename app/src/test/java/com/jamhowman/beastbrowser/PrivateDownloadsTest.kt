@@ -90,6 +90,14 @@ class PrivateDownloadsTest {
         assertTrue(kept.isFile)
     }
 
+    @Test fun sweepSkippedWhenListMissingOrUnreadable() {
+        // A missing list (e.g. the app died before the first save) loads as empty, so sweeping would wipe the vault.
+        assertFalse(DownloadCenter.shouldSweepPrivate(listExists = false, listReadOk = true))
+        assertFalse(DownloadCenter.shouldSweepPrivate(listExists = true, listReadOk = false))
+        assertFalse(DownloadCenter.shouldSweepPrivate(listExists = false, listReadOk = false))
+        assertTrue(DownloadCenter.shouldSweepPrivate(listExists = true, listReadOk = true))
+    }
+
     @Test fun sweepOnMissingDirIsNoOp() {
         val dir = File(app.cacheDir, "does-not-exist").apply { deleteRecursively() }
         assertTrue(DownloadCenter.sweepOrphanedPrivateFiles(dir, emptyList()).isEmpty())

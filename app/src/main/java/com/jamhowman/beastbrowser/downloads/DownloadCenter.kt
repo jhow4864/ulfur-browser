@@ -137,13 +137,17 @@ object DownloadCenter {
         // Private downloads that were running when the process died are never saved anywhere, so their partial
         // files would sit hidden in the folder forever. Runs before any download can start (this is the first
         // init in this process), so nothing in the folder can belong to a running download. If the vault list
-        // couldn't be read, keep everything: an unreadable list must never cost the user their vault files.
-        if (privReadOk) {
+        // is missing or couldn't be read, keep everything: a lost or unreadable list must never cost the user
+        // their vault files (worst case is a few leftover partial files).
+        if (shouldSweepPrivate(privFile.isFile, privReadOk)) {
             val keep = _privateItems.value.mapNotNull { it.filePath } +
                 _items.value.filter { it.isPrivate }.mapNotNull { it.filePath }
             sweepOrphanedPrivateFiles(privDir, keep)
         }
     }
+
+    /** Only sweep when the vault list exists and was read cleanly; otherwise we can't tell orphans from vault files. */
+    internal fun shouldSweepPrivate(listExists: Boolean, listReadOk: Boolean): Boolean = listExists && listReadOk
 
     /**
      * Deletes files in the private downloads folder that no vault entry (or [keepPaths]) refers to.
