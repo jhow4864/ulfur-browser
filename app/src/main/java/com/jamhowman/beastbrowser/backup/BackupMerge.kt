@@ -6,15 +6,24 @@ import java.util.UUID
 
 /**
  * Merge rules for importing a backup or CSV into existing data. Nothing existing is ever deleted.
- * - Logins match on normalised origin + username: identical password → skipped; different password → the
- *   existing entry gets the imported password (guid / createdAt / timesUsed kept); otherwise added.
+ * - Logins match on normalised origin + username: identical password → skipped; different password → the newer
+ *   copy wins. The existing entry takes the imported password (guid / createdAt / timesUsed kept) only if the
+ *   imported one was changed more recently; if the device copy is newer, or the import has no date (Chrome CSV),
+ *   the device copy is kept and counted in [LoginResult.keptNewer]. Otherwise added.
  * - Bookmarks, speed-dial tiles and reading-list articles are added only if their URL isn't present yet.
  * - Bookmark folders: built-in folders map to themselves; a backed-up custom folder maps to the device folder with
  *   the same id, else the one with the same name under the same parent, else it is created (nesting kept).
  */
 object BackupMerge {
 
-    data class LoginResult(val merged: List<SavedLogin>, val added: Int, val updated: Int, val skipped: Int)
+    data class LoginResult(
+        val merged: List<SavedLogin>,
+        val added: Int,
+        val updated: Int,
+        val skipped: Int,
+        /** Same login with a different password, where the device copy was kept because it is newer (or the import is undated). */
+        val keptNewer: Int = 0,
+    )
 
     fun mergeLogins(
         existing: List<SavedLogin>,
@@ -24,7 +33,7 @@ object BackupMerge {
     ): LoginResult {
         val merged = existing.toMutableList()
         val guids = existing.mapTo(HashSet()) { it.guid }
-        var added = 0; var updated = 0; var skipped = 0
+        var added = 0; var updated = 0; var skipped = 0; var keptNewer = 0
         for (inc in incoming) {
             if (inc.origin.isBlank() || inc.password.isEmpty()) { skipped++; continue }
             val key = normalizeOrigin(inc.origin)
@@ -32,6 +41,9 @@ object BackupMerge {
             if (idx >= 0) {
                 val old = merged[idx]
                 if (old.password == inc.password) { skipped++; continue }
+                // Restoring an old backup must not roll back a password changed since. An undated import
+                // (updatedAt 0) can't prove it is newer, so the device copy stays.
+                if (inc.updatedAt <= old.updatedAt) { keptNewer++; continue }
                 merged[idx] = old.copy(
                     password = inc.password,
                     formActionOrigin = old.formActionOrigin ?: inc.formActionOrigin,
@@ -50,7 +62,7 @@ object BackupMerge {
                 added++
             }
         }
-        return LoginResult(merged, added, updated, skipped)
+        return LoginResult(merged, added, updated, skipped, keptNewer)
     }
 
     /**

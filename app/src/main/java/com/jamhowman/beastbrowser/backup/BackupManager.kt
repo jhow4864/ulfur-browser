@@ -29,6 +29,7 @@ object BackupManager {
         val loginsAdded: Int = 0,
         val loginsUpdated: Int = 0,
         val loginsSkipped: Int = 0,
+        val loginsKeptNewer: Int = 0,
         /** Logins were selected but the vault couldn't be unlocked. */
         val loginsLocked: Boolean = false,
         val bookmarks: Int = 0,
@@ -89,7 +90,7 @@ object BackupManager {
         if (s.logins && !p.logins.isNullOrEmpty()) {
             val r = PasswordVault.importLogins(p.logins)
             sum = if (r == null) sum.copy(loginsLocked = true)
-            else sum.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped)
+            else sum.copy(loginsAdded = r.added, loginsUpdated = r.updated, loginsSkipped = r.skipped, loginsKeptNewer = r.keptNewer)
         }
         if (s.bookmarks && !p.bookmarks.isNullOrEmpty()) {
             val db = BrowserDb.get(context)
