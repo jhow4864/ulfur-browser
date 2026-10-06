@@ -141,7 +141,7 @@ The debug APK lands in `app/build/outputs/apk/debug/app-debug.apk`. The Gradle p
     tools/build_small_apk.sh /path/to/Ulfur-arm64.apk
 
 ### Continuous integration
-`.github/workflows/ci.yml` runs on every push and pull request: `assembleDebug`, `testDebugUnitTest` and
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`: `assembleDebug`, `testDebugUnitTest` and
 `lintDebug` (lint errors fail the build, warnings don't). The debug APK and the test and lint reports are attached to
 each run for 14 days. CI never signs release builds.
 
