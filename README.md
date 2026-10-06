@@ -82,7 +82,7 @@ Apart from the pages you visit, the only background connections are:
 
 ## For developers
 
-* Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.7.0 (versionCode 18)
+* Package: `com.jamhowman.beastbrowser` (unchanged for upgrades). minSdk 26, target/compile SDK 37 (37.1). Version 2.7.1 (versionCode 19)
 * Engine: `org.mozilla.geckoview:geckoview-<abi>:157.0.20260924084938` from https://maven.mozilla.org/maven2/
 * Ad blocking: uBlock Origin 1.75.0 (official AMO XPI, unpacked into `app/src/main/assets/extensions/ublock/`),
   installed as a built-in extension. Also uses GeckoView Enhanced Tracking Protection (Strict),

@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Roadmap 11: wolf-eye mark for private tabs (faceted eye, slit pupil cut out, brow slash). -->
+<!-- 2.7.1: wolf-eye mark for private tabs, redrawn in the howling-moon logo's smooth style
+     (curved almond eye, slit pupil cut out, brow sweep). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"
     android:tint="?attr/colorControlNormal">
     <path android:fillColor="@android:color/white" android:fillType="evenOdd"
-        android:pathData="M1.5,12.5L7.5,7L16,6.4L22.5,11.4L16.2,17.4L7.6,18Z M12,8.3L13.5,12.4L12,16.5L10.5,12.4Z M5.5,5.2L17.2,3.4L18.8,5L7,6.6Z"/>
+        android:pathData="M1.5,13.2 Q7,6.6 13.6,7.6 Q19.4,8.6 22.5,12.4 Q17.6,18.2 11.4,17.6 Q5.4,17 1.5,13.2Z M12.3,8.9 Q10.9,12.6 12.3,16.3 Q13.7,12.6 12.3,8.9Z"/>
+    <path android:fillColor="@android:color/white"
+        android:pathData="M3,6.2 Q9.5,2.6 17.5,4.2 L17.1,5.4 Q10,4.4 3.6,7.2Z"/>
 </vector>
