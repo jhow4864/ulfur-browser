@@ -120,6 +120,31 @@
         <item quantity="other">Removes %1$d finished, failed or cancelled entries from this list. Downloaded files stay in Downloads/&brand;.</item>
     </plurals>
     <string name="private_downloads_note">Private downloads stay inside &brand; only. They never appear in Gallery or Files. Uninstalling the app or clearing its storage permanently deletes them.</string>
+    <!-- 2.5.1 Move to Downloads (branding/ulfur/mockups-2.5.1/SPEC.md) -->
+    <string name="vault_move">Move to Downloads</string>
+    <string name="vault_selected">%d selected</string>
+    <string name="vault_select_all">Select all</string>
+    <plurals name="vault_move_title">
+        <item quantity="one">Move %d file to Downloads?</item>
+        <item quantity="other">Move %d files to Downloads?</item>
+    </plurals>
+    <string name="vault_move_body">They\'ll be saved to Downloads/&brand; and removed from the vault.</string>
+    <string name="vault_move_warning">Once moved, anyone with your phone can see them in Gallery, Files and other apps. No fingerprint needed.</string>
+    <string name="vault_move_confirm">Move</string>
+    <plurals name="vault_moving">
+        <item quantity="one">Moving %d file · checking copies…</item>
+        <item quantity="other">Moving %d files · checking copies…</item>
+    </plurals>
+    <plurals name="vault_moved">
+        <item quantity="one">Moved %d file to Downloads/&brand;</item>
+        <item quantity="other">Moved %d files to Downloads/&brand;</item>
+    </plurals>
+    <plurals name="vault_move_partial">
+        <item quantity="one">Moved %1$d file to Downloads/&brand;. %2$s couldn\'t be moved, so it\'s still safe in the vault.</item>
+        <item quantity="other">Moved %1$d files to Downloads/&brand;. %2$s couldn\'t be moved, so it\'s still safe in the vault.</item>
+    </plurals>
+    <string name="vault_move_open">Open</string>
+    <string name="vault_move_needs_storage">Allow storage access to move files to Downloads</string>
     <string name="vault_stored_note">Stored encrypted in &brand;\'s vault.</string>
     <string name="realm_note_play">Play uses &brand;\'s original cookie jar (your existing logins). Shared across realms: uBlock filters, bookmarks, history (not Ghost), saved passwords, downloads.</string>
     <string name="error_https_only">&brand;\'s HTTPS-Only mode couldn\'t find a secure version of %1$s. Your connection would be unencrypted.</string>
@@ -278,6 +303,10 @@
     <plurals name="backup_n_passwords_skipped">
         <item quantity="one">%1$d password was already saved.</item>
         <item quantity="other">%1$d passwords were already saved.</item>
+    </plurals>
+    <plurals name="backup_n_passwords_kept_newer">
+        <item quantity="one">%1$d password on this phone was kept because it\'s newer than the one in the file, or the file has no date for it.</item>
+        <item quantity="other">%1$d passwords on this phone were kept because they\'re newer than the ones in the file, or the file has no dates for them.</item>
     </plurals>
     <plurals name="backup_n_bookmarks">
         <item quantity="one">%1$d bookmark</item>

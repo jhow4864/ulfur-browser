@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2.5.1 Move to Downloads confirm (branding/ulfur/mockups-2.5.1 move-3-confirm). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="4dp"
+    android:paddingEnd="24dp">
+
+    <TextView
+        android:id="@+id/moveBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp" />
+
+    <!-- The Gallery warning gets its own tinted box so it can't be skimmed past. -->
+    <TextView
+        android:id="@+id/moveWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_vault_move_warning"
+        android:drawablePadding="10dp"
+        android:padding="12dp"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp" />
+</LinearLayout>

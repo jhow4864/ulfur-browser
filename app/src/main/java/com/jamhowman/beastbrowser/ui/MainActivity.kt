@@ -71,6 +71,7 @@ import com.jamhowman.beastbrowser.browser.Engine
 import com.jamhowman.beastbrowser.browser.ShieldLevel
 import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
+import com.jamhowman.beastbrowser.browser.UboBadge
 import com.jamhowman.beastbrowser.browser.UrlUtils
 import com.jamhowman.beastbrowser.data.Accent
 import com.jamhowman.beastbrowser.data.BeastControl
@@ -1977,8 +1978,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             override fun onBrowserAction(extension: WebExtension, session: GeckoSession?, action: WebExtension.Action) {
                 uboActions[tab.id] = action
                 val n = parseBadge(action.badgeText)
-                if (n > tab.uboCount) Stats.total.addAndGet((n - tab.uboCount).toLong())
-                tab.uboCount = n
+                Stats.total.addAndGet(UboBadge.newBlocks(tab.uboCounted, n).toLong())
+                tab.uboCount = UboBadge.pageCount(tab.uboCount, tab.uboCounted, n)
+                tab.uboCounted = n
                 tallyUbo(tab, n)
                 onBlockedChanged(tab)
             }
