@@ -3,9 +3,20 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
-## Unreleased (2.8)
+## 2.6.0 (versionCode 17)
 
 **New features**
+* **Weekly tracker tally.** Settings › Shields › Weekly tracker tally shows how many ads and trackers were blocked
+  in the last 7 days, your top 5 sites and a count for each kind of tracker, with uBlock Origin's blocks on their
+  own line. The tally is kept only on your phone: it stores just the site name, the kind of block and a daily count.
+  Private tabs and Ghost are never counted, it isn't part of backups, and days older than 8 weeks are deleted.
+  Clear tally empties it, and so do clearing browsing history and Clear data on exit.
+* **Tracker shield.** The shield in the toolbar shows how much the page blocked: a plain shield when nothing was
+  blocked, a count for 1 to 9, and a shield with a check and a badge in your theme's gradient for 10 or more.
+* **Private mode you can't mistake.** Private tabs, Ghost and the private vault now have violet bars (dark violet
+  in dark mode, pale violet in light mode). Private and Ghost tabs also get a violet stripe under the top bar and a
+  wolf-eye **PRIVATE** label in the address bar. On plain http pages the label reads **NOT SECURE**. Your theme's
+  accent colours stay as they are.
 * **Theme picker.** Settings › Appearance › Theme & accent has eight preset themes: Blood Moon, Frost, Toxic,
   Ember, Void, Gold, Sakura and Ash. A live preview shows each one before you leave the screen, and Dark / Light /
   System mode moved there too. Realm accents: Work follows Auto (Frost, or Ember while the theme is Frost) or gets
@@ -15,14 +26,6 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   ring fills while a search you started from the new-tab page loads, and its eye flashes when the page is ready.
   Ghost gets a dimmer, slower wolf with no flash. Turn the motion off in Settings › Appearance › Motion; it also
   stays still while Android's "Remove animations" is on, though the ring still shows progress.
-
-**Fixes**
-* Accent-coloured text (home stats, download types, reading-list sites) is now readable in light mode.
-* Android 8.0: the navigation bar stays black in light mode, so its buttons stay visible.
-
-## Unreleased (2.5.1)
-
-**New features**
 * **Crash reports (opt-in, off by default).** Turn on Settings › Crash reports › Save crash reports and, if Ulfur
   crashes, a short report is kept on your phone: Ulfur and Android versions, phone model, GeckoView version, time,
   thread and the stack trace. Reports never include web addresses, page titles, history or anything from private
@@ -39,9 +42,29 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   Multi-select also lets you share or delete several vault files at once.
 
 **Fixes**
+* Restoring a backup or importing passwords no longer replaces a password you've changed since. The newer one is
+  kept, and on undated Chrome, Edge or Brave exports the one on your phone wins. The summary says how many
+  passwords on your phone were kept.
+* Password changes waiting for your fingerprint are no longer lost if the vault locks first. They're saved after
+  your next unlock, as long as Android doesn't close Ulfur before then.
 * The private vault no longer asks for your fingerprint twice when you first open it.
 * The all-time "blocked" counter no longer counts uBlock Origin's blocks twice when you move to another page, and
   the shield badge no longer shows the previous page's uBlock Origin number on the new page.
+* Long download names keep their file extension, so the file still opens in the right app, and very long Chinese
+  or emoji names can now be saved.
+* Half-finished private downloads, left behind when Ulfur was closed or crashed mid-download, are now deleted at the
+  next start instead of quietly taking up space.
+* Android 11 and later: paused downloads no longer expire and get deleted by Android after a week, as long as you
+  open Ulfur at least every few days. If the unfinished file is gone anyway, Resume starts the download over
+  cleanly instead of failing. On Android 8 and 9, resuming a download whose unfinished file was deleted no longer
+  produces a corrupt file.
+* A failed update download no longer leaves the update stuck, offered again at every start even after "Skip this
+  version", and no longer leaves a partial download behind. Unexpected errors show "Download failed" instead of
+  crashing Ulfur.
+* Android 14 and later: if you leave Ulfur while an update downloads, an "Update ready to install" notification now
+  appears. Tap it to finish updating. Before, the install screen could silently fail to open.
+* Accent-coloured text (home stats, download types, reading-list sites) is now readable in light mode.
+* Android 8.0: the navigation bar stays black in light mode, so its buttons stay visible.
 
 ## 2.5.0 (versionCode 16)
 

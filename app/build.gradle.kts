@@ -71,9 +71,10 @@ android {
         applicationId = "com.jamhowman.beastbrowser"
         minSdk = 26
         targetSdk = 37
-        // 2.3.8 shipped as versionCode 13; rebuilt releases must sit above it to install as an update.
-        versionCode = 16
-        versionName = "2.5.0"
+        // Every release needs a higher versionCode than the last one (2.5.0 shipped as 16): Android and the in-app
+        // updater only install a higher versionCode as an update.
+        versionCode = 17
+        versionName = "2.6.0"
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += beastAbi }
     }
