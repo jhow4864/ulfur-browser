@@ -46,6 +46,10 @@ object Prefs {
     var wolfAnimation: Boolean
         get() = sp.getBoolean("wolf_animation", true)
         set(v) = sp.edit { putBoolean("wolf_animation", v) }
+    /** 2.8: selected alternate app icon key ([AppIcon.key]); default brand = "default". */
+    var appIconKey: String
+        get() = sp.getString("app_icon", AppIcon.DEFAULT.key) ?: AppIcon.DEFAULT.key
+        set(v) = sp.edit { putString("app_icon", v) }
     /** dark | light | system — chrome theme (default dark). */
     val uiTheme get() = sp.getString("ui_theme", "dark") ?: "dark"
     val restoreTabs get() = sp.getBoolean("restore_tabs", true)

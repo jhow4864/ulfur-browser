@@ -3,6 +3,11 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## Unreleased
+
+**New features**
+* **Alternate app icons.** Settings › Appearance has an App icon picker with the brand Default icon plus eight colourways that match the accent themes (Blood Moon, Frost, Toxic, Ember, Void, Gold, Sakura, Ash).
+
 ## 2.7.1 (versionCode 19)
 
 **New look**

@@ -404,6 +404,13 @@
     <string name="appearance_realm_auto">%1$s (%2$s in use)</string>
     <string name="appearance_realm_ghost">Always dim</string>
     <string name="appearance_realm_tile">%1$s realm accent: %2$s, %3$s</string>
+    <string name="appearance_section_icon">App icon</string>
+    <plurals name="appearance_icons_count">
+        <item quantity="one">%1$d icon</item>
+        <item quantity="other">%1$d icons</item>
+    </plurals>
+    <string name="appearance_icon_option">%1$s app icon</string>
+    <string name="appearance_icon_applied">App icon updated. Some launchers take a moment to refresh.</string>
     <string name="appearance_section_motion">Motion</string>
     <string name="appearance_wolf_title">Animated wolf</string>
     <string name="appearance_wolf_on">The new-tab wolf breathes and its eye flashes when a page loads</string>
