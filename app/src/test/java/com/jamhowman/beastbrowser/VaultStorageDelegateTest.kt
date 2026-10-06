@@ -30,14 +30,14 @@ class VaultStorageDelegateTest {
     @Test fun fetchWhileLockedReturnsEmpty() {
         // activityProvider null → no unlock sheet; still must return empty (no hang).
         PasswordVault.lock()
-        val delegate = VaultStorageDelegate { null }
+        val delegate = VaultStorageDelegate(activityProvider = { null })
         val arr = awaitArray(delegate.onLoginFetch("https://example.com"))
         assertEquals(0, arr.size)
     }
 
     @Test fun fetchAllWhileLockedReturnsEmpty() {
         PasswordVault.lock()
-        val delegate = VaultStorageDelegate { null }
+        val delegate = VaultStorageDelegate(activityProvider = { null })
         val arr = awaitArray(delegate.onLoginFetch())
         assertEquals(0, arr.size)
     }
