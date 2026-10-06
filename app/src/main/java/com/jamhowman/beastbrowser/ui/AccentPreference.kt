@@ -13,8 +13,13 @@ import androidx.preference.PreferenceViewHolder
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.data.Accent
 
-/** Row of neon swatches (GX-style accent picker). */
+/**
+ * Row of neon swatches (GX-style accent picker).
+ * 2.3.8: [fallback] is shown when the (per-realm) key has no value yet; disabled = dimmed, not clickable.
+ */
 class AccentPreference @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : Preference(context, attrs) {
+
+    var fallback: Accent = Accent.RED
 
     init { layoutResource = R.layout.pref_accent }
 
@@ -23,7 +28,7 @@ class AccentPreference @JvmOverloads constructor(context: Context, attrs: Attrib
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
         holder.itemView.isClickable = false
-        val current = Accent.from(getPersistedString(Accent.RED.key))
+        val current = getPersistedString(null)?.let { Accent.from(it) } ?: fallback
         (holder.findViewById(R.id.accentName) as TextView).text = current.label
         val row = holder.findViewById(R.id.swatches) as LinearLayout
         row.removeAllViews()
@@ -45,6 +50,8 @@ class AccentPreference @JvmOverloads constructor(context: Context, attrs: Attrib
             }
             frame.addView(ring, FrameLayout.LayoutParams(size + dp(context, 10), size + dp(context, 10)))
             frame.addView(dot, FrameLayout.LayoutParams(size, size).apply { leftMargin = dp(context, 5); topMargin = dp(context, 5) })
+            frame.isEnabled = isEnabled
+            frame.alpha = if (isEnabled) 1f else 0.4f
             frame.setOnClickListener {
                 if (callChangeListener(accent.key)) { persistString(accent.key); notifyChanged() }
             }

@@ -83,6 +83,33 @@
                 android:textColor="?attr/colorPrimary"
                 android:textSize="40sp"
                 tools:text="B" />
+
+            <!-- 2.3.8: tab DNA label ("↳ from …" / "• N child tabs") -->
+            <TextView
+                android:id="@+id/dnaLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|start"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_chip"
+                android:ellipsize="end"
+                android:maxWidth="150dp"
+                android:paddingStart="8dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                android:singleLine="true"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp"
+                android:visibility="gone" />
         </FrameLayout>
     </LinearLayout>
+
+    <!-- 2.3.8: tab DNA lineage strip (colour = TabDnaDecoration.lineageColor(root)) -->
+    <View
+        android:id="@+id/dnaStrip"
+        android:layout_width="3dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:visibility="gone" />
 </com.google.android.material.card.MaterialCardView>

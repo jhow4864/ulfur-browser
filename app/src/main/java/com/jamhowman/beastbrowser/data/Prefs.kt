@@ -29,7 +29,40 @@ object Prefs {
     val restoreTabs get() = sp.getBoolean("restore_tabs", true)
     val searchSuggestions get() = sp.getBoolean("search_suggestions", true)
     val searchEngine get() = SearchEngine.from(sp.getString("search_engine", null))
-    val accent get() = Accent.from(sp.getString("accent", null))
+    /** Accent of the current [realm] (2.3.8: per-realm accents). */
+    val accent: Accent get() = accentFor(realm)
+
+    // ---- 2.3.8: Realms. Key names match 2.3.8 so upgraded installs keep their state. ----
+
+    var realm: Realm
+        get() = Realm.from(sp.getString("realm", null))
+        set(v) = sp.edit { putString("realm", v.key) }
+
+    /** Pref key holding [realm]'s accent: `accent` (Play), `accent_work`, or null (Ghost is fixed). */
+    fun accentKey(realm: Realm): String? = when (realm) {
+        Realm.PLAY -> "accent"
+        Realm.WORK -> "accent_work"
+        Realm.GHOST -> null
+    }
+
+    /** Play: GX Red. Work: Cyber Cyan, or Lava Orange if Play already uses Cyan. Ghost: Ultraviolet. */
+    fun defaultAccent(realm: Realm): Accent = when (realm) {
+        Realm.PLAY -> Accent.RED
+        Realm.WORK -> if (Accent.from(sp.getString("accent", null)) == Accent.CYAN) Accent.ORANGE else Accent.CYAN
+        Realm.GHOST -> Accent.PURPLE
+    }
+
+    fun accentFor(realm: Realm): Accent {
+        val key = accentKey(realm) ?: return Accent.PURPLE
+        return sp.getString(key, null)?.let { Accent.from(it) } ?: defaultAccent(realm)
+    }
+
+    var ghostHintShown: Boolean
+        get() = sp.getBoolean("ghost_hint_shown", false)
+        set(v) = sp.edit { putBoolean("ghost_hint_shown", v) }
+
+    /** Play uses the plain key (same as pre-Realms builds); other realms add `_work` / `_ghost`. */
+    private fun realmKey(base: String, realm: Realm) = if (realm == Realm.PLAY) base else "${base}_${realm.key}"
 
     var totalBlocked: Long
         get() = sp.getLong("total_blocked", 0)
@@ -39,17 +72,24 @@ object Prefs {
         get() = sp.getStringSet("shield_disabled_sites", emptySet()) ?: emptySet()
         set(v) = sp.edit { putStringSet("shield_disabled_sites", HashSet(v)) }
 
-    /** Saved normal tabs (one URL per line) + selected index. */
-    var savedTabs: String
-        get() = sp.getString("saved_tabs", "") ?: ""
-        set(v) = sp.edit { putString("saved_tabs", v) }
-    /** 2.3.5: [TabGroup] id per saved tab (newline-joined, parallel to [savedTabs]; "" = no group). */
-    var savedTabGroups: String
-        get() = sp.getString("saved_tab_groups", "") ?: ""
-        set(v) = sp.edit { putString("saved_tab_groups", v) }
-    var savedTabIndex: Int
-        get() = sp.getInt("saved_tab_index", 0)
-        set(v) = sp.edit { putInt("saved_tab_index", v) }
+    /**
+     * Saved session of one realm, all newline-joined and parallel:
+     * - `saved_tabs`: URL per normal tab (`beast://home` for the home page)
+     * - `saved_tab_groups` (2.3.5): [TabGroup] id per tab, "" = none
+     * - `saved_tab_parents` (2.3.8): index of the parent tab in the same list, "" = none
+     * - `saved_tab_index`: selected tab
+     */
+    fun savedTabs(realm: Realm): String = sp.getString(realmKey("saved_tabs", realm), "") ?: ""
+    fun savedTabGroups(realm: Realm): String = sp.getString(realmKey("saved_tab_groups", realm), "") ?: ""
+    fun savedTabParents(realm: Realm): String = sp.getString(realmKey("saved_tab_parents", realm), "") ?: ""
+    fun savedTabIndex(realm: Realm): Int = sp.getInt(realmKey("saved_tab_index", realm), 0)
+
+    fun saveTabs(realm: Realm, tabs: String, groups: String, parents: String, index: Int) = sp.edit {
+        putString(realmKey("saved_tabs", realm), tabs)
+        putString(realmKey("saved_tab_groups", realm), groups)
+        putString(realmKey("saved_tab_parents", realm), parents)
+        putInt(realmKey("saved_tab_index", realm), index)
+    }
 
     /** Set while browsing with "clear on exit" on; if the process dies before a clean exit we wipe on next start. */
     var pendingWipe: Boolean

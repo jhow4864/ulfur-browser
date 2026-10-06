@@ -1,12 +1,14 @@
 package com.jamhowman.beastbrowser.browser
 
 import android.graphics.Bitmap
+import com.jamhowman.beastbrowser.data.Realm
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
-class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession) {
+/** @param realm 2.3.8: the [Realm] (cookie jar / tab list) this tab belongs to. */
+class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val realm: Realm = Realm.PLAY) {
     var url: String = UrlUtils.HOME
     var title: String = ""
     var thumbnail: Bitmap? = null

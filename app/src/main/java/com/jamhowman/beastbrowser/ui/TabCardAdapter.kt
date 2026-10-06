@@ -12,13 +12,15 @@ import com.jamhowman.beastbrowser.databinding.ItemTabCardBinding
 class TabCardAdapter(
     private val onSelect: (Tab) -> Unit,
     private val onClose: (Tab) -> Unit,
-    /** Long-press → "Move to group" (2.3.5). */
+    /** Long-press → "Move to group" (2.3.5) / "Close branch" (2.3.8). */
     private val onGroup: (Tab) -> Unit = {},
 ) : RecyclerView.Adapter<TabCardAdapter.VH>() {
 
     var items: List<Tab> = emptyList()
     var currentId: Long = -1
     var accent: Int = 0
+    /** 2.3.8: every tab of the realm by id (not just the filtered [items]) for Tab DNA lineage. */
+    var byId: Map<Long, Tab> = emptyMap()
 
     class VH(val b: ItemTabCardBinding) : RecyclerView.ViewHolder(b.root)
 
@@ -47,8 +49,30 @@ class TabCardAdapter(
         val group = TabGroup.from(tab.groupId)
         h.b.groupStrip.isVisible = group != null
         if (group != null) h.b.groupStrip.setBackgroundColor(group.accent.color)
+        // 2.3.8 Tab DNA: lineage strip in the root's colour + "↳ from …" / "• N child tabs"
+        val parent = tab.parentId?.let { byId[it] }
+        val children = byId.values.count { it.parentId == tab.id }
+        val linked = parent != null || children > 0
+        h.b.dnaStrip.isVisible = linked
+        if (linked) h.b.dnaStrip.setBackgroundColor((TabDnaDecoration.lineageColor(rootOf(tab)) and 0x00FFFFFF) or 0xCC000000.toInt())
+        h.b.dnaLabel.isVisible = linked
+        h.b.dnaLabel.text = when {
+            parent != null -> "↳ from ${parent.displayTitle}"
+            children == 1 -> "• 1 child tab"
+            else -> "• $children child tabs"
+        }
         h.b.root.setOnClickListener { onSelect(tab) }
         h.b.root.setOnLongClickListener { onGroup(tab); true }
         h.b.close.setOnClickListener { onClose(tab) }
+    }
+
+    /** Oldest ancestor still open in this realm (cycle-safe). */
+    fun rootOf(tab: Tab): Tab {
+        var t = tab
+        val seen = HashSet<Long>()
+        while (seen.add(t.id)) {
+            t = t.parentId?.let { byId[it] } ?: break
+        }
+        return t
     }
 }

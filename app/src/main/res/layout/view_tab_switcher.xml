@@ -44,6 +44,14 @@
 
         <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
 
+        <!-- 2.3.8: realm seal (opens RealmSheet); icon swapped per realm at runtime -->
+        <ImageButton
+            android:id="@+id/realmSeal"
+            style="@style/BeastIconButton"
+            android:contentDescription="@string/realms"
+            android:src="@drawable/ic_play"
+            app:tint="?attr/colorPrimary" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/closeAll"
             style="?attr/borderlessButtonStyle"

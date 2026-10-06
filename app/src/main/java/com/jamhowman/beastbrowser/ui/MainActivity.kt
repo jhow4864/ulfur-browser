@@ -59,6 +59,7 @@ import com.jamhowman.beastbrowser.data.Accent
 import com.jamhowman.beastbrowser.data.BeastControl
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.Realm
 import com.jamhowman.beastbrowser.data.TabGroup
 import com.jamhowman.beastbrowser.search.SearchSuggest
 import com.jamhowman.beastbrowser.search.SuggestItem
@@ -98,6 +99,8 @@ import org.mozilla.geckoview.WebRequestError
 import org.mozilla.geckoview.WebResponse
 import java.io.File
 import java.io.FileOutputStream
+import java.util.EnumMap
+import java.util.EnumSet
 import java.util.Locale
 import kotlin.concurrent.thread
 import kotlin.math.max
@@ -114,7 +117,18 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private lateinit var suggestAdapter: SuggestAdapter
     private var suggestJob: Job? = null
 
-    private val tabs = mutableListOf<Tab>()
+    /** 2.3.8 Realms: the active realm; every realm keeps its own tab list and last-selected tab. */
+    private var realm = Realm.PLAY
+    private val realmTabs = EnumMap<Realm, MutableList<Tab>>(Realm::class.java).apply {
+        Realm.entries.forEach { put(it, mutableListOf()) }
+    }
+    private val realmCurrent = EnumMap<Realm, Tab>(Realm::class.java)
+    /** Realms whose saved session was already restored (others are restored lazily on first switch). */
+    private val restoredRealms: EnumSet<Realm> = EnumSet.noneOf(Realm::class.java)
+    /** Tabs of the current realm (what the UI shows). */
+    private val tabs: MutableList<Tab> get() = realmTabs.getValue(realm)
+    /** Tabs of every realm (session lookups, uBO, shields). */
+    private val allTabs: List<Tab> get() = realmTabs.values.flatten()
     private var current: Tab? = null
     private var nextId = 1L
     private var accent = Accent.RED
@@ -135,7 +149,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private val readerListener: (GeckoSession) -> Unit = { s -> if (current?.session === s) runOnUiThread { updateReaderButton() } }
     private val readerHost = object : ReaderMode.Host {
         override fun closeReader(session: GeckoSession, originalUrl: String?) {
-            val t = tabs.firstOrNull { it.session === session } ?: return
+            val t = allTabs.firstOrNull { it.session === session } ?: return
             when {
                 t.canGoBack -> session.goBack()
                 originalUrl != null -> load(t, originalUrl)
@@ -165,6 +179,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     // ======================================================================= lifecycle
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        realm = Prefs.realm
         accent = Prefs.accent
         theme.applyStyle(accent.overlay, true)
         super.onCreate(savedInstanceState)
@@ -206,7 +221,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         Engine.onExtensionReady(extListener)
         Engine.uboBridge.events += uboEvents
         observeDownloads()
-        restoreTabs()
+        restoreTabs(realm)
         if (!handleIntent(intent) && tabs.isEmpty()) newTab()
         if (current == null) tabs.lastOrNull()?.let { selectTab(it) }
     }
@@ -347,7 +362,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             DownloadCenter.endPrivateSession()
             if (Prefs.clearOnExit) wipeData()
             geckoView.releaseSession()
-            tabs.forEach { runCatching { it.session.close() } }
+            allTabs.forEach { runCatching { it.session.close() } }
         } else {
             geckoView.releaseSession()
         }
@@ -374,9 +389,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     // ======================================================================= tabs
 
-    private fun createSession(private: Boolean) = GeckoSession(
+    /** Realm sessions use the realm's Gecko cookie jar ([Realm.contextId]); Ghost is always private. */
+    private fun createSession(private: Boolean, realm: Realm) = GeckoSession(
         GeckoSessionSettings.Builder()
-            .usePrivateMode(private)
+            .usePrivateMode(private || realm.alwaysPrivate)
+            .apply { realm.contextId?.let { contextId(it) } }
             .useTrackingProtection(true)
             .suspendMediaWhenInactive(false)
             .build()
@@ -393,27 +410,60 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     fun newTab(
         url: String? = null, private: Boolean = false,
         parent: Tab? = null, select: Boolean = true, lazy: Boolean = false, open: Boolean = true,
+        realm: Realm = parent?.realm ?: this.realm,
     ): Tab {
-        val tab = Tab(nextId++, private, createSession(private))
+        val isPrivate = private || realm.alwaysPrivate
+        val tab = Tab(nextId++, isPrivate, createSession(isPrivate, realm), realm)
         tab.parentId = parent?.id
         wire(tab)
         if (open) tab.session.open(runtime)
-        val idx = parent?.let { tabs.indexOf(it) } ?: -1
-        if (idx >= 0) tabs.add(idx + 1, tab) else tabs.add(tab)
+        // Tab DNA: children go after the parent's existing branch so lineages stay together.
+        val list = realmTabs.getValue(realm)
+        if (parent != null && parent in list) list.add(lastOfBranch(list, parent) + 1, tab) else list.add(tab)
         if (url != null && url != UrlUtils.HOME) {
             tab.showingHome = false
             tab.url = url
             if (lazy || !open) tab.pendingUrl = if (open) url else null else load(tab, url)
         }
-        if (select) {
+        if (select && realm == this.realm) {
             if (open) selectTab(tab) else selectWhenOpen(tab, 0)
         }
         updateTabCount()
-        if (private && !Prefs.privateWarningShown) {
+        if (isPrivate && realm == Realm.GHOST && !Prefs.ghostHintShown) {
+            Prefs.ghostHintShown = true
+            snack("Ghost realm: private, own cookie jar, nothing kept after the last Ghost tab closes")
+        } else if (isPrivate && realm != Realm.GHOST && !Prefs.privateWarningShown) {
             Prefs.privateWarningShown = true
             snack("Private tab: no history, cookies or cache are kept after you close it")
         }
         return tab
+    }
+
+    /** Index of the last tab in [tab]'s branch (the tab itself or its trailing descendants) in [list]. */
+    private fun lastOfBranch(list: List<Tab>, tab: Tab): Int {
+        var i = list.indexOf(tab)
+        if (i < 0) return list.lastIndex
+        val branch = descendants(list, tab).mapTo(HashSet()) { it.id }
+        while (i + 1 < list.size && list[i + 1].id in branch) i++
+        return i
+    }
+
+    /** All tabs descending from [tab] (children, grandchildren, ...) in list order, excluding [tab]. */
+    private fun descendants(list: List<Tab>, tab: Tab): List<Tab> {
+        val ids = hashSetOf(tab.id)
+        var grew = true
+        while (grew) {
+            grew = false
+            for (t in list) if (t.id !in ids && t.parentId != null && t.parentId in ids) { ids += t.id; grew = true }
+        }
+        return list.filter { it.id != tab.id && it.id in ids }
+    }
+
+    /** Tab DNA: close a tab together with its whole branch. */
+    private fun closeBranch(tab: Tab) {
+        val branch = descendants(tabs, tab) + tab
+        branch.forEach { closeTab(it, force = true) }
+        snack("Closed branch · ${branch.size} tabs")
     }
 
     /** Sessions returned to Gecko (window.open / tabs.create) are opened by Gecko; attach once open. */
@@ -458,9 +508,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     }
 
     private fun closeTab(tab: Tab, force: Boolean = false) {
-        val idx = tabs.indexOf(tab)
+        val list = realmTabs.getValue(tab.realm)
+        val idx = list.indexOf(tab)
         if (idx < 0) return
-        val lastPrivate = tab.isPrivate && tabs.none { it !== tab && it.isPrivate }
+        val lastPrivate = tab.isPrivate && allTabs.none { it !== tab && it.isPrivate }
         if (lastPrivate && !force && DownloadCenter.activePrivateCount() > 0) {
             val n = DownloadCenter.activePrivateCount()
             MaterialAlertDialogBuilder(this)
@@ -470,8 +521,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 .setNegativeButton("Keep tab", null).show()
             return
         }
-        tabs.removeAt(idx)
+        list.removeAt(idx)
         uboActions.remove(tab.id)
+        // Tab DNA: orphans are adopted by the grandparent
+        list.forEach { if (it.parentId == tab.id) it.parentId = tab.parentId }
+        if (realmCurrent[tab.realm] === tab) realmCurrent.remove(tab.realm)
         if (tab === current) {
             if (geckoView.session === tab.session) geckoView.releaseSession()
             current = null
@@ -482,6 +536,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         MediaSniffer.clear(tab.session)
         ReaderMode.forget(tab.session)
         runCatching { tab.session.close() } // closing the last private session lets Gecko purge private data
+        // Ghost is burned when its last tab closes: also wipe its cookie jar explicitly.
+        if (tab.realm == Realm.GHOST && list.isEmpty()) burnGhostJar()
         if (lastPrivate) {
             val beforeVault = DownloadCenter.privateVaultCount()
             val cancelled = DownloadCenter.endPrivateSession()  // unfinished cancelled; DONE → private vault
@@ -494,8 +550,13 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             }
         }
         if (tabs.isEmpty()) newTab()
+        else if (current == null) selectTab(tabs.last())
         updateTabCount()
         if (b.switcher.root.isVisible) refreshSwitcher()
+    }
+
+    private fun burnGhostJar() {
+        Realm.GHOST.contextId?.let { id -> runCatching { runtime.storageController.clearDataForSessionContext(id) } }
     }
 
     private fun showHome(tab: Tab) {
@@ -526,23 +587,108 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         } else if (t.canGoForward) t.session.goForward()
     }
 
+    /**
+     * Saves the normal tabs of every persisting realm that was restored this run (realms never opened keep
+     * their saved session untouched). Keys per realm: see [Prefs.saveTabs].
+     */
     private fun saveTabs() {
-        if (!Prefs.restoreTabs || Prefs.clearOnExit) { Prefs.savedTabs = ""; Prefs.savedTabGroups = ""; return }
-        val normal = tabs.filter { !it.isPrivate }
-        Prefs.savedTabs = normal.joinToString("\n") { if (it.showingHome) UrlUtils.HOME else ReaderMode.originalUrl(it.url) ?: it.url }
-        Prefs.savedTabGroups = normal.joinToString("\n") { it.groupId.orEmpty() }
-        Prefs.savedTabIndex = normal.indexOf(current).coerceAtLeast(0)
+        val keep = Prefs.restoreTabs && !Prefs.clearOnExit
+        Realm.entries.filter { it.persistsTabs }.forEach { r ->
+            if (!keep) { Prefs.saveTabs(r, "", "", "", 0); return@forEach }
+            if (r !in restoredRealms) return@forEach
+            val normal = realmTabs.getValue(r).filter { !it.isPrivate }
+            val selected = if (r == realm) current else realmCurrent[r]
+            Prefs.saveTabs(
+                r,
+                tabs = normal.joinToString("\n") { if (it.showingHome) UrlUtils.HOME else ReaderMode.originalUrl(it.url) ?: it.url },
+                groups = normal.joinToString("\n") { it.groupId.orEmpty() },
+                parents = normal.joinToString("\n") { t ->
+                    normal.indexOfFirst { it.id == t.parentId }.takeIf { it >= 0 }?.toString().orEmpty()
+                },
+                index = normal.indexOf(selected).coerceAtLeast(0),
+            )
+        }
     }
 
-    private fun restoreTabs() {
+    /** Restores [realm]'s saved session once per run (Ghost never persists). */
+    private fun restoreTabs(realm: Realm) {
+        if (!restoredRealms.add(realm) || !realm.persistsTabs) return
         if (!Prefs.restoreTabs || Prefs.clearOnExit) return
-        val urls = Prefs.savedTabs.split('\n').filter { it.isNotBlank() }
+        val urls = Prefs.savedTabs(realm).split('\n').filter { it.isNotBlank() }
         if (urls.isEmpty()) return
-        val groups = Prefs.savedTabGroups.split('\n')
-        urls.forEachIndexed { i, url ->
-            newTab(url, select = false, lazy = true).groupId = groups.getOrNull(i)?.takeIf { it.isNotBlank() }
+        val groups = Prefs.savedTabGroups(realm).split('\n')
+        val parents = Prefs.savedTabParents(realm).split('\n')
+        val created = urls.mapIndexed { i, url ->
+            newTab(url, select = false, lazy = true, realm = realm).also {
+                it.groupId = groups.getOrNull(i)?.takeIf { g -> g.isNotBlank() }
+            }
         }
-        tabs.getOrNull(Prefs.savedTabIndex)?.let { selectTab(it) }
+        created.forEachIndexed { i, t ->
+            val parent = parents.getOrNull(i)?.toIntOrNull()?.let { created.getOrNull(it) }
+            if (parent != null && parent !== t) t.parentId = parent.id
+        }
+        created.getOrNull(Prefs.savedTabIndex(realm))?.let {
+            if (realm == this.realm) selectTab(it) else realmCurrent[realm] = it
+        }
+    }
+
+    // ======================================================================= realms (2.3.8)
+
+    private fun showRealms() {
+        val counts = Realm.entries.associateWith { r ->
+            if (r in restoredRealms || !r.persistsTabs) realmTabs.getValue(r).size
+            else Prefs.savedTabs(r).split('\n').count { it.isNotBlank() }
+        }
+        RealmSheet.show(this, realm, counts, ::switchRealm, ::wipeRealm)
+    }
+
+    private fun switchRealm(r: Realm) {
+        if (r == realm) return
+        if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
+        if (b.findBar.isVisible) closeFind()
+        hideSuggest()
+        b.urlInput.clearFocus()
+        b.home.homeSearchInput.clearFocus()
+        hideKeyboard()
+        current?.let {
+            captureThumbnail(it)
+            it.session.setActive(false)
+            runCatching { runtime.webExtensionController.setTabActive(it.session, false) }
+            realmCurrent[realm] = it
+        }
+        geckoView.releaseSession()
+        current = null
+        realm = r
+        Prefs.realm = r
+        restoreTabs(r)
+        if (current == null) {
+            val next = realmCurrent[r]?.takeIf { it in tabs } ?: tabs.lastOrNull()
+            if (next != null) selectTab(next) else newTab()
+        }
+        accent = Prefs.accent
+        theme.applyStyle(accent.overlay, true)
+        applyAccent()
+        updateHomeStats()
+        if (b.switcher.root.isVisible) {
+            syncSwitcherMode()
+            buildTabGroupPills()
+            refreshSwitcher()
+        }
+        saveTabs()
+        snack(when (r) {
+            Realm.WORK -> "Work realm · own cookies & tabs"
+            Realm.PLAY -> "Play realm · your original cookies & tabs"
+            Realm.GHOST -> "Ghost realm · private, own cookie jar"
+        })
+    }
+
+    /** Ghost: close every Ghost tab and wipe the jar. Work: wipe cookies & site data, reload its pages. */
+    private fun wipeRealm(r: Realm) {
+        val contextId = r.contextId ?: return
+        if (r == Realm.GHOST) realmTabs.getValue(r).toList().forEach { closeTab(it, force = true) }
+        runtime.storageController.clearDataForSessionContext(contextId)
+        if (r == Realm.WORK) realmTabs.getValue(r).filter { !it.showingHome }.forEach { it.session.reload() }
+        snack(if (r == Realm.GHOST) "Ghost burned" else "Work cookies & site data wiped")
     }
 
     // ======================================================================= UI wiring
@@ -668,9 +814,12 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.btnTabs.setOnClickListener { showSwitcher() }
         b.btnTabs.setOnLongClickListener { newTab(); toast("New tab"); true }
         b.btnMenu.setOnClickListener { showMenu() }
+        b.btnMenu.setOnLongClickListener { showRealms(); true }
     }
 
     private fun setupHome() {
+        b.home.logo.setOnLongClickListener { showRealms(); true }
+        b.home.wordmark.setOnLongClickListener { showRealms(); true }
         b.home.homeSearchInput.setOnEditorActionListener { v, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_GO || event?.keyCode == KeyEvent.KEYCODE_ENTER) {
                 submit(v.text.toString()); true
@@ -754,7 +903,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.home.root.isVisible = t.showingHome
         b.swipe.isInvisible = t.showingHome
         if (!b.urlInput.hasFocus()) b.urlInput.setText(if (t.showingHome) "" else displayUrl(t))
-        b.urlInput.hint = getString(if (t.isPrivate) R.string.search_hint_private else R.string.search_hint)
+        b.urlInput.hint = getString(when {
+            realm == Realm.GHOST -> R.string.search_hint_ghost
+            t.isPrivate -> R.string.search_hint_private
+            else -> R.string.search_hint
+        })
         b.home.homeSearchInput.hint = "Search ${Prefs.searchEngine.label}"
 
         val (icon, tint) = when {
@@ -857,6 +1010,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.home.logo.imageTintList = ColorStateList.valueOf(c)
         glow(b.home.logoGlow, c)
         b.home.wordmarkSub.setTextColor(c)
+        b.home.wordmarkSub.text = "BROWSER · " + realm.label.uppercase(Locale.ROOT)
         b.home.homeSearchIcon.imageTintList = ColorStateList.valueOf(c)
         (getDrawable(R.drawable.bg_home_search)!!.mutate() as GradientDrawable).let {
             it.setColor(getColor(R.color.surface2))
@@ -873,6 +1027,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.switcher.newTabFab.setTextColor(accent.onColor)
         b.switcher.newTabFab.iconTint = ColorStateList.valueOf(accent.onColor)
         tabAdapter.accent = c
+        b.switcher.realmSeal.setImageResource(realm.sealIcon)
+        b.switcher.realmSeal.imageTintList = ColorStateList.valueOf(c)
+        b.switcher.realmSeal.contentDescription = "Realm: ${realm.label}"
+        b.btnMenu.tooltipText = "Menu · long-press for realms (${realm.label})"
         styleToggle()
         b.findCount.setTextColor(c)
         refreshUi()
@@ -902,6 +1060,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val sw = b.switcher
         sw.tabGrid.layoutManager = GridLayoutManager(this, 2)
         sw.tabGrid.adapter = tabAdapter
+        sw.tabGrid.addItemDecoration(TabDnaDecoration(tabAdapter))
+        sw.realmSeal.setOnClickListener { showRealms() }
         ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
             override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {
@@ -964,14 +1124,18 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 buildTabGroupPills()
                 refreshSwitcher()
             }
-            .setNegativeButton(android.R.string.cancel, null).show()
+            .setNegativeButton(android.R.string.cancel, null)
+            .apply {
+                val branch = descendants(tabs, tab)
+                if (branch.isNotEmpty()) setNeutralButton("Close branch (${branch.size + 1})") { _, _ -> closeBranch(tab) }
+            }
+            .show()
     }
 
     private fun showSwitcher() {
         hideKeyboard(); b.urlInput.clearFocus()
         current?.let { captureThumbnail(it) }
-        switcherPrivate = current?.isPrivate == true
-        b.switcher.switcherMode.check(if (switcherPrivate) R.id.modePrivate else R.id.modeNormal)
+        syncSwitcherMode()
         if (b.switcher.tabSearch.tabSearchInput.text?.toString() != switcherQuery) {
             b.switcher.tabSearch.tabSearchInput.setText(switcherQuery)
         }
@@ -981,6 +1145,16 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         root.alpha = 0f; root.scaleX = 0.96f; root.scaleY = 0.96f
         root.isVisible = true
         root.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(180).start()
+    }
+
+    /** Ghost has a single (private) list: hide the Normal toggle and label the other with the realm. */
+    private fun syncSwitcherMode() {
+        val sw = b.switcher
+        switcherPrivate = realm.alwaysPrivate || current?.isPrivate == true
+        sw.modeNormal.isVisible = !realm.alwaysPrivate
+        sw.modeNormal.text = realm.label
+        sw.modePrivate.text = if (realm.alwaysPrivate) realm.label else getString(R.string.private_tabs)
+        sw.switcherMode.check(if (switcherPrivate) R.id.modePrivate else R.id.modeNormal)
     }
 
     private fun hideSwitcher() {
@@ -1003,7 +1177,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                     TabGroup.from(t.groupId)?.let { getString(it.labelRes).lowercase(Locale.ROOT).contains(q) } == true
             }
         tabAdapter.items = items
+        tabAdapter.byId = tabs.associateBy { it.id }
         tabAdapter.currentId = current?.id ?: -1
+        tabAdapter.accent = accent.color
         tabAdapter.notifyDataSetChanged()
         val empty = b.switcher.switcherEmpty
         empty.root.isVisible = items.isEmpty()
@@ -1016,7 +1192,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             empty.emptyCta.text = getString(if (switcherPrivate) R.string.new_private_tab else R.string.new_tab)
             empty.emptyCta.setOnClickListener { newTab(private = switcherPrivate); hideSwitcher() }
         }
-        b.switcher.newTabFab.text = getString(if (switcherPrivate) R.string.new_private_tab else R.string.new_tab)
+        b.switcher.newTabFab.text = when {
+            realm == Realm.GHOST -> "New Ghost tab"
+            else -> getString(if (switcherPrivate) R.string.new_private_tab else R.string.new_tab)
+        }
         b.switcher.newTabFab.setIconResource(if (switcherPrivate) R.drawable.ic_incognito else R.drawable.ic_add)
         b.switcher.newTabFab.iconTint = ColorStateList.valueOf(accent.onColor)
     }
@@ -1101,7 +1280,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val bookmarked = onPage && db.isBookmarked(t.url)
         val items = listOf(
             MenuItem(R.drawable.ic_add, "New tab") { newTab() },
-            MenuItem(R.drawable.ic_incognito, "Private tab") { newTab(private = true) },
+            MenuItem(R.drawable.ic_incognito, if (realm == Realm.GHOST) "Ghost tab" else "Private tab") { newTab(private = true) },
+            MenuItem(realm.sealIcon, "Realm · ${realm.label}", realm != Realm.PLAY) { showRealms() },
             MenuItem(R.drawable.ic_bookmark, "Bookmarks") { openLibrary(0) },
             MenuItem(R.drawable.ic_history, "History") { openLibrary(1) },
             DownloadCenter.activeCount.let { n ->
@@ -1314,20 +1494,20 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val url = ReaderMode.savedUrl(id)
         when {
             url != null -> { if (current !== t) selectTab(t); load(t, url) }
-            HelperSessions.baseUrl == null && attempt < 25 -> b.root.postDelayed({ if (t in tabs) openSavedArticle(t, id, attempt + 1) }, 200)
+            HelperSessions.baseUrl == null && attempt < 25 -> b.root.postDelayed({ if (t in allTabs) openSavedArticle(t, id, attempt + 1) }, 200)
             else -> snack("That article is no longer in your reading list")
         }
     }
 
     /** Toolbar badge for detected saveable videos. Beast Helper feeds [MediaSniffer]. */
     fun onMediaBadgeTapped(session: org.mozilla.geckoview.GeckoSession) {
-        val tab = tabs.firstOrNull { it.session === session } ?: current ?: return
+        val tab = allTabs.firstOrNull { it.session === session } ?: current ?: return
         MediaSaveSheet.show(this, session, tab.isPrivate, tab.url, accent.color)
     }
 
     /** 2.3.7: Media Radar overlay (media badge long-press / menu). */
     private fun openMediaRadar(session: org.mozilla.geckoview.GeckoSession) {
-        val tab = tabs.firstOrNull { it.session === session } ?: current ?: return
+        val tab = allTabs.firstOrNull { it.session === session } ?: current ?: return
         if (!MediaSniffer.hasMedia(session)) {
             Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
             return
@@ -1429,8 +1609,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val url = t.url
         Engine.setUboSiteEnabled(url, up) { res ->
             val h = UrlUtils.host(url).orEmpty()
-            tabs.filter { UrlUtils.host(it.url).orEmpty() == h }.forEach { it.uboSiteOn = res; it.uboSiteHost = h }
-            if (tabs.contains(t)) t.session.reload()
+            allTabs.filter { UrlUtils.host(it.url).orEmpty() == h }.forEach { it.uboSiteOn = res; it.uboSiteHost = h }
+            if (allTabs.contains(t)) t.session.reload()
             updateShield()
         updateMediaBadge()
         }
@@ -1444,7 +1624,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 val h = UrlUtils.host(ev.optString("url")).orEmpty()
                 val on = ev.optBoolean("enabled", true)
                 var etpSynced = false
-                tabs.filter { h.isNotEmpty() && UrlUtils.host(it.url).orEmpty() == h }.forEach { tab ->
+                allTabs.filter { h.isNotEmpty() && UrlUtils.host(it.url).orEmpty() == h }.forEach { tab ->
                     tab.uboSiteOn = on; tab.uboSiteHost = h
                     // keep ETP in step so the one switch stays truthful
                     val perm = tab.trackingPermission
@@ -1456,7 +1636,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 }
                 updateShield(); shieldsRefresh?.invoke()
             }
-            "whitelistChanged", "hello" -> tabs.forEach { refreshUboSite(it, force = true) }
+            "whitelistChanged", "hello" -> allTabs.forEach { refreshUboSite(it, force = true) }
         }
     }
 
@@ -1595,7 +1775,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             }
             override fun onOpenOptionsPage(source: WebExtension) { openUboDashboard() }
         })
-        tabs.forEach { attachUbo(it, ext); refreshUboSite(it, force = true) }
+        allTabs.forEach { attachUbo(it, ext); refreshUboSite(it, force = true) }
         updateHomeStats()
     }
 
@@ -1642,7 +1822,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     /** Hosts an extension popup (uBO's panel) in a bottom sheet. */
     private fun showExtensionPopup(): GeckoResult<GeckoSession> {
-        val session = GeckoSession(GeckoSessionSettings.Builder().usePrivateMode(current?.isPrivate == true).build())
+        val session = GeckoSession(GeckoSessionSettings.Builder()
+            .usePrivateMode(current?.isPrivate == true || realm.alwaysPrivate)
+            .apply { realm.contextId?.let { contextId(it) } }
+            .build())
         val dialog = BottomSheetDialog(this)
         val view = GeckoView(this).apply {
             layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dp(this@MainActivity, 560))
@@ -1749,7 +1932,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                         Engine.allowInsecureTemporarily(true)
                         tab.restoreHttpsOnly = true
                     }
-                    if (tabs.contains(tab)) load(tab, http)
+                    if (allTabs.contains(tab)) load(tab, http)
                 }
             }
             "back" -> goBack()
@@ -1774,8 +1957,11 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val isImage = element.type == ContextElement.TYPE_IMAGE
         val options = mutableListOf<Pair<String, () -> Unit>>()
         if (link != null) {
-            options += "Open in new tab" to { newTab(link, private = tab.isPrivate, parent = tab, select = false); snack("Opened in background") { selectTab(tabs.last()) } }
-            options += "Open in private tab" to { newTab(link, private = true) }
+            options += "Open in new tab" to {
+                val opened = newTab(link, private = tab.isPrivate, parent = tab, select = false)
+                snack("Opened in background") { if (opened in tabs) selectTab(opened) }
+            }
+            options += (if (realm == Realm.GHOST) "Open in Ghost tab" else "Open in private tab") to { newTab(link, private = true, parent = tab) }
             options += "Copy link" to { copy(link) }
             options += "Share link" to { startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, link), "Share link")) }
             options += "Download link" to { downloadUrl(link, null) }
@@ -1859,7 +2045,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val wasCurrent = tab === current
         if (geckoView.session === tab.session) geckoView.releaseSession()
         runCatching { tab.session.close() }
-        tab.session = createSession(tab.isPrivate)
+        tab.session = createSession(tab.isPrivate, tab.realm)
         wire(tab)
         tab.session.open(runtime)
         if (!tab.showingHome) tab.pendingUrl = tab.url

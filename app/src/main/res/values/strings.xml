@@ -57,4 +57,8 @@
     <!-- 2.3.7: Media Radar -->
     <string name="media_radar">Media Radar</string>
     <string name="media_radar_empty">No streams on this page</string>
+
+    <!-- 2.3.8: Realms -->
+    <string name="realms">Realms</string>
+    <string name="search_hint_ghost">Ghost search or address</string>
 </resources>

@@ -46,8 +46,19 @@ class SettingsActivity : AppCompatActivity() {
                 UiTheme.apply(value as String)
                 true
             }
-            findPreference<AccentPreference>("accent")?.setOnPreferenceChangeListener { _, _ ->
-                view?.post { activity?.recreate() }; true
+            // 2.3.8: the accent row edits the current realm's accent (`accent` / `accent_work`; Ghost is fixed).
+            findPreference<AccentPreference>("accent")?.apply {
+                val realm = Prefs.realm
+                title = "Accent · ${realm.label} realm"
+                fallback = Prefs.defaultAccent(realm)
+                val key = Prefs.accentKey(realm)
+                if (key == null) {
+                    isEnabled = false
+                    summary = "Ghost is always Ultraviolet"
+                } else {
+                    this.key = key
+                }
+                setOnPreferenceChangeListener { _, _ -> view?.post { activity?.recreate() }; true }
             }
             findPreference<Preference>("reset_counter")?.apply {
                 summary = "${fmt(Stats.total.get())} blocked so far"
