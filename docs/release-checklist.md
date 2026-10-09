@@ -6,7 +6,7 @@ Do every step, in order, for each release. Don't publish until every box is tick
 - [ ] Everything for the release is merged to `main` through reviewed PRs.
 - [ ] CI is green on the `main` commit you're releasing (build, unit tests, lint).
 - [ ] `versionCode` is higher than the last release **and any test build installed on a phone**, and `versionName` is the
-      new version (`app/build.gradle.kts`). Test builds use up versionCodes too: `2.8.0-pre1` was 20, so **2.8.0 is 21**.
+      new version (`app/build.gradle.kts`). Test builds use up versionCodes too: `2.8.0-pre1` was 20 and `2.8.0-pre2` was 21, so **2.8.0 is 22**.
 - [ ] `CHANGELOG.md` has a section for the new version, in plain language.
 - [ ] README "For developers" shows the new version and the GeckoView / uBlock Origin versions actually shipped.
 
