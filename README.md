@@ -175,7 +175,10 @@ forced a one-time reinstall.)
 A release-signed APK cannot be installed over a debug-signed one (or the reverse); uninstall first.
 
 ### Licences
-Full list and source locations: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Ulfur is free software, licensed under the **GNU General Public License v3.0** ([LICENSE](LICENSE)). Copyright (C) 2026 Jam Howman.
+You may use, modify and redistribute it under the GPL-3.0 terms; modified versions you distribute must also be GPL-3.0 with source available.
+
+Bundled third-party components keep their own licences. Full list and source locations: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 * uBlock Origin is GPL-3.0 (c) Raymond Hill and contributors (https://github.com/gorhill/uBlock). Ulfur's
   `beast-bridge.js` addition is GPL-3.0 as well. If you distribute an APK that contains uBO, you must follow the GPLv3
