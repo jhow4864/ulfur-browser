@@ -75,6 +75,17 @@ class AppIconTest {
         AppIcon.entries.filter { it != AppIcon.DEFAULT }.forEach { assertDisabled(it) }
     }
 
+    @Test fun mainActivityIsNeverDisabled() {
+        val main = android.content.ComponentName(ctx, "${ctx.packageName}.ui.MainActivity")
+        AppIcon.entries.forEach { icon ->
+            AppIcon.apply(ctx, icon)
+            assertTrue(
+                "MainActivity disabled after picking ${icon.key}",
+                ctx.packageManager.getComponentEnabledSetting(main) != PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            )
+        }
+    }
+
     @Test fun syncRestoresStoredChoice() {
         Prefs.appIconKey = AppIcon.FULL_MOON.key
         AppIcon.sync(ctx)

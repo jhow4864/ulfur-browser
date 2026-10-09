@@ -8,8 +8,10 @@ import androidx.annotation.DrawableRes
 import com.jamhowman.beastbrowser.R
 
 /**
- * Alternate home-screen icons (2.8). The brand [DEFAULT] stays on [com.jamhowman.beastbrowser.ui.MainActivity];
- * each colourway is an `<activity-alias>` that targets MainActivity.
+ * Alternate home-screen icons (2.8). Every launcher entry, including the brand [DEFAULT], is an
+ * `<activity-alias>` targeting [com.jamhowman.beastbrowser.ui.MainActivity]. MainActivity itself is never
+ * disabled: it holds the http/https VIEW filter (default-browser role) and is the target of pinned shortcuts,
+ * and disabling an alias's target would disable every alias too.
  *
  * Icon assets → ThemePreset map (Designer names first; mismatches matched by accent hex):
  * - blood_moon → BLOOD_MOON, frost → FROST, toxic → TOXIC, ember → EMBER,
@@ -25,14 +27,14 @@ enum class AppIcon(
     @DrawableRes val previewRes: Int,
     @DrawableRes val iconRes: Int,
     @DrawableRes val roundIconRes: Int,
-    /** Simple class name of the activity-alias, or null when the launcher is MainActivity. */
-    val aliasSimpleName: String?,
+    /** Simple class name of the launcher activity-alias. */
+    val aliasSimpleName: String,
 ) {
     DEFAULT(
         "default", "Default", null,
         R.drawable.ic_icon_preview_default,
         R.mipmap.ic_launcher, R.mipmap.ic_launcher_round,
-        null,
+        "IconAliasDefault",
     ),
     BLOOD_MOON(
         "blood_moon", "Blood Moon", ThemePreset.BLOOD_MOON,
@@ -85,15 +87,14 @@ enum class AppIcon(
 
     fun componentName(context: Context): ComponentName {
         val pkg = context.packageName
-        val cls = if (aliasSimpleName == null) "$pkg.ui.MainActivity" else "$pkg.ui.$aliasSimpleName"
-        return ComponentName(pkg, cls)
+        return ComponentName(pkg, "$pkg.ui.$aliasSimpleName")
     }
 
     companion object {
         fun from(key: String?): AppIcon =
             entries.firstOrNull { it.key == key } ?: DEFAULT
 
-        /** Persist [icon] and enable exactly one launcher component (MainActivity or one alias). */
+        /** Persist [icon] and enable exactly one launcher alias. Never touches MainActivity. */
         fun apply(context: Context, icon: AppIcon) {
             Prefs.appIconKey = icon.key
             enableOnly(context, icon)
