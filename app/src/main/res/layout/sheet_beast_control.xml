@@ -58,61 +58,10 @@
         </LinearLayout>
     </LinearLayout>
     <TextView
-        android:textSize="12sp"
+        android:textSize="13sp"
         android:textColor="@color/text_secondary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/ctrl_cpu_cap"
-        android:textAllCaps="true"
-        android:letterSpacing="0.06" />
-    <com.google.android.material.slider.Slider
-        android:value="100"
-        android:id="@+id/cpuCap"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:stepSize="5"
-        android:valueFrom="25"
-        android:valueTo="100"
-        app:thumbColor="?attr/colorPrimary"
-        app:trackColorActive="?attr/colorPrimary"
-        app:trackColorInactive="@color/track_muted" />
-    <TextView
-        android:textSize="12sp"
-        android:textColor="@color/text_secondary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/ctrl_ram_cap"
-        android:textAllCaps="true"
-        android:letterSpacing="0.06" />
-    <com.google.android.material.slider.Slider
-        android:value="100"
-        android:id="@+id/ramCap"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:stepSize="5"
-        android:valueFrom="25"
-        android:valueTo="100"
-        app:thumbColor="?attr/colorPrimary"
-        app:trackColorActive="?attr/colorPrimary"
-        app:trackColorInactive="@color/track_muted" />
-    <TextView
-        android:textSize="12sp"
-        android:textColor="@color/text_secondary"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/ctrl_net_cap"
-        android:textAllCaps="true"
-        android:letterSpacing="0.06" />
-    <com.google.android.material.slider.Slider
-        android:value="100"
-        android:id="@+id/netCap"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:stepSize="5"
-        android:valueFrom="25"
-        android:valueTo="100"
-        app:thumbColor="?attr/colorPrimary"
-        app:trackColorActive="?attr/colorPrimary"
-        app:trackColorInactive="@color/track_muted" />
+        android:layout_marginTop="14dp"
+        android:text="@string/ctrl_note" />
 </LinearLayout>
