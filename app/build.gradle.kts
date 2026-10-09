@@ -11,7 +11,12 @@ plugins {
     id("com.android.application")
 }
 
-val geckoviewVersion = "157.0.20260924084938"   // latest stable (release channel) on maven.mozilla.org
+// GeckoView 158 for Ulfur 2.8. Stable 158 isn't on maven.mozilla.org until release day (13 Oct 2026), so this
+// branch builds against the newest 158 *beta*. RELEASE DAY: set geckoviewChannel = "" and geckoviewVersion to the
+// stable build (artifact org.mozilla.geckoview:geckoview-arm64-v8a:158.0.<buildid>), and update README.md and
+// THIRD_PARTY_NOTICES.md to match. Never ship a release built from the beta channel.
+val geckoviewChannel = "-beta"                   // "" = release channel (stable), "-beta" = beta channel
+val geckoviewVersion = "158.0.20261007115609"   // newest 158 beta on maven.mozilla.org as of 9 Oct 2026
 // One ABI per build keeps the APK sensible (~110 MB). Default arm64-v8a (phones);
 // `-Pbeast.abi=x86_64` builds an emulator/Chromebook APK, `armeabi-v7a` for old 32-bit phones.
 val beastAbi = (findProperty("beast.abi") as String?) ?: "arm64-v8a"
@@ -64,7 +69,7 @@ fun releaseSigningProblem(): String? {
 android {
     namespace = "com.jamhowman.beastbrowser"
     compileSdk {
-        version = release(37) { minorApiLevel = 1 }   // GeckoView 157 requires 37.1
+        version = release(37) { minorApiLevel = 2 }   // GeckoView 158 requires 37.2 (157 needed 37.1)
     }
 
     defaultConfig {
@@ -73,6 +78,7 @@ android {
         targetSdk = 37
         // Every release needs a higher versionCode than the last one (2.5.0 shipped as 16): Android and the in-app
         // updater only install a higher versionCode as an update.
+        // NEXT: 2.8.0 must be versionCode 22. 20 and 21 were used by the 2.8.0-pre1/pre2 test builds (GitHub releases).
         versionCode = 19
         versionName = "2.7.1"
         vectorDrawables.useSupportLibrary = true
@@ -137,7 +143,7 @@ android {
 }
 
 dependencies {
-    implementation("org.mozilla.geckoview:geckoview-$beastAbi:$geckoviewVersion")
+    implementation("org.mozilla.geckoview:geckoview$geckoviewChannel-$beastAbi:$geckoviewVersion")
 
     implementation("androidx.core:core-ktx:1.19.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
@@ -245,6 +251,36 @@ tasks.matching { it.name in setOf("packageRelease", "packageReleaseBundle", "sig
     dependsOn(validateReleaseSigning)
 }
 tasks.matching { it.name == "preReleaseBuild" }.configureEach { mustRunAfter(validateReleaseSigning) }
+
+// Pre-release GeckoView guard: release packaging refuses a beta/nightly engine unless explicitly allowed
+// (-Pulfur.allowPrereleaseGecko=true or env ULFUR_ALLOW_PRERELEASE_GECKO=true, for test builds only). Stops a beta engine slipping into a published release.
+abstract class CheckGeckoChannel : DefaultTask() {
+    @get:Input abstract val channel: Property<String>
+    @get:Input abstract val version: Property<String>
+    @get:Input abstract val allowPrerelease: Property<Boolean>
+
+    @TaskAction fun check() {
+        if (channel.get().isEmpty()) return
+        val msg = "GeckoView is on the '${channel.get().removePrefix("-")}' channel (${version.get()}), not stable."
+        if (!allowPrerelease.get()) throw GradleException(
+            "$msg Switch app/build.gradle.kts to the stable release (geckoviewChannel = \"\") before building a release, " +
+                "or pass -Pulfur.allowPrereleaseGecko=true for a throwaway test build."
+        )
+        logger.warn("WARNING: $msg This APK is a TEST build and must not be published.")
+    }
+}
+val checkGeckoChannel = tasks.register<CheckGeckoChannel>("checkGeckoChannel") {
+    group = "verification"
+    description = "Fails release packaging when GeckoView is a beta/nightly build (override for test builds only)."
+    channel.set(geckoviewChannel)
+    version.set(geckoviewVersion)
+    allowPrerelease.set(
+        ((findProperty("ulfur.allowPrereleaseGecko") as String?) ?: System.getenv("ULFUR_ALLOW_PRERELEASE_GECKO"))?.toBoolean() ?: false
+    )
+}
+tasks.matching { it.name in setOf("packageRelease", "packageReleaseBundle", "signReleaseBundle") }.configureEach {
+    dependsOn(checkGeckoChannel)
+}
 
 androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
