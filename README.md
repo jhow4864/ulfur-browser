@@ -39,11 +39,10 @@ Ulfur is an independent project. It embeds Mozilla's open source GeckoView libra
 **Look and feel**
 * Dark-first design, a choice of accent colours (each realm can have its own) and an icon that follows your
   wallpaper colours on Android 13 and later
-* **Beast Control**, which shows the app's live CPU, memory and data use
+* **Ulfur Monitor**, which shows the app's live CPU, memory and data use
 
 ## Install
 Ulfur is released for **64-bit ARM (arm64-v8a) phones only**, which covers almost every Android phone from the last several years. There is no 32-bit or x86 release.
-
 
 1. Download the newest `Ulfur-<version>-arm64.apk` from [Releases](../../releases/latest).
 2. Open it on your phone and allow installs from your browser or file manager if Android asks.
