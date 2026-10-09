@@ -61,7 +61,7 @@ object BackupManager {
         "doh_provider" to S, "doh_mode" to S, "doh_custom_url" to S,
         "doh_nextdns_id" to S,
         "https_mode" to S, "cookie_mode" to S, "search_engine" to S,
-        "ui_theme" to S, "accent" to S, "accent_work" to S,
+        "ui_theme" to S, "accent" to S, "accent_work" to S, "app_icon" to S,
     )
 
     /** [Sections.logins] needs the vault unlocked; otherwise logins are left out (null). */

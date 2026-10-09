@@ -19,6 +19,7 @@ import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.edit
 import androidx.core.view.AccessibilityDelegateCompat
@@ -29,6 +30,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.jamhowman.beastbrowser.R
+import com.jamhowman.beastbrowser.data.AppIcon
 import com.jamhowman.beastbrowser.data.AppTheme
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Realm
@@ -62,7 +64,7 @@ class AppearanceFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        listOf(b.headerPreview, b.headerMode, b.headerAccent, b.headerRealms, b.headerMotion).forEach {
+        listOf(b.headerPreview, b.headerMode, b.headerAccent, b.headerRealms, b.headerIcon, b.headerMotion).forEach {
             ViewCompat.setAccessibilityHeading(it.sectionLabel, true)
         }
         bind()
@@ -102,6 +104,9 @@ class AppearanceFragment : Fragment() {
             b.presetGrid.addView(presetCard(ctx, preset, preset == theme, night) { pickTheme(it) }, gridCell(ctx))
         }
         bindRealms(ctx, night)
+        header(b.headerIcon, p, R.string.appearance_section_icon,
+            resources.getQuantityString(R.plurals.appearance_icons_count, AppIcon.entries.size, AppIcon.entries.size))
+        bindIcons(ctx, p)
         header(b.headerMotion, p, R.string.appearance_section_motion, null)
         bindWolf(p)
     }
@@ -444,6 +449,70 @@ class AppearanceFragment : Fragment() {
         dialog.setOnDismissListener { if (sheet === dialog) sheet = null }
         sheet = dialog
         dialog.show()
+    }
+
+
+    // ------------------------------------------------------------------ app icon
+
+    private fun bindIcons(ctx: Context, p: ThemePalette) {
+        val current = AppIcon.from(Prefs.appIconKey)
+        b.iconGrid.removeAllViews()
+        AppIcon.entries.forEach { icon ->
+            b.iconGrid.addView(iconCard(ctx, icon, icon == current, p) { pickIcon(it) }, iconCell(ctx))
+        }
+    }
+
+    private fun pickIcon(icon: AppIcon) {
+        if (icon.key == Prefs.appIconKey) return
+        AppIcon.apply(requireContext(), icon)
+        Toast.makeText(requireContext(), R.string.appearance_icon_applied, Toast.LENGTH_SHORT).show()
+        bind()
+    }
+
+    private fun iconCell(ctx: Context) = GridLayout.LayoutParams(
+        GridLayout.spec(GridLayout.UNDEFINED, 1f), GridLayout.spec(GridLayout.UNDEFINED, 1f),
+    ).apply {
+        width = 0
+        height = ViewGroup.LayoutParams.WRAP_CONTENT
+        setMargins(dp(ctx, 4), dp(ctx, 4), dp(ctx, 4), dp(ctx, 4))
+    }
+
+    private fun iconCard(ctx: Context, icon: AppIcon, selected: Boolean, p: ThemePalette, onPick: (AppIcon) -> Unit): View {
+        val surface = ctx.getColor(R.color.surface)
+        val frame = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            contentDescription = getString(R.string.appearance_icon_option, icon.label)
+            isSelected = selected
+            radioRole(this, selected)
+            isClickable = true
+            isFocusable = true
+            foreground = AppCompatResources.getDrawable(ctx, selectableBackground(ctx))
+            setOnClickListener { onPick(icon) }
+            val pad = dp(ctx, 6)
+            setPadding(pad, pad, pad, pad)
+            background = if (selected) rounded(ctx, p.surfaceTint, 16, p.withAlpha(0x88), 1)
+            else rounded(ctx, surface, 16, ctx.getColor(R.color.stroke), 1)
+        }
+        frame.addView(ImageView(ctx).apply {
+            setImageResource(icon.previewRes)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            clipToOutline = true
+            background = rounded(ctx, 0, 18)
+            outlineProvider = ViewOutlineProvider.BACKGROUND
+        }, LinearLayout.LayoutParams(dp(ctx, 64), dp(ctx, 64)))
+        frame.addView(TextView(ctx).apply {
+            text = icon.label
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            typeface = Typeface.create("sans-serif-medium", if (selected) Typeface.BOLD else Typeface.NORMAL)
+            setTextColor(if (selected) p.accentText else ctx.getColor(R.color.text_primary))
+            gravity = Gravity.CENTER
+            maxLines = 1
+            setAutoSizeTextTypeUniformWithConfiguration(9, 12, 1, TypedValue.COMPLEX_UNIT_SP)
+            setPadding(0, dp(ctx, 6), 0, 0)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        return frame
     }
 
     // ------------------------------------------------------------------ swatch card

@@ -5,6 +5,10 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 
 ## Unreleased (2.8)
 
+* **Alternate app icons.** Settings › Appearance has an App icon picker with the brand Default icon plus eight colourways that match the accent themes (Blood Moon, Frost, Toxic, Ember, Void, Gold, Sakura, Ash).
+* **Ulfur Monitor replaces Ulfur Control.** It still shows live CPU, memory and network use. The three "limit" sliders
+  are gone because they never limited anything; they only changed the colour of the figures.
+* The README now says Ulfur is arm64-only, and no longer lists a 32-bit build.
 * **Media Radar is now opt-in.** Stream detection, the media badge and the Media Radar menu entry stay off until you
   turn on Settings › General › Media Radar. Turning it off forgets anything already detected.
 

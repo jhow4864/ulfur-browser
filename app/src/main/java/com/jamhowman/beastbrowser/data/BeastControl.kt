@@ -10,18 +10,16 @@ import java.io.RandomAccessFile
 import java.util.Locale
 
 /**
- * Beast Control (2.3.5): live CPU / RAM / network figures for the app plus three "limit" sliders.
+ * Ulfur Monitor (was "Beast Control"): live CPU / RAM / network figures for the app.
  *
- * The limits are **soft**: they only drive the "over soft limit" warnings in the sheet.
- * [applySoftHints] is intentionally a no-op — nothing is throttled (same as the 2.3.5 release).
+ * 2.8: the three "limit" sliders were removed. They never throttled anything (they only coloured
+ * the figures), and a control that does nothing is worse than none. [clearLegacyLimits] drops
+ * their saved values.
  */
 object BeastControl {
     private const val KEY_CPU = "beast_ctrl_cpu"
     private const val KEY_RAM = "beast_ctrl_ram"
     private const val KEY_NET = "beast_ctrl_net"
-
-    /** Soft network budget at 100 %: 50 MiB per session. */
-    private const val NET_BUDGET_BYTES = 50L * 1024 * 1024
 
     private var lastCpuJiffies = -1L
     private var lastCpuWallNs = -1L
@@ -35,21 +33,13 @@ object BeastControl {
         val deviceRamBytes: Long,
         /** Bytes sent + received by the app since the session started (-1 = unsupported). */
         val netBytes: Long,
-    ) {
-        val cpuOverSoft: Boolean get() = cpuPercent != null && cpuPercent > cpuCap
-        val ramOverSoft: Boolean get() = deviceRamBytes > 0 && ramBytes * 100 > deviceRamBytes * ramCap
-        val netOverSoft: Boolean get() = netBytes >= 0 && netBytes * 100 > netCap.toLong() * NET_BUDGET_BYTES
-    }
+    )
 
-    var cpuCap: Int
-        get() = Prefs.sp.getInt(KEY_CPU, 100).coerceIn(25, 100)
-        set(v) = Prefs.sp.edit { putInt(KEY_CPU, v.coerceIn(25, 100)) }
-    var ramCap: Int
-        get() = Prefs.sp.getInt(KEY_RAM, 100).coerceIn(25, 100)
-        set(v) = Prefs.sp.edit { putInt(KEY_RAM, v.coerceIn(25, 100)) }
-    var netCap: Int
-        get() = Prefs.sp.getInt(KEY_NET, 100).coerceIn(25, 100)
-        set(v) = Prefs.sp.edit { putInt(KEY_NET, v.coerceIn(25, 100)) }
+    /** Remove the old slider prefs (2.3.5-2.7.x). Safe to call every launch. */
+    fun clearLegacyLimits() {
+        if (Prefs.sp.contains(KEY_CPU) || Prefs.sp.contains(KEY_RAM) || Prefs.sp.contains(KEY_NET))
+            Prefs.sp.edit { remove(KEY_CPU); remove(KEY_RAM); remove(KEY_NET) }
+    }
 
     fun snapshot(context: Context): Snapshot {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -58,10 +48,6 @@ object BeastControl {
         if (pssKb <= 0) pssKb = Debug.MemoryInfo().also { Debug.getMemoryInfo(it) }.totalPss.toLong()
         return Snapshot(sampleCpuPercent(), pssKb * 1024, mem.totalMem, sessionNetBytes())
     }
-
-    /** Placeholder for real throttling; the limits only produce warnings for now. */
-    @Suppress("UNUSED_PARAMETER")
-    fun applySoftHints(snapshot: Snapshot) {}
 
     /** utime + stime of this process, in clock ticks. */
     private fun readSelfCpuJiffies(): Long? = try {

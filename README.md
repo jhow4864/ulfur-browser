@@ -39,9 +39,10 @@ Ulfur is an independent project. It embeds Mozilla's open source GeckoView libra
 **Look and feel**
 * Dark-first design, a choice of accent colours (each realm can have its own) and an icon that follows your
   wallpaper colours on Android 13 and later
-* **Beast Control**, which shows the app's live CPU, memory and data use
+* **Ulfur Monitor**, which shows the app's live CPU, memory and data use
 
 ## Install
+Ulfur is released for **64-bit ARM (arm64-v8a) phones only**, which covers almost every Android phone from the last several years. There is no 32-bit or x86 release.
 
 1. Download the newest `Ulfur-<version>-arm64.apk` from [Releases](../../releases/latest).
 2. Open it on your phone and allow installs from your browser or file manager if Android asks.
@@ -130,9 +131,8 @@ records keep working: each record stores its MediaStore URI or absolute path.
 Needs JDK 17+ and Android SDK platform 37.1. Point Gradle at the SDK with `ANDROID_HOME` or a `local.properties`
 containing `sdk.dir=...`. That file is git-ignored and must not be committed.
 
-    ./gradlew assembleDebug                         # arm64-v8a (default)
-    ./gradlew assembleDebug -Pbeast.abi=x86_64      # emulator build
-    ./gradlew assembleDebug -Pbeast.abi=armeabi-v7a # older 32-bit phones
+    ./gradlew assembleDebug                         # arm64-v8a (default, the only released build)
+    ./gradlew assembleDebug -Pbeast.abi=x86_64      # emulator build, for development only
     ./gradlew testDebugUnitTest                     # unit tests and UI preview renders (../beast-browser-screens)
 
 The debug APK lands in `app/build/outputs/apk/debug/app-debug.apk`. The Gradle property names (`beast.abi`,

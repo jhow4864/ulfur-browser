@@ -424,6 +424,18 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal" />
 
+            <!-- ============================================================ APP ICON (2.8) -->
+            <include android:id="@+id/headerIcon" layout="@layout/view_section_header" />
+
+            <GridLayout
+                android:id="@+id/iconGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:columnCount="3"
+                android:useDefaultMargins="false" />
+
             <!-- ============================================================ MOTION (item 19) -->
             <include android:id="@+id/headerMotion" layout="@layout/view_section_header" />
 

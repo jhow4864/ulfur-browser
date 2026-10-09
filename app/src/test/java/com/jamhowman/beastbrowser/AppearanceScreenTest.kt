@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.GridLayout
 import androidx.core.content.edit
+import com.jamhowman.beastbrowser.data.AppIcon
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Realm
 import com.jamhowman.beastbrowser.data.ThemePreset
@@ -101,5 +102,20 @@ class AppearanceScreenTest {
         assertTrue(!sw.isChecked && !Prefs.wolfAnimation)
         assertEquals(f.getString(R.string.appearance_wolf_off),
             f.requireView().findViewById<android.widget.TextView>(R.id.wolfSummary).text.toString())
+    }
+
+    @Test fun appIconGridShowsNineChoicesAndStoresThePick() {
+        Prefs.init(androidx.test.core.app.ApplicationProvider.getApplicationContext())
+        Prefs.sp.edit(commit = true) { clear() }
+        val (_, f) = open()
+        val grid = f.requireView().findViewById<GridLayout>(R.id.iconGrid)
+        assertEquals(AppIcon.entries.size, grid.childCount)
+        assertTrue("Default is selected by default", grid.getChildAt(0).isSelected)
+        grid.getChildAt(AppIcon.entries.indexOf(AppIcon.GOLD)).performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals("gold", Prefs.appIconKey)
+        assertSame(AppIcon.GOLD, AppIcon.from(Prefs.appIconKey))
+        assertTrue(grid.getChildAt(AppIcon.entries.indexOf(AppIcon.GOLD)).isSelected)
+        assertTrue(!grid.getChildAt(0).isSelected)
     }
 }

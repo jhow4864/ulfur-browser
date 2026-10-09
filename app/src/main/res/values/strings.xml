@@ -57,13 +57,11 @@
     <string name="use_this">Use this</string>
 
     <!-- 2.3.5: Control sheet, tab search, Speed Dial widget (resource name kept) -->
-    <string name="beast_control">&brand; Control</string>
+    <string name="beast_control">&brand; Monitor</string>
+    <string name="ctrl_note">Live readout of what &brand; is using right now. Network counts since you opened the app. This shows usage only; it does not limit anything.</string>
     <string name="ctrl_cpu">CPU</string>
-    <string name="ctrl_cpu_cap">CPU limit</string>
     <string name="ctrl_net">NET</string>
-    <string name="ctrl_net_cap">Network limit</string>
     <string name="ctrl_ram">RAM</string>
-    <string name="ctrl_ram_cap">RAM limit</string>
     <string name="search_tabs">Search tabs</string>
     <string name="widget_speed_dial">Speed dial</string>
 
@@ -406,6 +404,13 @@
     <string name="appearance_realm_auto">%1$s (%2$s in use)</string>
     <string name="appearance_realm_ghost">Always dim</string>
     <string name="appearance_realm_tile">%1$s realm accent: %2$s, %3$s</string>
+    <string name="appearance_section_icon">App icon</string>
+    <plurals name="appearance_icons_count">
+        <item quantity="one">%1$d icon</item>
+        <item quantity="other">%1$d icons</item>
+    </plurals>
+    <string name="appearance_icon_option">%1$s app icon</string>
+    <string name="appearance_icon_applied">App icon updated. Some launchers take a moment to refresh.</string>
     <string name="appearance_section_motion">Motion</string>
     <string name="appearance_wolf_title">Animated wolf</string>
     <string name="appearance_wolf_on">The new-tab wolf breathes and its eye flashes when a page loads</string>
