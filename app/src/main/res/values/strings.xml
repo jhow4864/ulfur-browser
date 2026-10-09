@@ -413,4 +413,6 @@
     <string name="appearance_sheet_play_note">Play uses the theme. Changing it here changes the theme.</string>
     <string name="appearance_sheet_work_note">Work gets its own accent, so you can tell the realms apart at a glance.</string>
     <string name="appearance_sheet_work_auto">Use auto: Frost, or Ember while the theme is Frost</string>
+    <string name="menu_add_home">Add to Home screen</string>
+    <string name="add_home_unsupported">Your launcher doesn\'t support home-screen shortcuts</string>
 </resources>
