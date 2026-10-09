@@ -22,11 +22,11 @@ import org.robolectric.annotation.Config
 class MediaSnifferTest {
     @Before fun optIn() {
         Prefs.init(ApplicationProvider.getApplicationContext<Application>())
-        Prefs.sp.edit(commit = true) { clear(); putBoolean("media_radar", true) }
+        Prefs.sp.edit(commit = true) { clear(); putBoolean("video_download", true) }
     }
 
     @Test fun ignoresPagesWhileOff() {
-        Prefs.sp.edit(commit = true) { putBoolean("media_radar", false) }
+        Prefs.sp.edit(commit = true) { putBoolean("video_download", false) }
         val session = GeckoSession()
         MediaSniffer.publish(session, listOf(DetectedMedia("2", "https://cdn.example.com/a.mp4", pageUrl = "https://example.com")))
         assertEquals(0, MediaSniffer.count(session))

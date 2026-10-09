@@ -34,7 +34,7 @@ Ulfur is an independent project. It embeds Mozilla's open source GeckoView libra
 * Reader view with an offline reading list
 * On-device page translation, so pages aren't sent to a translation server
 * A download manager with pause and resume, plus downloads of HLS video streams
-* **Media Radar** (off by default; turn it on in Settings), which lists plain progressive MP4/WebM and unencrypted HLS. It does not list or save AES-128 HLS, SAMPLE-AES, or EME (Widevine, PlayReady, FairPlay). It does not list major streaming hosts (YouTube, Netflix, Disney+, and the rest of the host block). It does not bypass DRM.
+* A **video download button** in the address bar (on by default; can be turned off in Settings), for plain progressive MP4/WebM and unencrypted HLS. It does not offer or save AES-128 HLS, SAMPLE-AES, or EME (Widevine, PlayReady, FairPlay). It does not list major streaming hosts (YouTube, Netflix, Disney+, and the rest of the host block). It does not bypass DRM.
 
 **Look and feel**
 * Dark-first design, a choice of accent colours (each realm can have its own) and an icon that follows your

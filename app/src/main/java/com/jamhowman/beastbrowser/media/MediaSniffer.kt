@@ -60,7 +60,7 @@ object MediaSniffer {
 
     /** Replace the detected list for a tab. Blocked hosts are stripped. */
     fun publish(session: GeckoSession, items: List<DetectedMedia>) {
-        if (!com.jamhowman.beastbrowser.data.Prefs.mediaRadar) { clear(session); return } // 2.8: opt-in
+        if (!com.jamhowman.beastbrowser.data.Prefs.videoDownload) { clear(session); return } // 2.8: download button switched off
         val cleaned = items.filterNot { isDrmHost(it.url) || isDrmHost(it.pageUrl) }
             .distinctBy { it.url }
         if (cleaned.isEmpty()) bySession.remove(session) else bySession[session] = cleaned
@@ -71,7 +71,7 @@ object MediaSniffer {
         if (bySession.remove(session) != null) listeners.forEach { runCatching { it(session) } }
     }
 
-    /** Drop everything detected (Media Radar switched off). */
+    /** Drop everything detected (video download button switched off). */
     fun clearAll() {
         val sessions = bySession.keys.toList()
         bySession.clear()

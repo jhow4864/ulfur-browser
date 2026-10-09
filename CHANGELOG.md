@@ -9,8 +9,10 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 * **Ulfur Monitor replaces Ulfur Control.** It still shows live CPU, memory and network use. The three "limit" sliders
   are gone because they never limited anything; they only changed the colour of the figures.
 * The README now says Ulfur is arm64-only, and no longer lists a 32-bit build.
-* **Media Radar is now opt-in.** Stream detection, the media badge and the Media Radar menu entry stay off until you
-  turn on Settings › General › Media Radar. Turning it off forgets anything already detected.
+* **Video download button is back on by default.** When a page has a video Ulfur can save, a download button shows in
+  the address bar again; tap it to save. You can turn it off in Settings › General › Video download button.
+* **Media Radar is gone.** The full-screen radar overlay, its menu entry and the long-press on the download button
+  have been removed. The download button and save sheet do the same job.
 
 ## 2.7.1 (versionCode 19)
 

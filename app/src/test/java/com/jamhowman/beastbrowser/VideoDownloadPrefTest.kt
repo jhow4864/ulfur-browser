@@ -7,6 +7,7 @@ import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.media.MediaSniffer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -14,10 +15,10 @@ import org.mozilla.geckoview.GeckoSession
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** 2.8: Media Radar is opt-in and off by default. */
+/** 2.8: the video download button is on by default and can be switched off. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-class MediaRadarOptInTest {
+class VideoDownloadPrefTest {
     private val ctx get() = ApplicationProvider.getApplicationContext<Application>()
 
     @Before fun clean() {
@@ -25,8 +26,13 @@ class MediaRadarOptInTest {
         Prefs.sp.edit(commit = true) { clear() }
     }
 
-    @Test fun offByDefault() {
-        assertFalse(Prefs.mediaRadar)
+    @Test fun onByDefault() {
+        assertTrue(Prefs.videoDownload)
+    }
+
+    @Test fun oldMediaRadarSettingIsIgnored() {
+        Prefs.sp.edit(commit = true) { putBoolean("media_radar", false) }
+        assertTrue(Prefs.videoDownload)
     }
 
     @Test fun clearAllEmptiesEveryTab() {

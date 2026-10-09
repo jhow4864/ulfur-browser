@@ -558,7 +558,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (old != null && old !== tab) {
             old.session.setActive(false)
             runCatching { runtime.webExtensionController.setTabActive(old.session, false) }
-            if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
         }
         current = tab
         if (geckoView.session !== tab.session) {
@@ -715,7 +714,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     private fun switchRealm(r: Realm) {
         if (r == realm) return
-        if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
         if (b.findBar.isVisible) closeFind()
         hideSuggest()
         b.urlInput.clearFocus()
@@ -828,7 +826,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.shieldButton.setOnClickListener { showShields() }
         b.readerButton.setOnClickListener { toggleReader() }
         b.mediaButton.setOnClickListener { current?.session?.let { onMediaBadgeTapped(it) } }
-        b.mediaButton.setOnLongClickListener { if (Prefs.mediaRadar) current?.session?.let { openMediaRadar(it) }; true }
         MediaSniffer.addListener { session ->
             if (current?.session === session) runOnUiThread { updateMediaBadge() }
         }
@@ -956,7 +953,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             override fun handleOnBackPressed() {
                 when {
                     fullscreenTab != null -> fullscreenTab?.session?.exitFullScreen()
-                    MediaRadar.isShowing(b.radar) -> MediaRadar.hide(b.radar)
                     b.switcher.root.isVisible -> hideSwitcher()
                     b.findBar.isVisible -> closeFind()
                     b.suggestList.isVisible -> {
@@ -1444,12 +1440,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             DownloadCenter.activeCount.let { n ->
                 MenuItem(R.drawable.ic_download, if (n > 0) "Downloads ($n)" else "Downloads", n > 0) { openDownloads() }
             },
-            if (!Prefs.mediaRadar) null else (onPage && MediaSniffer.hasMedia(t.session)).let { hasMedia ->
-                MenuItem(R.drawable.ic_download, getString(R.string.media_radar), hasMedia) {
-                    if (hasMedia) openMediaRadar(t.session)
-                    else Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
-                }
-            },
             if (pipOffered) MenuItem(R.drawable.ic_pip, getString(R.string.menu_pip)) {
                 if (!enterPip()) toast(getString(R.string.pip_unavailable))
             } else null,
@@ -1679,19 +1669,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         MediaSaveSheet.show(this, session, tab.isPrivate, tab.url, accent.color)
     }
 
-    /** 2.3.7: Media Radar overlay (media badge long-press / menu). */
-    private fun openMediaRadar(session: org.mozilla.geckoview.GeckoSession) {
-        val tab = allTabs.firstOrNull { it.session === session } ?: current ?: return
-        if (!MediaSniffer.hasMedia(session)) {
-            Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
-            return
-        }
-        MediaRadar.show(this, b.radar, session, tab.isPrivate, tab.url, accent.color, accent.onColor)
-    }
-
     private fun updateMediaBadge() {
         val t = current
-        val n = if (t == null || t.showingHome || !Prefs.mediaRadar) 0 else MediaSniffer.count(t.session)
+        val n = if (t == null || t.showingHome || !Prefs.videoDownload) 0 else MediaSniffer.count(t.session)
         b.mediaButton.isVisible = n > 0
         b.mediaBadge.isVisible = n > 0
         b.mediaBadge.text = if (n > 99) "99+" else n.toString()
@@ -2454,7 +2434,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             if (b.switcher.root.isVisible) b.switcher.root.isVisible = false
             switcherUp = false
             if (b.suggestList.isVisible) hideSuggest()
-            if (MediaRadar.isShowing(b.radar)) MediaRadar.hide(b.radar)
             b.urlInput.clearFocus()
             hideKeyboard()
         } else {
