@@ -57,13 +57,11 @@
     <string name="use_this">Use this</string>
 
     <!-- 2.3.5: Control sheet, tab search, Speed Dial widget (resource name kept) -->
-    <string name="beast_control">&brand; Control</string>
+    <string name="beast_control">&brand; Monitor</string>
+    <string name="ctrl_note">Live readout of what &brand; is using right now. Network counts since you opened the app. This shows usage only; it does not limit anything.</string>
     <string name="ctrl_cpu">CPU</string>
-    <string name="ctrl_cpu_cap">CPU limit</string>
     <string name="ctrl_net">NET</string>
-    <string name="ctrl_net_cap">Network limit</string>
     <string name="ctrl_ram">RAM</string>
-    <string name="ctrl_ram_cap">RAM limit</string>
     <string name="search_tabs">Search tabs</string>
     <string name="widget_speed_dial">Speed dial</string>
 

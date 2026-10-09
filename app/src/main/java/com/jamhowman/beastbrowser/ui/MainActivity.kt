@@ -1615,20 +1615,14 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun showBeastControl() {
         val dialog = BottomSheetDialog(this)
         val s = SheetBeastControlBinding.inflate(layoutInflater)
-        s.cpuCap.value = BeastControl.cpuCap.toFloat()
-        s.ramCap.value = BeastControl.ramCap.toFloat()
-        s.netCap.value = BeastControl.netCap.toFloat()
+        BeastControl.clearLegacyLimits()
         fun paint() {
             val snap = BeastControl.snapshot(this)
-            BeastControl.applySoftHints(snap)
             val ok = accent.color
-            val warn = getColor(R.color.warn)
             s.ctrlCpu.text = BeastControl.formatCpu(snap.cpuPercent)
             s.ctrlRam.text = BeastControl.formatRam(snap.ramBytes)
             s.ctrlNet.text = BeastControl.formatNet(snap.netBytes)
-            s.ctrlCpu.setTextColor(if (snap.cpuOverSoft) warn else ok)
-            s.ctrlRam.setTextColor(if (snap.ramOverSoft) warn else ok)
-            s.ctrlNet.setTextColor(if (snap.netOverSoft) warn else ok)
+            s.ctrlCpu.setTextColor(ok); s.ctrlRam.setTextColor(ok); s.ctrlNet.setTextColor(ok)
         }
         paint()
         val ticker = object : Runnable {
@@ -1639,9 +1633,6 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             }
         }
         s.root.postDelayed(ticker, 1500)
-        s.cpuCap.addOnChangeListener { _, v, fromUser -> if (fromUser) { BeastControl.cpuCap = v.toInt(); paint() } }
-        s.ramCap.addOnChangeListener { _, v, fromUser -> if (fromUser) { BeastControl.ramCap = v.toInt(); paint() } }
-        s.netCap.addOnChangeListener { _, v, fromUser -> if (fromUser) { BeastControl.netCap = v.toInt(); paint() } }
         dialog.setOnDismissListener { s.root.removeCallbacks(ticker) }
         dialog.setContentView(s.root)
         dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
