@@ -78,6 +78,7 @@ android {
         targetSdk = 37
         // Every release needs a higher versionCode than the last one (2.5.0 shipped as 16): Android and the in-app
         // updater only install a higher versionCode as an update.
+        // NEXT: 2.8.0 must be versionCode 21, not 20. 20 was used by the 2.8.0-pre1 test build installed on a phone.
         versionCode = 19
         versionName = "2.7.1"
         vectorDrawables.useSupportLibrary = true
