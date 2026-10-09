@@ -32,7 +32,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-37.1 build-tools;36.0.0 platform-tools"
+          packages: "platforms;android-37.2 build-tools;36.0.0 platform-tools"
 
       - name: Set up Node (extension JS tests)
         uses: actions/setup-node@v7

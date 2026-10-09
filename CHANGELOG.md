@@ -13,6 +13,7 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   the address bar again; tap it to save. You can turn it off in Settings › General › Video download button.
 * **Media Radar is gone.** The full-screen radar overlay, its menu entry and the long-press on the download button
   have been removed. The download button and save sheet do the same job.
+* **GeckoView 158.** The engine moves from GeckoView 157 to 158 (Firefox 158), with its security fixes.
 
 ## 2.7.1 (versionCode 19)
 

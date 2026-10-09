@@ -5,7 +5,7 @@ next to the code in this repo (paths given) and inside every APK built from it.
 
 | Component | Version | Licence | Where |
 |---|---|---|---|
-| GeckoView (Mozilla) | 157.0.20260924084938 | MPL-2.0 | Maven dependency `org.mozilla.geckoview:geckoview-*` |
+| GeckoView (Mozilla) | 158.0.20261007115609 (beta; stable 158 at release) | MPL-2.0 | Maven dependency `org.mozilla.geckoview:geckoview-*` |
 | uBlock Origin (Raymond Hill and contributors) | 1.75.0 | GPL-3.0 | `app/src/main/assets/extensions/ublock/` (`LICENSE.txt`) |
 | Readability.js (Mozilla) | 0.6.0 | Apache-2.0 | `app/src/main/assets/extensions/beast-helper/reader/` (`LICENSE-Readability.txt`) |
 | Libraries bundled inside uBlock Origin (CodeMirror, CSSTree, hsluv, js-beautify, lz4, publicsuffixlist, punycode.js, regexanalyzer, diff) | as shipped with uBO 1.75.0 | their own licences (MIT and similar) | `app/src/main/assets/extensions/ublock/lib/` |

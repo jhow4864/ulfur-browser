@@ -17,6 +17,10 @@ Do every step, in order, for each release. Don't publish until every box is tick
       The SHA-256 digest must be `1f04b66b6d0bdf3c6e39640c23b95e517d7a144549385885e1789e3b92f6dd16`
       and the DN `CN=Beast Browser, O=Jam Howman, C=GB`. Anything else, especially `CN=Android Debug`: stop.
 - [ ] Record the APK's own SHA-256 (`sha256sum Ulfur-<version>-arm64.apk`) for the release notes.
+- [ ] GeckoView in `app/build.gradle.kts` is a **stable** build (`geckoviewChannel = ""`); release packaging refuses beta/nightly.
+- [ ] Generate the release notes: `tools/release_notes.sh <version> Ulfur-<version>-arm64.apk > Ulfur-<version>-release-notes.md`
+      (template: `docs/RELEASE_NOTES_TEMPLATE.md`). It fills in the APK SHA-256, the signer SHA-256, the GeckoView and uBlock
+      Origin versions and the link to the `v<version>` source tag, which GPL-3.0 requires with every release.
 
 ## 3. Real-phone test
 - [ ] Install the exact APK you'll publish **over the previous release** on a real arm64 phone (not a fresh install),
