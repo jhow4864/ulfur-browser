@@ -125,6 +125,10 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             findPreference<Preference>("downloads")?.setOnPreferenceClickListener {
                 startActivity(Intent(requireContext(), DownloadsActivity::class.java)); true
             }
+            findPreference<Preference>("media_radar")?.setOnPreferenceChangeListener { _, on ->
+                if (on == false) com.jamhowman.beastbrowser.media.MediaSniffer.clearAll() // 2.8: forget detected streams
+                true
+            }
             findPreference<Preference>("clear_now")?.setOnPreferenceClickListener { confirmClear(); true }
             findPreference<Preference>("backup_export")?.setOnPreferenceClickListener { backupUi.startExport(); true }
             findPreference<Preference>("backup_import")?.setOnPreferenceClickListener { backupUi.startImport(); true }
