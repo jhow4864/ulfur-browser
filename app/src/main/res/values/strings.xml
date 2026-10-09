@@ -65,11 +65,9 @@
     <string name="search_tabs">Search tabs</string>
     <string name="widget_speed_dial">Speed dial</string>
 
-    <!-- 2.3.7: Media Radar -->
-    <string name="media_radar">Media Radar</string>
-    <string name="media_radar_empty">No streams on this page</string>
-    <string name="pref_media_radar_title">Media Radar</string>
-    <string name="pref_media_radar_summary">Spot plain MP4, WebM and unencrypted HLS videos on a page so you can save them. Never lists DRM-protected or encrypted streams. Off by default.</string>
+    <!-- 2.8: video download button -->
+    <string name="pref_video_download_title">Video download button</string>
+    <string name="pref_video_download_summary">Show a download button in the address bar when a page has a plain MP4, WebM or unencrypted HLS video. Never offers DRM-protected or encrypted streams.</string>
 
     <!-- 2.3.8: Realms -->
     <string name="realms">Realms</string>

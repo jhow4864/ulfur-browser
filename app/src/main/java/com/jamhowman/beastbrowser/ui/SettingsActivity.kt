@@ -125,7 +125,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
             findPreference<Preference>("downloads")?.setOnPreferenceClickListener {
                 startActivity(Intent(requireContext(), DownloadsActivity::class.java)); true
             }
-            findPreference<Preference>("media_radar")?.setOnPreferenceChangeListener { _, on ->
+            findPreference<Preference>("video_download")?.setOnPreferenceChangeListener { _, on ->
                 if (on == false) com.jamhowman.beastbrowser.media.MediaSniffer.clearAll() // 2.8: forget detected streams
                 true
             }

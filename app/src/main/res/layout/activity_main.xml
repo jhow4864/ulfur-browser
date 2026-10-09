@@ -354,11 +354,6 @@
         android:id="@+id/switcher"
         layout="@layout/view_tab_switcher" />
 
-    <!-- 2.3.7: Media Radar overlay -->
-    <include
-        android:id="@+id/radar"
-        layout="@layout/overlay_media_radar" />
-
     <!-- ===== Fullscreen video ===== -->
     <FrameLayout
         android:id="@+id/fullscreen"

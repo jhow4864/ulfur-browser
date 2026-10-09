@@ -56,7 +56,7 @@ object BackupManager {
         "dnt_gpc" to B, "fingerprinting" to B, "safe_browsing" to B,
         "clear_on_exit" to B, "search_suggestions" to B,
         "dark_pages" to B, "restore_tabs" to B,
-        "pip" to B, "force_dark" to B, "media_radar" to B,
+        "pip" to B, "force_dark" to B, "video_download" to B,
         "autoplay" to S,
         "doh_provider" to S, "doh_mode" to S, "doh_custom_url" to S,
         "doh_nextdns_id" to S,

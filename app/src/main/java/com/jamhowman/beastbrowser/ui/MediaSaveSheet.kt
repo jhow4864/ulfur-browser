@@ -18,7 +18,7 @@ import org.mozilla.geckoview.GeckoSession
 
 /** Bottom sheet listing detected videos for the current tab, with one-tap Save into Download Center. */
 object MediaSaveSheet {
-    /** @param onlyId 2.3.7: show just this stream (from Media Radar); falls back to all if it's gone. */
+    /** @param onlyId 2.3.7: show just this stream ; falls back to all if it's gone. */
     fun show(activity: AppCompatActivity, session: GeckoSession, isPrivate: Boolean, pageUrl: String, accentColor: Int, onlyId: String? = null) {
         DownloadCenter.init(activity)
         val all = MediaSniffer.forSession(session)

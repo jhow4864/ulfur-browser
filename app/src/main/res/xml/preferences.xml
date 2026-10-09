@@ -80,9 +80,9 @@
     <PreferenceCategory app:title="General" app:iconSpaceReserved="false">
         <Preference app:key="downloads" app:iconSpaceReserved="false" app:title="Downloads"
             app:summary="@string/pref_downloads_summary" />
-        <!-- 2.8: Media Radar is opt-in (MediaSniffer ignores pages while this is off). -->
-        <SwitchPreferenceCompat app:key="media_radar" app:defaultValue="false" app:iconSpaceReserved="false"
-            app:title="@string/pref_media_radar_title" app:summary="@string/pref_media_radar_summary" />
+        <!-- 2.8: video download button in the address bar. On by default (MediaSniffer ignores pages while off). -->
+        <SwitchPreferenceCompat app:key="video_download" app:defaultValue="true" app:iconSpaceReserved="false"
+            app:title="@string/pref_video_download_title" app:summary="@string/pref_video_download_summary" />
         <SwitchPreferenceCompat app:key="restore_tabs" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="Restore tabs on start" app:summary="Normal tabs only. Private tabs are never saved" />
         <Preference app:key="check_updates" app:iconSpaceReserved="false" app:title="Check for updates" />

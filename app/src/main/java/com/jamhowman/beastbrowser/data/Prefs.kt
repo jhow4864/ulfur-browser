@@ -21,8 +21,8 @@ object Prefs {
     val cookieMode get() = sp.getString("cookie_mode", "tcp") ?: "tcp"
     val fingerprinting get() = sp.getBoolean("fingerprinting", true)
     val ublockEnabled get() = sp.getBoolean("ublock", true)
-    /** 2.8: Media Radar (stream detection, media badge, save sheet) is opt-in. Off by default. */
-    val mediaRadar get() = sp.getBoolean("media_radar", false)
+    /** 2.8: video download button in the address bar (stream detection + save sheet). On by default. */
+    val videoDownload get() = sp.getBoolean("video_download", true)
     /** 2.7: hide cookie banners with uBO's cookie-notice lists (EasyList/uBO – Cookie Notices). Default on. */
     val cookieBanners get() = sp.getBoolean("cookie_banners", true)
     /**
