@@ -828,7 +828,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.shieldButton.setOnClickListener { showShields() }
         b.readerButton.setOnClickListener { toggleReader() }
         b.mediaButton.setOnClickListener { current?.session?.let { onMediaBadgeTapped(it) } }
-        b.mediaButton.setOnLongClickListener { current?.session?.let { openMediaRadar(it) }; true }
+        b.mediaButton.setOnLongClickListener { if (Prefs.mediaRadar) current?.session?.let { openMediaRadar(it) }; true }
         MediaSniffer.addListener { session ->
             if (current?.session === session) runOnUiThread { updateMediaBadge() }
         }
@@ -1444,7 +1444,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             DownloadCenter.activeCount.let { n ->
                 MenuItem(R.drawable.ic_download, if (n > 0) "Downloads ($n)" else "Downloads", n > 0) { openDownloads() }
             },
-            (onPage && MediaSniffer.hasMedia(t.session)).let { hasMedia ->
+            if (!Prefs.mediaRadar) null else (onPage && MediaSniffer.hasMedia(t.session)).let { hasMedia ->
                 MenuItem(R.drawable.ic_download, getString(R.string.media_radar), hasMedia) {
                     if (hasMedia) openMediaRadar(t.session)
                     else Toast.makeText(this, R.string.media_radar_empty, Toast.LENGTH_SHORT).show()
@@ -1700,7 +1700,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     private fun updateMediaBadge() {
         val t = current
-        val n = if (t == null || t.showingHome) 0 else MediaSniffer.count(t.session)
+        val n = if (t == null || t.showingHome || !Prefs.mediaRadar) 0 else MediaSniffer.count(t.session)
         b.mediaButton.isVisible = n > 0
         b.mediaBadge.isVisible = n > 0
         b.mediaBadge.text = if (n > 99) "99+" else n.toString()

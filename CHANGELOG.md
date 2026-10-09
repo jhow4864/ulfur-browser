@@ -3,6 +3,11 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## Unreleased (2.8)
+
+* **Media Radar is now opt-in.** Stream detection, the media badge and the Media Radar menu entry stay off until you
+  turn on Settings › General › Media Radar. Turning it off forgets anything already detected.
+
 ## 2.7.1 (versionCode 19)
 
 **New look**

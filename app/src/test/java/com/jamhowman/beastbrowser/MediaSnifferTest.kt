@@ -1,11 +1,16 @@
 
 package com.jamhowman.beastbrowser
 
+import android.app.Application
+import androidx.core.content.edit
+import androidx.test.core.app.ApplicationProvider
+import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.media.DetectedMedia
 import com.jamhowman.beastbrowser.media.MediaSniffer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.geckoview.GeckoSession
@@ -15,6 +20,18 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class MediaSnifferTest {
+    @Before fun optIn() {
+        Prefs.init(ApplicationProvider.getApplicationContext<Application>())
+        Prefs.sp.edit(commit = true) { clear(); putBoolean("media_radar", true) }
+    }
+
+    @Test fun ignoresPagesWhileOff() {
+        Prefs.sp.edit(commit = true) { putBoolean("media_radar", false) }
+        val session = GeckoSession()
+        MediaSniffer.publish(session, listOf(DetectedMedia("2", "https://cdn.example.com/a.mp4", pageUrl = "https://example.com")))
+        assertEquals(0, MediaSniffer.count(session))
+    }
+
     @Test fun blocksYoutubeAndNetflix() {
         assertTrue(MediaSniffer.isDrmHost("https://www.youtube.com/watch?v=x"))
         assertTrue(MediaSniffer.isDrmHost("youtu.be"))
