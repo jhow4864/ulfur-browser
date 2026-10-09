@@ -1465,6 +1465,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             MenuItem(R.drawable.ic_find, "Find in page") { openFind() },
             MenuItem(R.drawable.ic_desktop, "Desktop site", t.desktopMode) { toggleDesktop(t) },
             MenuItem(R.drawable.ic_up, zoomLabel(t), t.zoomPercent != 100) { showZoom(t) },
+            if (HomeShortcut.eligible(t.url, t.isPrivate, onPage)) MenuItem(R.drawable.ic_home, getString(R.string.menu_add_home)) {
+                if (!HomeShortcut.request(this, t.title, t.url, accent.color, accent.onColor)) toast(getString(R.string.add_home_unsupported))
+            } else null,
             MenuItem(R.drawable.ic_star, "Add to Speed Dial") {
                 if (onPage) showAddTile(t.title, t.url) else showAddTile(null, null)
             },
