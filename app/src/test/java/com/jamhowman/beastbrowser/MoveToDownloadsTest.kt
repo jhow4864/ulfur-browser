@@ -27,6 +27,7 @@ class MoveToDownloadsTest {
 
     @Before fun setUp() {
         app = ApplicationProvider.getApplicationContext()
+        com.jamhowman.beastbrowser.downloads.PrivateCrypto.keys = MemKeys() // 2.10: vault files are encrypted
         DownloadCenter.init(app)
         DownloadCenter.replaceAllForPreview(emptyList())
         DownloadCenter.clearPrivateVault()
@@ -34,7 +35,9 @@ class MoveToDownloadsTest {
     }
 
     private fun vault(id: Long, name: String, bytes: ByteArray): File {
-        val f = File(app.filesDir, "private_downloads/$name").also { it.parentFile!!.mkdirs(); it.writeBytes(bytes) }
+        val f = File(app.filesDir, "private_downloads/$name").also { it.parentFile!!.mkdirs()
+            com.jamhowman.beastbrowser.downloads.PrivateCrypto.writer(it).use { w -> w.write(bytes); w.finish() }
+        }
         val item = DownloadItem(
             id = id, url = "https://example.com/$name", fileName = name, mime = "application/octet-stream",
             domain = "example.com", isPrivate = true, status = DlStatus.DONE,

@@ -147,6 +147,20 @@ object DownloadCenter {
                 _items.value.filter { it.isPrivate }.mapNotNull { it.filePath }
             sweepOrphanedPrivateFiles(privDir, keep)
         }
+        // Vault files from before 2.10 are plaintext: encrypt them in place (new file, then swap).
+        val legacy = _privateItems.value.mapNotNull { it.filePath?.let(::File) }
+        if (legacy.isNotEmpty()) io.execute { legacy.forEach { encryptLegacy(it) } }
+    }
+
+    /** Encrypts a pre-2.10 plaintext vault file. The old file is deleted (not shredded; flash can't promise that). */
+    internal fun encryptLegacy(f: File): Boolean {
+        if (!f.isFile || PrivateCrypto.isEncrypted(f)) return false
+        val tmp = File(f.parentFile, ".enc-" + f.name)
+        return runCatching {
+            PrivateCrypto.writer(tmp).use { w -> f.inputStream().use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
+            if (!f.delete() || !tmp.renameTo(f)) throw IOException("swap failed")
+            true
+        }.getOrElse { Log.w(TAG, "could not encrypt an older vault file", it); tmp.delete(); false }
     }
 
     /** Only sweep when the vault list exists and was read cleanly; otherwise we can't tell orphans from vault files. */
@@ -252,6 +266,7 @@ object DownloadCenter {
                             written += n
                         }
                     }
+                    out.finish()
                 }
                 if (written == 0L) throw IOException("Empty file")
                 finalizeTarget(item)
@@ -436,7 +451,7 @@ object DownloadCenter {
             val want = java.security.MessageDigest.getInstance("SHA-256")
             var size = 0L
             openOutput(target, 0).use { o ->
-                from.inputStream().use { i ->
+                PrivateCrypto.reader(from).use { i ->
                     val buf = ByteArray(64 * 1024)
                     while (true) {
                         val n = i.read(buf); if (n < 0) break
@@ -461,6 +476,22 @@ object DownloadCenter {
         } finally {
             if (!ok) deleteTarget(target)
         }
+    }
+
+    /**
+     * Ulfur #1: deletes every vault file and the vault key. Even a copy of a file that escaped deletion (backup,
+     * flash wear-levelling) can never be decrypted again. Unfinished private downloads are cancelled first.
+     */
+    fun wipePrivateVaultAndKey(): Int {
+        _items.value.filter { it.isPrivate }.forEach { cancel(it.id) }
+        val n = clearPrivateVault()
+        io.execute {
+            PrivateCrypto.destroyKey()
+            ensurePrivateDir().listFiles()?.forEach { f ->
+                if (f.isFile && !f.name.startsWith(".") && f.name != PRIVATE_STORE && f.name != "$PRIVATE_STORE.tmp") f.delete()
+            }
+        }
+        return n
     }
 
     fun clearPrivateVault(): Int {
@@ -496,7 +527,7 @@ object DownloadCenter {
             }
             if (job.isHls || item.isHls) { runHls(job, item); return }
 
-            var offset = if (item.contentUri != null || item.filePath != null) item.downloaded else 0L
+            var offset = if (!item.isPrivate && (item.contentUri != null || item.filePath != null)) item.downloaded else 0L
             val initial = job.initial.also { job.initial = null }
             val resp = if (initial != null && offset == 0L) initial else {
                 initial?.body?.let { runCatching { it.close() } }
@@ -533,7 +564,7 @@ object DownloadCenter {
                     var speed = 0.0
                     while (job.stop == null) {
                         val n = input.read(buf)
-                        if (n < 0) break
+                        if (n < 0) { out.finish(); break }
                         out.write(buf, n)
                         done += n
                         val now = SystemClock.elapsedRealtime()
@@ -607,6 +638,7 @@ object DownloadCenter {
                 },
                 write = { chunk -> (out ?: throw IOException("HLS output not ready")).write(chunk, chunk.size) },
             )
+            if (job.stop == null) out?.finish()
             runCatching { out?.close() }
             out = null
             if (job.stop != null) { settleStop(job); return }
@@ -723,7 +755,11 @@ object DownloadCenter {
 
     // ------------------------------------------------------------------ files
 
-    private interface Output : Closeable { fun write(b: ByteArray, n: Int) }
+    private interface Output : Closeable {
+        fun write(b: ByteArray, n: Int)
+        /** Marks the stream complete. Encrypted vault files are unreadable without it; plain files ignore it. */
+        fun finish() {}
+    }
 
     private fun createTarget(item: DownloadItem): DownloadItem {
         if (item.isPrivate) {
@@ -758,6 +794,17 @@ object DownloadCenter {
     }
 
     private fun openOutput(item: DownloadItem, offset: Long): Output {
+        if (item.isPrivate) {
+            // Ulfur #1: private files are encrypted as they stream in; plaintext never reaches disk. A chunked
+            // AEAD stream can't be appended to safely, so a private download always (re)starts at byte 0.
+            val f = File(item.filePath ?: throw IOException("No target"))
+            val w = PrivateCrypto.writer(f)
+            return object : Output {
+                override fun write(b: ByteArray, n: Int) = w.write(b, 0, n)
+                override fun finish() = w.finish()
+                override fun close() = w.close()
+            }
+        }
         item.contentUri?.let { s ->
             val pfd = app.contentResolver.openFileDescriptor(Uri.parse(s), "rw") ?: throw IOException("Can't open file")
             val fos = FileOutputStream(pfd.fileDescriptor)
@@ -880,7 +927,8 @@ object DownloadCenter {
         } ?: item.filePath?.let { File(it).isFile } ?: false
     }.getOrDefault(false)
 
-    fun uriFor(item: DownloadItem): Uri? = item.contentUri?.let(Uri::parse)
+    fun uriFor(item: DownloadItem): Uri? = if (item.isPrivate && item.contentUri == null && item.filePath != null)
+        PrivateVaultProvider.uriFor(app.packageName, item) else item.contentUri?.let(Uri::parse)
         ?: item.filePath?.let { runCatching { FileProvider.getUriForFile(app, app.packageName + ".files", File(it)) }.getOrNull() }
 
     fun openIntent(item: DownloadItem): Intent? {

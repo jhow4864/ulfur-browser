@@ -270,9 +270,19 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         ReaderMode.addListener(readerListener)
         HelperSessions.onThemeColor = { session, value ->
             runOnUiThread {
-                allTabs.firstOrNull { it.session === session }?.let { tab ->
-                    if (tab.metaThemeColor != value) { tab.metaThemeColor = value; if (tab === current) refreshUi() }
+                // 2.10 follow-up: at most one theme-color change per 250 ms per page, latest value wins.
+                val throttle = themeThrottles.getOrPut(session) {
+                    com.jamhowman.beastbrowser.data.ThemeColorThrottle(
+                        now = { android.os.SystemClock.uptimeMillis() },
+                        schedule = { d, block -> b.root.postDelayed({ if (!isDestroyed) block() }, d) },
+                        apply = { v ->
+                            allTabs.firstOrNull { it.session === session }?.let { tab ->
+                                if (tab.metaThemeColor != v) { tab.metaThemeColor = v; if (tab === current) refreshUi() }
+                            }
+                        },
+                    )
                 }
+                throttle.submit(value)
             }
         }
         if (Prefs.pendingWipe) wipeData() // "clear data on exit" after the process was killed
@@ -1067,6 +1077,45 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private var baseTopBar: android.graphics.drawable.Drawable? = null
     private var siteColors: SiteToolbar.Colors? = null
     private var pillIconTints: Map<android.widget.ImageView, ColorStateList?>? = null
+    private var baseBottomBar: Int? = null
+    private var bottomTints: Map<android.view.View, Any?>? = null
+    private val themeThrottles = java.util.WeakHashMap<org.mozilla.geckoview.GeckoSession, com.jamhowman.beastbrowser.data.ThemeColorThrottle>()
+
+    /** Icons and text of the bottom bar, for the site tint (2.10 follow-up). */
+    private fun bottomBarInkViews(): List<android.view.View> {
+        val out = ArrayList<android.view.View>()
+        fun walk(v: android.view.View) {
+            when (v) {
+                is android.widget.ImageView, is android.widget.TextView -> out += v
+                is android.view.ViewGroup -> for (i in 0 until v.childCount) walk(v.getChildAt(i))
+            }
+        }
+        walk(b.bottomBar)
+        return out.filter { it.id != R.id.menuDownloadRing }
+    }
+
+    private fun tintBottomBar(c: SiteToolbar.Colors?) {
+        val views = bottomBarInkViews()
+        if (bottomTints == null) bottomTints = views.associateWith { v ->
+            when (v) { is android.widget.ImageView -> v.imageTintList; is android.widget.TextView -> v.textColors; else -> null }
+        }
+        if (c == null) {
+            bottomTints?.forEach { (v, t) ->
+                when (v) {
+                    is android.widget.ImageView -> v.imageTintList = t as ColorStateList?
+                    is android.widget.TextView -> (t as ColorStateList?)?.let { v.setTextColor(it) }
+                }
+            }
+            return
+        }
+        b.bottomBar.setBackgroundColor(c.bottomBar)
+        views.forEach { v ->
+            when (v) {
+                is android.widget.ImageView -> v.imageTintList = ColorStateList.valueOf(c.bottomInk)
+                is android.widget.TextView -> v.setTextColor(c.bottomInk)
+            }
+        }
+    }
 
     /**
      * 2.10 Ulfur #5: paints the toolbar with the page theme-color when Settings › Match toolbar to site colour is on.
@@ -1080,11 +1129,14 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             .filterIsInstance<android.widget.ImageView>().filter { it !== b.securityIcon }
         if (pillIconTints == null) pillIconTints = pillIcons.associateWith { it.imageTintList }
         val prev = siteColors
+        if (prev == null && c != null) baseBottomBar = (b.bottomBar.background as? ColorDrawable)?.color
         siteColors = c
         if (c == null) {
             if (prev == null) return
             b.topBar.background = baseTopBar ?: ColorDrawable(accent.systemBars ?: getColor(R.color.bg))
             pillIconTints?.forEach { (v, tint) -> v.imageTintList = tint }
+            baseBottomBar?.let { b.bottomBar.setBackgroundColor(it) }
+            tintBottomBar(null)
             applySurfaces() // url text colours
             refreshUi()     // padlock tint + pill
             return
@@ -1094,6 +1146,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.urlInput.setHintTextColor((c.ink and 0x00FFFFFF) or (0xB3 shl 24))
         b.securityIcon.imageTintList = ColorStateList.valueOf(if (t.url.startsWith("http://")) pickWarn(c.pill, c.ink) else c.ink)
         pillIcons.forEach { it.imageTintList = ColorStateList.valueOf(c.ink) }
+        tintBottomBar(c)
+        updateShield()
         styleAddressBar(b.urlInput.hasFocus())
     }
 
@@ -1149,7 +1203,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val active = Prefs.blockAds && !t.siteShieldsDown
         val n = if (t.showingHome) 0 else t.blockedOnPage
         // Roadmap 10: state (ShieldLevel) and look (ShieldBadge) are separate so the visuals can be swapped.
-        val style = ShieldBadge.style(ShieldLevel.of(n), active)
+        val site = siteColors
+        val style = if (site != null) ShieldBadge.siteTintStyle(ShieldLevel.of(n), Prefs.blockAds, t.siteShieldsDown)
+            else ShieldBadge.style(ShieldLevel.of(n), active)
         b.shieldIcon.setImageResource(style.icon)
         b.shieldIcon.imageTintList = ColorStateList.valueOf(shieldColor(style.iconTint))
         b.shieldButton.contentDescription = getString(style.description, fmt(n))
@@ -1179,6 +1235,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         ShieldBadge.Tint.ACCENT -> accent.color
         ShieldBadge.Tint.MUTED -> getColor(R.color.text_hint)
         ShieldBadge.Tint.WARN -> getColor(R.color.warn)
+        ShieldBadge.Tint.INK -> siteColors?.iconInk ?: getColor(R.color.text_primary)
     }
 
     /** Near-black or white, whichever reads better on [bg]. */
