@@ -31,7 +31,12 @@ object Engine {
 
     /** Port to the Beast bridge module inside uBO (per-site trusted switch, cookie-notice lists). */
     val uboBridge = NativeBridge("beast_ubo").also { b ->
-        b.events += { o -> if (o.optString("type") == "hello") syncCookieBanners() }
+        b.events += { o ->
+            if (o.optString("type") == "hello") {
+                syncCookieBanners()
+                appContext?.let { com.jamhowman.beastbrowser.filters.Filters.sync(it, force = true) } // 2.10 Ulfur #3
+            }
+        }
     }
     /**
      * Port to the Beast Helper extension (per-host HTTPS-Only exceptions). Also carries Reader view requests the
@@ -54,8 +59,11 @@ object Engine {
         private set
     private val extensionListeners = mutableListOf<(WebExtension) -> Unit>()
 
+    @Volatile private var appContext: Context? = null
+
     fun runtime(context: Context): GeckoRuntime {
         runtime?.let { return it }
+        appContext = context.applicationContext
         val settings = GeckoRuntimeSettings.Builder()
             .contentBlocking(contentBlocking())
             .allowInsecureConnections(httpsMode())

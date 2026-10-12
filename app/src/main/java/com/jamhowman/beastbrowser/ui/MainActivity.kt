@@ -1876,6 +1876,36 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.mediaBadge.setTextColor(accent.onColor)
     }
 
+    /**
+     * 2.10 Ulfur #3: element picker. The rule is scoped to the tab's own host (from the tab URL, not the page); a reply
+     * whose host differs (navigated away meanwhile) is dropped. Not offered in private tabs or Ghost, so no site
+     * from a private session is ever written to disk.
+     */
+    private val PICKER_UNDO_MS = 10_000
+
+    private fun startElementPicker(t: Tab) {
+        if (t.isPrivate || t.realm == Realm.GHOST || realm == Realm.GHOST) { Toast.makeText(this, R.string.picker_private, Toast.LENGTH_SHORT).show(); return }
+        val session = t.session
+        val pageHost = UrlUtils.host(t.url)
+        val accentHex = String.format("#%06X", accent.color and 0xFFFFFF)
+        HelperSessions.request(session, org.json.JSONObject().put("type", "startPicker").put("accent", accentHex), 10 * 60_000L) { r ->
+            if (r == null || !r.optBoolean("ok")) {
+                return@request
+            }
+            val replyHost = com.jamhowman.beastbrowser.filters.FilterRules.normalizeHost(r.optString("host"))
+            if (replyHost == null || replyHost != com.jamhowman.beastbrowser.filters.FilterRules.normalizeHost(pageHost)) return@request
+            val rule = com.jamhowman.beastbrowser.filters.Filters.store(this).addPickerRule(pageHost, r.optString("selector"))
+            if (rule == null) { Toast.makeText(this, R.string.picker_failed, Toast.LENGTH_SHORT).show(); return@request }
+            com.jamhowman.beastbrowser.filters.Filters.changedLocally(this)
+            // Designer spec: "Hidden on this site" with Undo for 10 s.
+            snack(getString(R.string.picker_saved), getString(R.string.picker_undo), PICKER_UNDO_MS) {
+                com.jamhowman.beastbrowser.filters.Filters.store(this).removePickerRule(rule)
+                com.jamhowman.beastbrowser.filters.Filters.changedLocally(this)
+                HelperSessions.request(session, org.json.JSONObject().put("type", "unhideLast"), 5_000) { }
+            }
+        }
+    }
+
     private fun showShields() {
         val t = current ?: return
         val dialog = BottomSheetDialog(this)
@@ -1940,6 +1970,9 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         s.uboPanelButton.setOnClickListener { dialog.dismiss(); openUboPanel() }
         s.uboDashboardButton.isEnabled = ubo?.metaData?.optionsPageUrl != null
         s.uboDashboardButton.setOnClickListener { dialog.dismiss(); openUboDashboard() }
+        s.pickElementButton.isEnabled = !t.showingHome && ubo != null && Prefs.ublockActive
+        s.pickElementButton.setOnClickListener { dialog.dismiss(); startElementPicker(t) }
+        s.ulfurFiltersButton.setOnClickListener { dialog.dismiss(); startActivity(Intent(this, FiltersActivity::class.java)) }
         listOf(s.uboPanelButton, s.uboDashboardButton).forEach {
             it.setTextColor(accent.color); it.strokeColor = ColorStateList.valueOf(accent.withAlpha(0x88))
         }

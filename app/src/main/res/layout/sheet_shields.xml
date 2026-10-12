@@ -219,6 +219,32 @@
             android:text="Filter lists" />
     </LinearLayout>
 
+    <!-- 2.10 Ulfur #3 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/pickElementButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:text="@string/picker_hide_element" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/ulfurFiltersButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="@string/picker_manage" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/shieldsListInfo"
         android:layout_width="wrap_content"

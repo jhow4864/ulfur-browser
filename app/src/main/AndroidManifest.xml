@@ -245,6 +245,11 @@
             android:parentActivityName=".ui.DownloadsActivity" />
 
         <activity
+            android:name=".ui.FiltersActivity"
+            android:exported="false"
+            android:label="@string/filters_title" />
+
+        <activity
             android:name=".ui.PasswordsActivity"
             android:exported="false"
             android:label="Passwords"

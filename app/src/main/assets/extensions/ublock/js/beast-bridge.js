@@ -64,6 +64,36 @@ const setCosmetic = (url, on) => {
     });
 };
 
+// Ulfur 2.10 #3: the app's extra filter lists + element-picker rules live in one marked region of "My filters".
+// The app validates and sanitises everything before sending it; anything outside the markers is the user's own.
+const MANAGED_BEGIN = '! >>> Ulfur filter lists and element rules (managed by the app, edits here are replaced) >>>';
+const MANAGED_END = '! <<< Ulfur managed end <<<';
+const MAX_MANAGED_CHARS = 64 * 1024 * 1024;
+
+const stripManaged = content => {
+    const lines = content.split('\n');
+    const out = [];
+    let inside = false;
+    for ( const line of lines ) {
+        if ( line === MANAGED_BEGIN ) { inside = true; continue; }
+        if ( line === MANAGED_END ) { inside = false; continue; }
+        if ( inside === false ) { out.push(line); }
+    }
+    return out.join('\n').trimEnd();
+};
+
+const setManaged = async text => {
+    if ( typeof text !== 'string' || text.length > MAX_MANAGED_CHARS ) { throw new Error('bad managed block'); }
+    await µb.isReadyPromise;
+    const details = await µb.loadUserFilters();
+    const mine = stripManaged((details && details.content) || '');
+    const block = text.trim() === '' ? '' : `\n${MANAGED_BEGIN}\n${text.trim()}\n${MANAGED_END}`;
+    const next = `${mine}${block}\n`;
+    if ( next === `${(details && details.content) || ''}` ) { return; }
+    await µb.saveUserFilters(next);
+    await µb.loadFilterLists();
+};
+
 const siteState = url => {
     try { return µb.getNetFilteringSwitch(url) !== false; } catch { return true; }
 };
@@ -123,6 +153,10 @@ const onMessage = async msg => {
             await µb.isReadyPromise;
             setCosmetic(url, msg.enabled === true);
             notify({ id, ok: true, enabled: cosmeticOn(url) });
+            break;
+        case 'setManaged':
+            await setManaged(msg.text);
+            notify({ id, ok: true });
             break;
         case 'ping':
             notify({ id, ok: true, version: browser.runtime.getManifest().version });
