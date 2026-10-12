@@ -30,7 +30,7 @@ import java.util.concurrent.Executors
  * Issue #34: "Add to Home screen" that actually lands on the home screen.
  *
  * - Pinned shortcut with the site's own icon (maskable manifest icon → manifest icon ≥144 px → apple-touch-icon /
- *   favicon if ≥96 px → white letter tile on theme_color / Ulfur red). Icons are fetched off the main thread.
+ *   page <link> icons (largest declared first) → fixed-path favicons if ≥96 px → white letter tile on theme_color / Ulfur red). Icons are fetched off the main thread.
  * - Sites with a manifest open in [WebAppActivity] (own task per app); sites without one open a normal Ulfur tab.
  * - A stable id per site, so re-adding updates the existing shortcut instead of duplicating it.
  * - requestPinShortcut gets a callback; if the launcher never confirms (ColorOS/Realme "Create home screen
@@ -103,43 +103,53 @@ object HomeScreenInstaller {
     // ------------------------------------------------------------------ icons (background thread)
 
     private fun buildIcon(spec: WebAppSpec?, pageUrl: String): IconCompat {
-        spec?.let { WebApps.pickManifestIcon(it.icons) }?.let { ic ->
-            fetch(ic.src)?.takeIf { WebApps.bigEnough(it.width, it.height) }?.let { bmp ->
-                return if (ic.maskable) IconCompat.createWithAdaptiveBitmap(fullBleed(bmp))
-                else IconCompat.createWithAdaptiveBitmap(inset(bmp, spec.backgroundColor ?: 0xFFFFFFFF.toInt()))
-            }
-        }
-        for (u in WebApps.fallbackIconUrls(spec?.startUrl ?: pageUrl)) {
-            // Never upscale a tiny favicon: below 96 px a letter tile looks better.
-            fetch(u)?.takeIf { WebApps.bigEnough(it.width, it.height) }?.let {
-                return IconCompat.createWithAdaptiveBitmap(inset(it, spec?.backgroundColor ?: 0xFFFFFFFF.toInt()))
-            }
-        }
-        return letterIcon(WebApps.letterTile(pageUrl, spec?.themeColor))
+        // 2.8.1: manifest icons, then the page's own <link> icons (fetched only if needed), then fixed paths.
+        val cands = PageIcons.candidates(spec, pageUrl) { pageLinks(pageUrl) }
+        val hit = PageIcons.firstUsable(cands, ::fetch) { it.width to it.height }
+            ?: return letterIcon(WebApps.letterTile(pageUrl, spec?.themeColor))
+        val (c, bmp) = hit
+        Log.d(TAG, "icon from ${c.source} ${bmp.width}x${bmp.height}")
+        return IconCompat.createWithAdaptiveBitmap(if (c.fullBleed) fullBleed(bmp) else inset(bmp))
     }
+
+    /** GET [url], following up to 5 redirects (including http→https, which HttpURLConnection won't do itself). */
+    private fun download(url: String, accept: String, max: Int): ByteArray? {
+        var u = url
+        repeat(6) {
+            val c = URL(u).openConnection() as HttpURLConnection
+            try {
+                c.connectTimeout = 6000; c.readTimeout = 6000; c.instanceFollowRedirects = false
+                c.setRequestProperty("Accept", accept)
+                val code = c.responseCode
+                if (code in 300..399) { u = PageIcons.redirectTarget(u, c.getHeaderField("Location")) ?: return null; return@repeat }
+                if (code !in 200..299) return null
+                val out = ByteArrayOutputStream()
+                c.inputStream.use { inp ->
+                    val buf = ByteArray(16 * 1024)
+                    while (true) {
+                        val n = inp.read(buf); if (n < 0) break
+                        out.write(buf, 0, n); if (out.size() > max) { if (max == MAX_BYTES) return null else break }
+                    }
+                }
+                return out.toByteArray()
+            } finally { c.disconnect() }
+        }
+        return null
+    }
+
+    /** The live page's icon links. GeckoView only hands us the manifest, so read the page's HTML head. */
+    private fun pageLinks(pageUrl: String): List<PageIcon> = runCatching {
+        if (WebApps.origin(pageUrl) == null) return emptyList()
+        val bytes = download(pageUrl, "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5", PageIcons.MAX_HTML_CHARS) ?: return emptyList()
+        PageIcons.parse(String(bytes, Charsets.UTF_8), pageUrl)
+    }.getOrDefault(emptyList())
 
     private fun fetch(src: String): Bitmap? = runCatching {
         val bytes = if (src.startsWith("data:")) {
             val comma = src.indexOf(',')
             if (comma < 0 || !src.substring(0, comma).contains(";base64")) return null
             Base64.decode(src.substring(comma + 1), Base64.DEFAULT)
-        } else {
-            val c = URL(src).openConnection() as HttpURLConnection
-            try {
-                c.connectTimeout = 6000; c.readTimeout = 6000; c.instanceFollowRedirects = true
-                c.setRequestProperty("Accept", "image/png,image/webp,image/*;q=0.8")
-                if (c.responseCode !in 200..299) return null
-                val out = ByteArrayOutputStream()
-                c.inputStream.use { inp ->
-                    val buf = ByteArray(16 * 1024)
-                    while (true) {
-                        val n = inp.read(buf); if (n < 0) break
-                        out.write(buf, 0, n); if (out.size() > MAX_BYTES) return null
-                    }
-                }
-                out.toByteArray()
-            } finally { c.disconnect() }
-        }
+        } else download(src, "image/png,image/webp,image/*;q=0.8", MAX_BYTES) ?: return null
         val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, o)
         if (o.outWidth <= 0) return null
@@ -151,16 +161,14 @@ object HomeScreenInstaller {
     /** Maskable icons are designed full-bleed: just scale to the adaptive canvas. */
     private fun fullBleed(src: Bitmap): Bitmap = Bitmap.createScaledBitmap(src, ICON_PX, ICON_PX, true)
 
-    /** Regular icons go inside the adaptive safe zone on the app's background colour. */
-    private fun inset(src: Bitmap, bg: Int): Bitmap {
+    /** Non-maskable icons go inside the 66/108 adaptive safe zone on their own corner colour (white if transparent). */
+    private fun inset(src: Bitmap): Bitmap {
         val out = Bitmap.createBitmap(ICON_PX, ICON_PX, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
-        c.drawColor(bg or 0xFF000000.toInt())
-        val box = ICON_PX * 0.58f
-        val scale = box / maxOf(src.width, src.height)
-        val w = src.width * scale; val h = src.height * scale
-        val dst = RectF((ICON_PX - w) / 2, (ICON_PX - h) / 2, (ICON_PX + w) / 2, (ICON_PX + h) / 2)
-        c.drawBitmap(src, Rect(0, 0, src.width, src.height), dst, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+        val mx = src.width - 1; val my = src.height - 1
+        c.drawColor(PageIcons.cornerColor(intArrayOf(src.getPixel(0, 0), src.getPixel(mx, 0), src.getPixel(0, my), src.getPixel(mx, my))))
+        val r = PageIcons.safeZoneRect(ICON_PX, src.width, src.height)
+        c.drawBitmap(src, Rect(0, 0, src.width, src.height), RectF(r[0], r[1], r[2], r[3]), Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
         return out
     }
 

@@ -3,6 +3,17 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## 2.8.1 (versionCode 24)
+
+* **Add to Home screen uses the site's real icon on more sites.** Ulfur now reads the icons the page itself links
+  (`<link rel="icon">`, `apple-touch-icon` and `apple-touch-icon-precomposed`, including ones on other domains and CDNs)
+  and picks the largest. BBC Weather, for example, now pins with its own 152 px icon instead of a "B" letter tile.
+  Icons that redirect, are missing or won't load are skipped, SVG-only icons fall back to the next image, and a letter
+  tile is still used when nothing is at least 96 px.
+* Icons that aren't designed for adaptive masks now sit inside the launcher's safe zone on a background that matches
+  the icon's corner colour (white if transparent), so circle and squircle masks no longer clip them. Maskable web app
+  icons still fill the whole shape.
+
 ## 2.8.0 (versionCode 23)
 
 * **Alternate app icons.** Settings › Appearance has an App icon picker with the brand Default icon plus eight colourways that match the accent themes (Blood Moon, Frost, Toxic, Ember, Void, Gold, Sakura, Ash).
