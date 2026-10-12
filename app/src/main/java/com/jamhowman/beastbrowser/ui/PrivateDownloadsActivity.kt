@@ -51,6 +51,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
     private lateinit var adapter: DownloadAdapter
     private lateinit var prompt: BiometricPrompt
     private var clearItem: MenuItem? = null
+    private var wipeItem: MenuItem? = null
     private var selectAllItem: MenuItem? = null
     /** The vault's palette (private override, if any), for tint code outside onCreate. */
     private lateinit var palette: ThemePalette
@@ -97,6 +98,10 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         clearItem = b.toolbar.menu.add("Clear all").apply {
             setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             setOnMenuItemClickListener { confirmClear(); true }
+        }
+        wipeItem = b.toolbar.menu.add(R.string.vault_wipe_key).apply {
+            setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+            setOnMenuItemClickListener { confirmWipe(); true }
         }
         selectAllItem = b.toolbar.menu.add(R.string.vault_select_all).apply {
             setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
@@ -158,6 +163,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         b.warning.isVisible = false
         b.storageLine.isVisible = false
         clearItem?.isVisible = false
+        wipeItem?.isVisible = false
         setSelection(emptySet())
         if (PrivateAuth.isAvailable(this)) askToUnlock()
     }
@@ -209,6 +215,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         b.movingBar.isVisible = moving
         selectAllItem?.isVisible = selecting && sel.size < list.size
         clearItem?.isVisible = !selecting && list.isNotEmpty() && PrivateLock.isUnlocked()
+        wipeItem?.isVisible = !selecting && PrivateLock.isUnlocked()
         if (selecting) {
             b.toolbar.setNavigationIcon(R.drawable.ic_close)
             b.toolbar.title = getString(R.string.vault_selected, sel.size)
@@ -359,6 +366,18 @@ class PrivateDownloadsActivity : AppCompatActivity() {
             .setTitle("Delete all private downloads?")
             .setMessage("Permanently deletes $n ${if (n == 1) "file" else "files"} from the vault.")
             .setPositiveButton("Delete all") { _, _ -> DownloadCenter.clearPrivateVault() }
+            .setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    /** Ulfur #1: deletes every vault file and the encryption key, so nothing left behind can ever be decrypted. */
+    private fun confirmWipe() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.vault_wipe_key_title)
+            .setMessage(R.string.vault_wipe_key_message)
+            .setPositiveButton(R.string.vault_wipe_key_confirm) { _, _ ->
+                val n = DownloadCenter.wipePrivateVaultAndKey()
+                Toast.makeText(this, resources.getQuantityString(R.plurals.vault_wiped, n, n), Toast.LENGTH_SHORT).show()
+            }
             .setNegativeButton(android.R.string.cancel, null).show()
     }
 }

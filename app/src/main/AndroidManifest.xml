@@ -276,6 +276,13 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- 2.10 (Ulfur #1): decrypts private downloads into a pipe for open/share; grant-only access. -->
+        <provider
+            android:name=".downloads.PrivateVaultProvider"
+            android:authorities="${applicationId}.privatevault"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <!-- 2.3.5: home-screen Speed Dial widget -->
         <receiver
             android:name=".widget.SpeedDialWidget"
