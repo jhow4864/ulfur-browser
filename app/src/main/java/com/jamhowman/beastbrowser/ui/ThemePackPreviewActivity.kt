@@ -53,6 +53,7 @@ class ThemePackPreviewActivity : AppCompatActivity() {
         ThemePacks.init(this)
         night = AppTheme.isNight(this)
         val uri = intent?.data ?: return finish()
+        if (!acceptsUri(uri)) return showError(ThemePackError.NOT_A_THEME) // 2.9.1: content:// only
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) { read(uri) }
             when (result) {
@@ -250,5 +251,9 @@ class ThemePackPreviewActivity : AppCompatActivity() {
         text = s; textSize = size; setTextColor(color); if (bold) setTypeface(typeface, Typeface.BOLD)
     }
 
-    companion object { const val UNDO_MS = 10_000 }
+    companion object {
+        const val UNDO_MS = 10_000
+        /** 2.9.1: only content:// (file pickers, file managers). file:// and anything else is refused. */
+        fun acceptsUri(uri: Uri?): Boolean = uri?.scheme.equals("content", ignoreCase = true) && !uri?.authority.isNullOrEmpty()
+    }
 }

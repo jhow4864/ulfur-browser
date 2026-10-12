@@ -163,4 +163,67 @@ class SafeStartTest {
         PrivateRedactor.clear()
         assertEquals("Secret title", PrivateRedactor.redact("Secret title"))
     }
+    // ---------------------------------------------------------------- 2.9.1: only user-visible launches count
+
+    /** One process start: [foreground] = started for an activity; [activity] = an activity got created. */
+    private fun process(foreground: Boolean, activity: Boolean, stable: Boolean = false): Boolean {
+        SafeStart.reset()
+        SafeStart.beginDeferred(LaunchGuard(file), foreground)
+        if (activity) SafeStart.onFirstActivity()
+        val safe = SafeStart.launch?.safeStart == true
+        if (stable) SafeStart.markStable()
+        return safe
+    }
+
+    @Test fun backgroundStartsNeverCount() {
+        assertFalse(process(foreground = false, activity = false))   // widget refresh
+        assertFalse(process(foreground = false, activity = false))   // widget refresh
+        assertEquals(LaunchGuard.State(), LaunchGuard(file).read())  // nothing armed
+        assertFalse(process(foreground = true, activity = true))     // normal launch
+    }
+
+    @Test fun backgroundThenActivityCrashesAreConsecutive() {
+        assertFalse(process(foreground = false, activity = true))    // background start, then an activity crashed
+        assertFalse(process(foreground = false, activity = false))   // widget refresh in between: ignored
+        assertFalse(process(foreground = true, activity = true))     // crashed again
+        assertTrue(process(foreground = true, activity = true))      // two in a row → safe start
+    }
+
+    @Test fun foregroundCrashInApplicationOnCreateStillCounts() {
+        // Counted at the start of BeastApp.onCreate; the activity is never created because onCreate dies.
+        assertFalse(process(foreground = true, activity = false))
+        assertFalse(process(foreground = true, activity = false))
+        assertTrue(process(foreground = true, activity = false))
+    }
+
+    @Test fun activityCountedOnlyOncePerProcess() {
+        SafeStart.reset()
+        SafeStart.beginDeferred(LaunchGuard(file), foreground = true)
+        SafeStart.onFirstActivity(); SafeStart.onFirstActivity()
+        assertEquals(1, LaunchGuard(file).read().unstable)
+    }
+
+    @Test fun backgroundProcessCantMarkOrArm() {
+        LaunchGuard(file).onLaunch()                                  // one real launch crash
+        SafeStart.reset(); SafeStart.beginDeferred(LaunchGuard(file), foreground = false)
+        SafeStart.markStable()                                        // background exit: must not reset nor bump
+        assertEquals(1, LaunchGuard(file).read().unstable)
+        assertTrue(process(foreground = true, activity = true).not()) // prev = 1
+    }
+
+    @Test fun countedLaunchLeftNormallyDoesNotCount() {
+        process(foreground = true, activity = true, stable = true)   // opened, then went to background (onStop)
+        process(foreground = true, activity = true, stable = true)
+        assertFalse(process(foreground = true, activity = true))
+    }
+
+    @Test fun previewAcceptsContentUrisOnly() {
+        val ok = com.jamhowman.beastbrowser.ui.ThemePackPreviewActivity.Companion
+        assertTrue(ok.acceptsUri(android.net.Uri.parse("content://com.android.providers.downloads.documents/document/12")))
+        assertFalse(ok.acceptsUri(android.net.Uri.parse("file:///sdcard/Download/moss.ulfurtheme")))
+        assertFalse(ok.acceptsUri(android.net.Uri.parse("file:///data/data/com.jamhowman.beastbrowser/shared_prefs/x.xml")))
+        assertFalse(ok.acceptsUri(android.net.Uri.parse("https://example.com/a.ulfurtheme")))
+        assertFalse(ok.acceptsUri(android.net.Uri.parse("content:///no-authority")))
+        assertFalse(ok.acceptsUri(null))
+    }
 }

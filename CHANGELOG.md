@@ -3,6 +3,16 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## 2.9.1 (versionCode 26)
+
+* **Fix: no more false safe starts.** 2.9.0 counted every start of Ulfur's process, including background ones such as
+  the speed-dial widget's half-hourly refresh, so two widget refreshes could open Ulfur in safe start. Now only
+  launches you can see count: when Ulfur is started to show a screen (counted at once, so a crash during startup still
+  counts) or when the first Ulfur screen opens in a process that started in the background. Background-only starts
+  never touch the counter, and leaving Ulfur normally still resets it.
+* Theme packs can only be opened through the system file picker or a file manager (content:// links); plain file
+  paths are refused.
+
 ## 2.9.0 (versionCode 25)
 
 * **Safe start.** If Ulfur crashes while starting twice in a row, it opens with your saved tabs and extensions

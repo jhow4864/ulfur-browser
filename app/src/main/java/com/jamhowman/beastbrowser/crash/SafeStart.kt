@@ -21,11 +21,42 @@ object SafeStart {
 
     val active: Boolean get() = tabsPaused || extensionsPaused || themePaused
 
-    /** Application.onCreate, main process only, before anything else. */
-    fun begin(context: Context) = begin(LaunchGuard(File(context.filesDir, LaunchGuard.FILE)))
+    @Volatile private var counted = false
+
+    /**
+     * Application.onCreate, main process only, before anything else (2.9.1). Only user-visible launches count:
+     * - [foreground] (the process was started for an activity: importance ≤ VISIBLE): count right now, so a crash
+     *   later in Application.onCreate still counts;
+     * - otherwise (widget update, broadcast, job, service): count nothing yet; [onFirstActivity] counts if and when an
+     *   activity of ours is created in this process. A background-only process never touches the counter.
+     */
+    fun begin(context: Context, foreground: Boolean) {
+        guard = LaunchGuard(File(context.filesDir, LaunchGuard.FILE))
+        counted = false
+        if (foreground) count()
+    }
+
+    /** First activity created in this process (ActivityLifecycleCallbacks). No-op once counted. */
+    fun onFirstActivity() { if (!counted) count() }
+
+    private fun count() {
+        val g = guard ?: return
+        counted = true
+        begin(g)
+    }
+
+    /** Whether this process has counted a launch (tests and the stable timer). */
+    val launchCounted: Boolean get() = counted
+
+    /** Tests: same as [begin] (context) with an explicit guard. */
+    fun beginDeferred(g: LaunchGuard, foreground: Boolean) {
+        guard = g; counted = false
+        if (foreground) count()
+    }
 
     fun begin(g: LaunchGuard): LaunchGuard.Launch {
         guard = g
+        counted = true
         val l = g.onLaunch()
         launch = l
         tabsPaused = l.safeStart; extensionsPaused = l.safeStart; themePaused = l.safeStart
@@ -33,7 +64,8 @@ object SafeStart {
         return l
     }
 
-    fun markStable() { guard?.markStable() }
+    /** Only a counted launch can be marked; a background process has nothing armed. */
+    fun markStable() { if (counted) guard?.markStable() }
 
     /** Turns the chosen items back on; the caller re-applies them (tabs, uBO, theme). */
     fun restore(tabs: Boolean = true, extensions: Boolean = true, theme: Boolean = true) {
@@ -47,5 +79,5 @@ object SafeStart {
     fun continueSafe() { awaitingChoice = false }
 
     /** Tests only. */
-    fun reset() { launch = null; guard = null; tabsPaused = false; extensionsPaused = false; themePaused = false; awaitingChoice = false }
+    fun reset() { counted = false; launch = null; guard = null; tabsPaused = false; extensionsPaused = false; themePaused = false; awaitingChoice = false }
 }
