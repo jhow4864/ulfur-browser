@@ -13,6 +13,9 @@ class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val r
     var url: String = UrlUtils.HOME
     var title: String = ""
     /** Issue #34: the current page's web app manifest (GeckoView onWebAppManifest), reset on each page load. */
+    /** 2.10 Ulfur #5: page `<meta name=theme-color>` (helper) and manifest `theme_color`; cleared on page start. */
+    @Volatile var metaThemeColor: String? = null
+    @Volatile var manifestThemeColor: String? = null
     var webApp: com.jamhowman.beastbrowser.webapp.WebAppSpec? = null
     var thumbnail: Bitmap? = null
     var progress: Int = 100

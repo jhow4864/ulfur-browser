@@ -27,6 +27,27 @@
     if (readerable !== null) post({ type: "readerable", value: readerable, url: location.href });
     if (drm) post({ type: "drm", url: location.href });
     else if (lastMedia) post(lastMedia);
+    if (lastTheme !== undefined) post({ type: "themeColor", value: lastTheme });
+  }
+
+  // 1.3.0 (Ulfur 2.10 #5): <meta name="theme-color"> of the top frame, honouring media (dark/light), raw CSS text.
+  // The app validates it (opaque colours only) and only uses it when "Match toolbar to site colour" is on.
+  let lastTheme;
+  function themeColor() {
+    const metas = Array.from(document.querySelectorAll('meta[name="theme-color" i]'));
+    for (const m of metas) {
+      const media = m.getAttribute("media");
+      try { if (media && !window.matchMedia(media).matches) continue; } catch (e) { continue; }
+      const v = (m.getAttribute("content") || "").trim();
+      if (v) return v.slice(0, 64);
+    }
+    return null;
+  }
+  function checkTheme() {
+    const v = themeColor();
+    if (v === lastTheme) return;
+    lastTheme = v;
+    post({ type: "themeColor", value: v });
   }
 
   function connect() {
@@ -179,6 +200,14 @@
 
   // ------------------------------------------------------------ start
   connect();
+  if (window === window.top) {
+    checkTheme();
+    try {
+      new MutationObserver(checkTheme).observe(document.head || document.documentElement,
+        { subtree: true, childList: true, attributes: true, attributeFilter: ["content", "media", "name"] });
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", checkTheme);
+    } catch (e) { }
+  }
   checkReaderable();
   setTimeout(checkReaderable, 2500);               // late-rendering pages
   browser.runtime.sendMessage({ type: "getMedia" }).then(r => { if (r && r.items && r.items.length) onMedia(r.items, r.pageUrl); }, () => { });

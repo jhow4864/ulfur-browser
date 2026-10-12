@@ -105,6 +105,9 @@ object HelperSessions : WebExtension.MessageDelegate {
         return ReaderMode.handlePageMessage(sender.session, o)
     }
 
+    /** 2.10 Ulfur #5: `{type:"themeColor", value}` from the top frame (raw CSS, or null when the meta went away). */
+    @Volatile var onThemeColor: ((GeckoSession, String?) -> Unit)? = null
+
     internal fun handle(session: GeckoSession, o: JSONObject) {
         val id = o.optInt("id", 0)
         if (id != 0) { pending.remove(id)?.invoke(o); return }
@@ -112,6 +115,7 @@ object HelperSessions : WebExtension.MessageDelegate {
             "readerable" -> ReaderMode.setReaderable(session, o.optBoolean("value"), o.optString("url"))
             "media" -> if (session !in drm) MediaSniffer.publish(session, parseMedia(o))
             "drm" -> markDrm(session)
+            "themeColor" -> onThemeColor?.invoke(session, o.optString("value").takeIf { o.has("value") && !o.isNull("value") && it.isNotBlank() }?.take(64))
         }
     }
 

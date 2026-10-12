@@ -86,6 +86,7 @@ import com.jamhowman.beastbrowser.data.BeastControl
 import com.jamhowman.beastbrowser.data.BrowserDb
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Realm
+import com.jamhowman.beastbrowser.data.SiteToolbar
 import com.jamhowman.beastbrowser.data.TabGroup
 import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.data.ThemePreset
@@ -267,6 +268,13 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         ReaderMode.init(this)
         ReaderMode.host = readerHost
         ReaderMode.addListener(readerListener)
+        HelperSessions.onThemeColor = { session, value ->
+            runOnUiThread {
+                allTabs.firstOrNull { it.session === session }?.let { tab ->
+                    if (tab.metaThemeColor != value) { tab.metaThemeColor = value; if (tab === current) refreshUi() }
+                }
+            }
+        }
         if (Prefs.pendingWipe) wipeData() // "clear data on exit" after the process was killed
 
         geckoView = GeckoView(this).apply {
@@ -350,6 +358,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (!stableMarked) { b.root.removeCallbacks(stableTimer); b.root.postDelayed(stableTimer, LaunchGuard.STABLE_MS) }
         Engine.applySettings()
         syncForceDark() // Settings may have switched forced dark or edited "Never force dark on"
+        current?.let { applySiteToolbar(it) } // Settings › Match toolbar to site colour may have changed
         syncPalette() // Settings > Appearance may have picked another theme: re-tint in place, no restart
         wolf.refresh(ghost = realm == Realm.GHOST) // reduce motion and the Animated wolf switch, read again on resume
         // Settings → theme (or system flip while we were paused): config may have changed already.
@@ -465,6 +474,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     override fun onDestroy() {
         Engine.removeExtensionListener(extListener)
         ReaderMode.removeListener(readerListener)
+        HelperSessions.onThemeColor = null
         if (ReaderMode.host === readerHost) ReaderMode.host = null
         Engine.uboBridge.events -= uboEvents
         runCatching { unregisterReceiver(pipReceiver) }
@@ -1050,6 +1060,47 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         updateReaderButton()
         updateTranslateChip()
         updateTabCount()
+        applySiteToolbar(t)
+    }
+
+    /** Pack / theme toolbar background as applySurfaces left it, restored when the site colour goes away. */
+    private var baseTopBar: android.graphics.drawable.Drawable? = null
+    private var siteColors: SiteToolbar.Colors? = null
+    private var pillIconTints: Map<android.widget.ImageView, ColorStateList?>? = null
+
+    /**
+     * 2.10 Ulfur #5: paints the toolbar with the page theme-color when Settings › Match toolbar to site colour is on.
+     * Private tabs / Ghost never (SiteToolbar.resolve); ink on the pill is ≥ 4.5:1 and fully opaque, so the address
+     * and padlock always stay readable. Overrides a theme pack's toolbar only while on.
+     */
+    private fun applySiteToolbar(t: Tab) {
+        val c = if (t.showingHome) null
+            else SiteToolbar.resolve(Prefs.siteToolbarColor, t.isPrivate, realm, t.metaThemeColor, t.manifestThemeColor)
+        val pillIcons = (0 until b.addressBar.childCount).map { b.addressBar.getChildAt(it) }
+            .filterIsInstance<android.widget.ImageView>().filter { it !== b.securityIcon }
+        if (pillIconTints == null) pillIconTints = pillIcons.associateWith { it.imageTintList }
+        val prev = siteColors
+        siteColors = c
+        if (c == null) {
+            if (prev == null) return
+            b.topBar.background = baseTopBar ?: ColorDrawable(accent.systemBars ?: getColor(R.color.bg))
+            pillIconTints?.forEach { (v, tint) -> v.imageTintList = tint }
+            applySurfaces() // url text colours
+            refreshUi()     // padlock tint + pill
+            return
+        }
+        b.topBar.background = ColorDrawable(c.bar)
+        b.urlInput.setTextColor(c.ink)
+        b.urlInput.setHintTextColor((c.ink and 0x00FFFFFF) or (0xB3 shl 24))
+        b.securityIcon.imageTintList = ColorStateList.valueOf(if (t.url.startsWith("http://")) pickWarn(c.pill, c.ink) else c.ink)
+        pillIcons.forEach { it.imageTintList = ColorStateList.valueOf(c.ink) }
+        styleAddressBar(b.urlInput.hasFocus())
+    }
+
+    /** The warn colour when it still reads on the pill, else the ink (the warning icon shape stays). */
+    private fun pickWarn(pill: Int, ink: Int): Int {
+        val w = getColor(R.color.warn)
+        return if (SiteToolbar.contrast(w, pill) >= 3.0) w else ink
     }
 
     private fun displayUrl(t: Tab): String {
@@ -1066,8 +1117,10 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val t = current
         val bg = (getDrawable(R.drawable.bg_address)!!.mutate() as GradientDrawable)
         val private = t?.isPrivate == true
-        bg.setColor(getColor(if (private) R.color.private_bg else R.color.surface2))
+        val site = siteColors.takeIf { !private }
+        bg.setColor(site?.pill ?: getColor(if (private) R.color.private_bg else R.color.surface2))
         bg.setStroke(dp(this, if (focused) 2 else 1), when {
+            site != null -> (site.ink and 0x00FFFFFF) or ((if (focused) 0xCC else 0x55) shl 24)
             focused -> accent.color
             private -> getColor(R.color.private_stroke)
             else -> getColor(R.color.stroke)
@@ -1243,14 +1296,18 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             b.home.statsHeader.setTextColor(getColor(R.color.text_primary))
             b.home.homeSearchInput.setTextColor(getColor(R.color.text_primary))
             b.urlInput.setTextColor(getColor(R.color.text_primary))
+            b.urlInput.setHintTextColor(getColor(R.color.text_hint))
+            baseTopBar = b.topBar.background
             return
         }
         val bars = accent.systemBars ?: r.background
         b.root.setBackgroundColor(bars)
         b.topBar.background = ThemeImageDrawable.active(ImageSlot.TOOLBAR, night) ?: ColorDrawable(r.toolbar)
         b.bottomBar.setBackgroundColor(r.toolbar)
-        b.urlInput.setTextColor(r.onToolbar)
-        b.urlInput.setHintTextColor(r.onToolbar and 0x00FFFFFF or 0x99000000.toInt())
+        baseTopBar = b.topBar.background
+        // The address text sits on the pill (surface2), not on the toolbar: text_primary, not onToolbar (2.10 fix).
+        b.urlInput.setTextColor(getColor(R.color.text_primary))
+        b.urlInput.setHintTextColor(getColor(R.color.text_hint))
         b.home.root.background = ThemeImageDrawable.active(ImageSlot.HOME, night) ?: ColorDrawable(r.background)
         b.switcher.root.background = ThemeImageDrawable.active(ImageSlot.SWITCHER, night) ?: ColorDrawable(r.background)
         listOf(b.home.wordmark, b.home.speedDialHeader, b.home.statsHeader, b.home.homeSearchInput).forEach { it.setTextColor(r.text) }

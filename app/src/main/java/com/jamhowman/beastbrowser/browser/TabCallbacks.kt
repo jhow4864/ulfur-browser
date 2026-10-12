@@ -79,6 +79,8 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         tab.hasLoaded = true
         tab.resetPageStats()
         tab.webApp = null
+        tab.metaThemeColor = null
+        tab.manifestThemeColor = null
         tab.autoplayBlocked = 0
         MediaSniffer.clear(session)
         host.onBlockedChanged(tab)
@@ -115,6 +117,8 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     /** Issue #34: Gecko's processed manifest, used by "Add to Home screen" (icon, name, standalone window). */
     override fun onWebAppManifest(session: GeckoSession, manifest: org.json.JSONObject) {
         tab.webApp = runCatching { com.jamhowman.beastbrowser.webapp.WebAppJson.fromManifest(manifest, tab.url) }.getOrNull()
+        tab.manifestThemeColor = manifest.optString("theme_color").takeIf { it.isNotBlank() }?.take(64)
+        host.onTabUpdated(tab)
     }
 
     override fun onCloseRequest(session: GeckoSession) = host.closeTabRequested(tab)

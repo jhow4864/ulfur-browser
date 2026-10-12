@@ -83,6 +83,8 @@
         <!-- 2.8: video download button in the address bar. On by default (MediaSniffer ignores pages while off). -->
         <SwitchPreferenceCompat app:key="video_download" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="@string/pref_video_download_title" app:summary="@string/pref_video_download_summary" />
+        <SwitchPreferenceCompat app:key="site_toolbar_color" app:defaultValue="false" app:iconSpaceReserved="false"
+            app:title="Match toolbar to site colour" app:summary="Use the site's theme colour for the toolbar. Never in private tabs or Ghost" />
         <SwitchPreferenceCompat app:key="restore_tabs" app:defaultValue="true" app:iconSpaceReserved="false"
             app:title="Restore tabs on start" app:summary="Normal tabs only. Private tabs are never saved" />
         <Preference app:key="check_updates" app:iconSpaceReserved="false" app:title="Check for updates" />
