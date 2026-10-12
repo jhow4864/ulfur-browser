@@ -207,7 +207,7 @@ class Prompts(
         val generated = Autocomplete.SelectOption.Hint.GENERATED
         val decision = com.jamhowman.beastbrowser.autofill.FillPolicy.browserFill(
             privateOrGhost = isPrivate(session),
-            field = com.jamhowman.beastbrowser.autofill.FieldGuard.get(session),
+            field = com.jamhowman.beastbrowser.autofill.FieldGuard.get(session, HelperSessions.currentUrl(session)),
             nowMs = android.os.SystemClock.elapsedRealtime(),
         )
         if (decision != com.jamhowman.beastbrowser.autofill.FillPolicy.Decision.ALLOW) return GeckoResult.fromValue(prompt.dismiss())
@@ -219,10 +219,13 @@ class Prompts(
         fun label(opt: Autocomplete.LoginSelectOption) = opt.value.username.takeIf { it.isNotBlank() } ?: "(no username)"
         /** Per-fill check, then the real password from the vault (matched again by registrable domain). */
         fun fill(opt: Autocomplete.LoginSelectOption) {
-            val site = opt.value.origin
-            com.jamhowman.beastbrowser.autofill.FillAuth.authorize(activity, com.jamhowman.beastbrowser.util.Domains.display(android.net.Uri.parse(site).host)) { ok ->
+            // Match against the tab's real current URL (scheme included), never the entry's own origin.
+            val pageUrl = HelperSessions.currentUrl(session)
+            if (pageUrl == null) { o.complete(prompt.dismiss()); return }
+            com.jamhowman.beastbrowser.autofill.FillAuth.authorize(activity, com.jamhowman.beastbrowser.util.Domains.display(android.net.Uri.parse(pageUrl).host)) { ok ->
                 val saved = if (ok) opt.value.guid?.let { PasswordVault.loginFor(it) } else null
-                if (saved == null || !com.jamhowman.beastbrowser.autofill.FillPolicy.webMatch(saved.origin, site)) {
+                val stillThere = HelperSessions.currentUrl(session) == pageUrl
+                if (saved == null || !stillThere || !com.jamhowman.beastbrowser.autofill.FillPolicy.webMatch(saved.origin, pageUrl)) {
                     o.complete(prompt.dismiss()); return@authorize
                 }
                 o.complete(prompt.confirm(Autocomplete.LoginSelectOption(withPassword(opt.value, saved.password))))

@@ -43,6 +43,23 @@ object FillPolicy {
         return saved.registrable.isNotEmpty() && saved.registrable == page.registrable
     }
 
+    /**
+     * Gecko's onLoginFetch passes a bare host ("example.com", no scheme). Adding "https://" there would let an http
+     * page pass the https-only rule, so the scheme comes from the tab's real URL, and only when its host is the
+     * same host. Anything else (other host, no tab URL, non-http(s)) gives null = offer nothing.
+     */
+    fun fetchOrigin(domain: String?, pageUrl: String?): String? {
+        val d = domain?.trim().orEmpty()
+        if (d.isEmpty()) return null
+        val page = site(pageUrl) ?: return null
+        if ("://" in d) {
+            val s = site(d) ?: return null
+            return if (s.scheme == page.scheme && s.host == page.host) "${s.scheme}://${s.host}" else null
+        }
+        val host = site("https://$d")?.host ?: return null
+        return if (host == page.host) "${page.scheme}://$host" else null
+    }
+
     private fun isIp(h: String) = h.startsWith("[") || h.all { it.isDigit() || it == '.' }
 
     /** `android://<hash>@<package>/` as used by Chrome/Firefox/Google Password Manager exports. */

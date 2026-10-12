@@ -11,6 +11,7 @@ import com.jamhowman.beastbrowser.passwords.VaultStorageDelegate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -117,7 +118,7 @@ class AutofillPolicyTest {
     @Test fun geckoNeverGetsPasswords() {
         PasswordVault.init(org.robolectric.RuntimeEnvironment.getApplication())
         PasswordVault.openDecrypted(listOf(SavedLogin(origin = "https://example.com", username = "a", password = "secret")))
-        val arr = await(VaultStorageDelegate({ null }).onLoginFetch("https://example.com"))
+        val arr = await(VaultStorageDelegate({ null }, pageUrlProvider = { "https://example.com/login" }).onLoginFetch("example.com"))
         assertEquals(1, arr.size)
         assertEquals("a", arr[0].username)
         assertEquals("", arr[0].password)
@@ -132,7 +133,7 @@ class AutofillPolicyTest {
         assertEquals(Decision.ALLOW, FillPolicy.browserFill(false, ok, 1000))
         PasswordVault.init(org.robolectric.RuntimeEnvironment.getApplication())
         PasswordVault.openDecrypted(listOf(SavedLogin(origin = "https://example.com", username = "a", password = "x")))
-        val priv = VaultStorageDelegate({ null }, { null }, { true })
+        val priv = VaultStorageDelegate({ null }, { null }, { true }, { "https://example.com/" })
         assertEquals(0, await(priv.onLoginFetch("https://example.com")).size)
         val mainAct = File(main, "java/com/jamhowman/beastbrowser/ui/MainActivity.kt").readText()
         assertTrue(mainAct.contains("current?.isPrivate == true || realm == Realm.GHOST"))
@@ -218,5 +219,69 @@ class AutofillPolicyTest {
             org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); latch.await(10, TimeUnit.MILLISECONDS)
         }
         return box.get()
+    }
+
+    // ---------------------------------------------------------------- Apk Tester must-fix (autofill2)
+
+    @Test fun httpPageNeverGetsHttpsLogin() {
+        assertEquals("http://example.com", FillPolicy.fetchOrigin("example.com", "http://example.com/login"))
+        assertFalse(FillPolicy.webMatch("https://example.com", FillPolicy.fetchOrigin("example.com", "http://example.com/login")))
+        assertFalse(FillPolicy.webMatch("https://example.com", "http://example.com/login"))
+        PasswordVault.init(org.robolectric.RuntimeEnvironment.getApplication())
+        PasswordVault.openDecrypted(listOf(SavedLogin(origin = "https://example.com", username = "a", password = "x")))
+        val onHttp = VaultStorageDelegate({ null }, pageUrlProvider = { "http://example.com/login" })
+        assertEquals(0, await(onHttp.onLoginFetch("example.com")).size)
+        val onHttps = VaultStorageDelegate({ null }, pageUrlProvider = { "https://example.com/login" })
+        assertEquals(1, await(onHttps.onLoginFetch("example.com")).size)
+    }
+
+    @Test fun schemelessFetchDomainTakesSchemeFromTabOnly() {
+        assertEquals("https://example.com", FillPolicy.fetchOrigin("example.com", "https://example.com/a"))
+        assertNull("no tab URL", FillPolicy.fetchOrigin("example.com", null))
+        assertNull("other host than the tab", FillPolicy.fetchOrigin("example.com", "https://evil.net/"))
+        assertNull("subdomain mismatch", FillPolicy.fetchOrigin("login.example.com", "https://example.com/"))
+        assertNull("scheme in domain must agree with the tab", FillPolicy.fetchOrigin("https://example.com", "http://example.com/"))
+        assertNull(FillPolicy.fetchOrigin("", "https://example.com/"))
+        assertNull(FillPolicy.fetchOrigin("example.com", "about:blank"))
+        PasswordVault.init(org.robolectric.RuntimeEnvironment.getApplication())
+        PasswordVault.openDecrypted(listOf(SavedLogin(origin = "https://example.com", username = "a", password = "x")))
+        assertEquals(0, await(VaultStorageDelegate({ null }, pageUrlProvider = { null }).onLoginFetch("example.com")).size)
+    }
+
+    @Test fun fillComparesAgainstTabUrlNotEntryOrigin() {
+        val prompts = File(main, "java/com/jamhowman/beastbrowser/ui/Prompts.kt").readText()
+        val fill = prompts.substringAfter("fun fill(opt").substringBefore("if (generatedOptions.isEmpty())")
+        assertTrue(fill.contains("HelperSessions.currentUrl(session)"))
+        assertTrue(fill.contains("webMatch(saved.origin, pageUrl)"))
+        assertFalse(fill.contains("opt.value.origin"))
+    }
+
+    @Test fun fieldReportIsBoundToPageAndClearedOnNavigation() {
+        val s1 = Any(); val s2 = Any()
+        val o = org.json.JSONObject().put("top", true).put("sameOrigin", true).put("visible", true)
+        com.jamhowman.beastbrowser.autofill.FieldGuard.reportFor(s1, o, 100, "https://a.example/login#x")
+        assertNotNull(com.jamhowman.beastbrowser.autofill.FieldGuard.get(s1, "https://a.example/login"))
+        assertNull("other page in same tab", com.jamhowman.beastbrowser.autofill.FieldGuard.get(s1, "https://evil.example/"))
+        assertNull("other tab", com.jamhowman.beastbrowser.autofill.FieldGuard.get(s2, "https://a.example/login"))
+        assertNull("no URL known", com.jamhowman.beastbrowser.autofill.FieldGuard.get(s1, null))
+        com.jamhowman.beastbrowser.autofill.FieldGuard.clear(s1)
+        assertNull(com.jamhowman.beastbrowser.autofill.FieldGuard.get(s1, "https://a.example/login"))
+        com.jamhowman.beastbrowser.autofill.FieldGuard.reportFor(s1, o, 100, null)
+        assertNull("report without a page is dropped", com.jamhowman.beastbrowser.autofill.FieldGuard.get(s1, "https://a.example/login"))
+        val hs = File(main, "java/com/jamhowman/beastbrowser/browser/HelperSessions.kt").readText()
+        assertTrue(hs.substringAfter("fun onLocationChange(").substringBefore("\n    }").contains("FieldGuard.clear(session)"))
+    }
+
+    @Test fun onlyCurrentSigningCertificateAccepted() {
+        val current = android.content.pm.Signature(ByteArray(64) { 1 })
+        val old = android.content.pm.Signature(ByteArray(64) { 2 })
+        val chosen = com.jamhowman.beastbrowser.autofill.AppSigners.currentSigners(arrayOf(current), arrayOf(old, current))
+        assertEquals(listOf(current), chosen)
+        val hashes = com.jamhowman.beastbrowser.autofill.AppSigners.hashes(chosen)
+        val oldHash = com.jamhowman.beastbrowser.autofill.AppSigners.hashes(listOf(old)).single()
+        val loginForOldKey = "android://${Base64.getUrlEncoder().encodeToString(oldHash)}@com.example.app"
+        assertFalse("rotated-away key no longer fills", FillPolicy.appMatch(loginForOldKey, "com.example.app", hashes))
+        val src = File(main, "java/com/jamhowman/beastbrowser/autofill/AppSigners.kt").readText()
+        assertTrue(src.contains("currentSigners(info.apkContentsSigners"))
     }
 }
