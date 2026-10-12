@@ -1,0 +1,7 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+    <!-- 2.10: shields off (site-tinted toolbar): shield outline with a slash, so state reads by shape, not colour. -->
+    <path android:fillColor="@android:color/white" android:pathData="M12,1L3,5v6c0,5.55 3.84,10.74 9,12 5.16,-1.26 9,-6.45 9,-12V5l-9,-4zM12,3.18l7,3.11V11c0,4.52 -2.98,8.69 -7,9.93 -4.02,-1.24 -7,-5.41 -7,-9.93V6.29l7,-3.11z"/>
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:strokeLineCap="round" android:pathData="M3.5,2.5L20.5,21.5"/>
+</vector>

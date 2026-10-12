@@ -30,7 +30,13 @@ object SiteToolbar {
      */
     val PROTECTED: List<Int> = listOf(PrivateLook.BARS_NIGHT, PrivateLook.BARS_DAY)
 
-    data class Colors(val bar: Int, val pill: Int, val ink: Int, val nudged: Boolean)
+    data class Colors(val bar: Int, val pill: Int, val ink: Int, val nudged: Boolean) {
+        /** 2.10 follow-up: the bottom bar is painted exactly like the top bar, with the same ink on its icons. */
+        val bottomBar: Int get() = bar
+        val bottomInk: Int get() = ink
+        /** Shield and other toolbar icons: the same ink (≥ [MIN_CONTRAST] on bar and pill). */
+        val iconInk: Int get() = ink
+    }
 
     /**
      * Null = leave the toolbar as it is (toggle off, private/Ghost, no or invalid colour). Otherwise the colours to

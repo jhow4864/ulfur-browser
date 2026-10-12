@@ -16,7 +16,9 @@ object ShieldBadge {
      * Colour roles; MainActivity resolves them: ACCENT = the toolbar's [ThemePalette] (2.8: the realm's preset for
      * light/dark, plus the private-mode override when one is set), MUTED = R.color.text_hint, WARN = R.color.warn.
      */
-    enum class Tint { ACCENT, MUTED, WARN }
+    enum class Tint { ACCENT, MUTED, WARN,
+        /** 2.10: the site-tinted toolbar's ink ([com.jamhowman.beastbrowser.data.SiteToolbar.Colors.ink], ≥ 4.5:1). */
+        INK }
 
     data class Style(
         @DrawableRes val icon: Int,
@@ -51,4 +53,16 @@ object ShieldBadge {
      * count, so it falls back to the flat solid accent, like every other text-bearing fill in that palette.
      */
     fun gradient(palette: ThemePalette): IntArray? = if (palette.gradientCarriesText) palette.gradient else null
+
+    /**
+     * 2.10 Ulfur #5 follow-up: the shield on a site-tinted toolbar. Accent/muted colours can't be trusted to read on an
+     * arbitrary site colour, so the icon uses the same ink as every other toolbar icon and shows its state by shape:
+     * filled = blocking, outline = paused for this site, slashed = shields off everywhere. The count badge keeps
+     * the accent fill (it carries its own onColor text).
+     */
+    fun siteTintStyle(level: ShieldLevel, blockingOn: Boolean, pausedForSite: Boolean): Style = when {
+        !blockingOn -> Style(R.drawable.ic_shield_off, Tint.INK, false, Tint.ACCENT, R.string.shield_level_down)
+        pausedForSite -> Style(R.drawable.ic_shield_outline, Tint.INK, level != ShieldLevel.NONE, Tint.ACCENT, R.string.shield_level_down)
+        else -> style(level, true).copy(icon = R.drawable.ic_shield, iconTint = Tint.INK)
+    }
 }
