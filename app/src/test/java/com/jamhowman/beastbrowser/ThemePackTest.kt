@@ -139,7 +139,7 @@ class ThemePackTest {
 
     @Test fun rejectsBrokenJsonAndWrongFormat() {
         listOf("", "{", "{\"format\":\"ulfurtheme\",", "[]", "\"hi\"", "not json", "$good trailing",
-            good.replace("\"ulfurtheme\"", "\"other\""), good.replace("\"schema\":1", "\"schema\":2"),
+            good.replace("\"ulfurtheme\"", "\"other\""), good.replace("\"schema\":1", "\"schema\":3"),
             good.replace("\"schema\":1", "\"schema\":\"1\""), good.replace("\"name\":\"Moss\"", "\"name\":\"\""),
             good.replace("\"name\":\"Moss\"", "\"name\":\"${"x".repeat(60)}\""), good.replace("Moss", "Mo\\u202Ess"),
             good.replace("\"toxic\"", "\"ghost\""), good.replace("\"toxic\"", "\"nope\""),

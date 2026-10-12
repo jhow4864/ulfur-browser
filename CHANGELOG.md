@@ -3,6 +3,18 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## 2.10.0 (versionCode 27), theme packs v2 (part 1)
+
+* **Theme packs can now change backgrounds, surfaces and text colours** (schema 2) and carry up to four background
+  images: home/new tab, the toolbar strip, the tab switcher and the Settings header. Images are drawn to fill their
+  area around a focal point, under a dimming layer that Ulfur strengthens automatically when text would be hard to
+  read.
+* Images are checked before they're opened (PNG, JPEG or WebP only; nothing animated, no SVG, GIF or HEIC; at most
+  4096 px per side and 16 megapixels), then re-encoded, so location and camera data never get stored.
+* The preview shows the images in the mock-up, and the readability warning now covers text over images. It checks
+  the darkest and lightest spots under the text, not an average.
+* Existing accent-only packs (schema 1) work exactly as before. Private tabs, Work and Ghost keep their own look.
+
 ## 2.9.1 (versionCode 26)
 
 * **Fix: no more false safe starts.** 2.9.0 counted every start of Ulfur's process, including background ones such as

@@ -73,7 +73,7 @@ class ThemePackPreviewActivity : AppCompatActivity() {
                 if (n < 0) break
                 out.write(buf, 0, n)
             }
-            ThemePackParser.parse(out.toByteArray())
+            ThemePackParser.parse(out.toByteArray(), com.jamhowman.beastbrowser.data.AndroidImageCodec)
         } ?: ThemePackResult.Bad(ThemePackError.NOT_A_THEME, "no data")
     } catch (e: Exception) {
         ThemePackResult.Bad(ThemePackError.NOT_A_THEME, e.javaClass.simpleName)
@@ -85,6 +85,7 @@ class ThemePackPreviewActivity : AppCompatActivity() {
                 ThemePackError.NOT_A_THEME -> R.string.theme_bad_file
                 ThemePackError.TOO_LARGE -> R.string.theme_too_large
                 ThemePackError.BAD_CONTENTS -> R.string.theme_bad_contents
+                ThemePackError.BAD_IMAGE -> R.string.theme_bad_image
             }
         ).setPositiveButton(android.R.string.ok, null).setOnDismissListener { finish() }.show()
     }
@@ -111,8 +112,9 @@ class ThemePackPreviewActivity : AppCompatActivity() {
         col.addView(mockup(pal), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = pad / 2 })
         col.addView(swatches(p), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = pad / 2 })
         // Contrast from the very palette Apply paints with, for every mode the pack sets.
-        val low = listOfNotNull(if (p.hasDark) p.palette(true) else null, if (p.hasLight) p.palette(false) else null)
-            .flatMap { ThemeContrast.lowContrast(it) }
+        // 2.10: plus text over every image after its (auto-raised) scrim, darkest and lightest point.
+        val modes = listOfNotNull(if (p.hasDark || !p.hasLight) true else null, if (p.hasLight) false else null)
+        val low = modes.flatMap { ThemeContrast.warnings(p, it) }
         if (low.isNotEmpty()) col.addView(text(getString(R.string.theme_low_contrast), 14f, 0xFF0E0E12.toInt()).apply {
             setPadding(pad / 2, pad / 2, pad / 2, pad / 2)
             background = GradientDrawable().apply { setColor(getColor(R.color.warn)); cornerRadius = dp(this@ThemePackPreviewActivity, 8).toFloat() }
@@ -160,21 +162,25 @@ class ThemePackPreviewActivity : AppCompatActivity() {
 
     private fun mockup(p: ThemePalette): View {
         val s = 0.7f
-        val bg = if (p.night) ThemeContrast.BG_DARK else ThemeContrast.BG_LIGHT
-        val surface = if (p.night) ThemeContrast.SURFACE_DARK else ThemeContrast.SURFACE_LIGHT
-        val ink = if (p.night) 0xFFF2F2F7.toInt() else 0xFF121218.toInt()
+        val rs = (p.surfaces ?: com.jamhowman.beastbrowser.data.ThemeSurfaces()).resolved(p.night)
+        val bg = rs.background
+        val surface = rs.surface
+        val ink = rs.onToolbar
+        val pk = pack!!
         val r = dp(this, 10).toFloat()
         fun mark(key: String, v: View) = v.also { highlight.getOrPut(key) { mutableListOf() } += it }
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val pd = (dp(context, 12) * s).toInt()
             setPadding(pd, pd, pd, pd)
-            background = GradientDrawable().apply { setColor(bg); cornerRadius = r; setStroke(dp(context, 1), p.withAlpha(0x55)) }
+            background = previewImage(pk, com.jamhowman.beastbrowser.data.ImageSlot.HOME, p.night)
+                ?: GradientDrawable().apply { setColor(bg); cornerRadius = r; setStroke(dp(context, 1), p.withAlpha(0x55)) }
         }
         // Toolbar with address bar
         box.addView(mark("surfaceTint", LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            background = GradientDrawable().apply { setColor(p.surfaceTint); cornerRadius = r * 2 }
+            background = previewImage(pk, com.jamhowman.beastbrowser.data.ImageSlot.TOOLBAR, p.night)
+                ?: GradientDrawable().apply { setColor(if (p.surfaces?.toolbar != null) rs.toolbar else p.surfaceTint); cornerRadius = r * 2 }
             setPadding(dp(context, 10), dp(context, 6), dp(context, 10), dp(context, 6))
             addView(mark("accent", text("◆", 12f, p.color)))
             addView(text("  example.com", 12f, ink))
@@ -206,13 +212,25 @@ class ThemePackPreviewActivity : AppCompatActivity() {
         return box
     }
 
+    private val previewBitmaps = mutableMapOf<com.jamhowman.beastbrowser.data.ImageSlot, android.graphics.Bitmap?>()
+
+    private fun previewImage(p: ThemePack, slot: com.jamhowman.beastbrowser.data.ImageSlot, night: Boolean): android.graphics.drawable.Drawable? {
+        val img = p.images[slot] ?: return null
+        val bmp = previewBitmaps.getOrPut(slot) { com.jamhowman.beastbrowser.data.AndroidImageCodec.bitmap(img) } ?: return null
+        return ThemeImageDrawable.of(p, slot, night, bmp)
+    }
+
     private fun swatches(p: ThemePack): View {
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val pal = p.palette(night)
         val values = mapOf("accent" to pal.color, "accentStart" to pal.accentStart, "accentEnd" to pal.accentEnd,
             "onAccent" to pal.onColor, "accentText" to pal.accentText, "surfaceTint" to pal.surfaceTint, "eye" to pal.eye)
-        ThemePackParser.COLOR_KEYS.forEach { key ->
-            val c = values.getValue(key)
+        val rs = (pal.surfaces ?: com.jamhowman.beastbrowser.data.ThemeSurfaces()).resolved(night)
+        val all = values + if (p.schema >= 2) mapOf("background" to rs.background, "surface" to rs.surface,
+            "surfaceVariant" to rs.surfaceVariant, "text" to rs.text, "textSecondary" to rs.textSecondary,
+            "toolbar" to rs.toolbar, "onToolbar" to rs.onToolbar, "divider" to rs.divider) else emptyMap()
+        all.keys.forEach { key ->
+            val c = all.getValue(key)
             val isDefault = p.colorFor(key, night) == null
             row.addView(LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
@@ -244,7 +262,8 @@ class ThemePackPreviewActivity : AppCompatActivity() {
         "onAccent" -> getString(R.string.theme_sw_on_accent)
         "accentText" -> getString(R.string.theme_sw_text)
         "surfaceTint" -> getString(R.string.theme_sw_surface)
-        else -> getString(R.string.theme_sw_eye)
+        "eye" -> getString(R.string.theme_sw_eye)
+        else -> key
     }
 
     private fun text(s: String, size: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
