@@ -145,3 +145,42 @@ class PrivateCryptoTest {
         assertFalse(DownloadCenter.encryptLegacy(f)) // already encrypted: untouched
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class EncLeftoverTest {
+    private val app: Application = ApplicationProvider.getApplicationContext()
+    private fun dir(n: String) = File(app.cacheDir, n).apply { deleteRecursively(); mkdirs() }
+
+    @Test fun startupSweepDeletesStaleEncLeftovers() {
+        val d = dir("enc-sweep")
+        val kept = File(d, "a.pdf").apply { writeText("x") }
+        val stale = File(d, ".enc-a.pdf").apply { writeText("y") }      // original still there: stale copy
+        val orphan = File(d, ".enc-gone.zip").apply { writeText("z") }  // not in the vault list at all
+        val nomedia = File(d, ".nomedia").apply { writeText("") }
+        val gone = DownloadCenter.sweepOrphanedPrivateFiles(d, listOf(kept.absolutePath))
+        assertEquals(setOf(".enc-a.pdf", ".enc-gone.zip"), gone.map { it.name }.toSet())
+        assertFalse(stale.exists()); assertFalse(orphan.exists())
+        assertTrue(kept.isFile); assertTrue(nomedia.isFile)
+    }
+
+    @Test fun startupSweepRestoresLeftoverWhenOriginalWasAlreadyDeleted() {
+        val d = dir("enc-restore")
+        val listed = File(d, "b.mp4")
+        File(d, ".enc-b.mp4").writeText("ciphertext")
+        val gone = DownloadCenter.sweepOrphanedPrivateFiles(d, listOf(listed.absolutePath))
+        assertTrue(gone.isEmpty())
+        assertEquals("ciphertext", listed.readText())
+        assertFalse(File(d, ".enc-b.mp4").exists())
+    }
+
+    @Test fun wipeDeletesEncLeftoversToo() {
+        val d = dir("enc-wipe")
+        listOf("a.pdf", "half.mp4", ".enc-a.pdf", ".enc-c.bin").forEach { File(d, it).writeText("x") }
+        File(d, ".nomedia").writeText("")
+        File(d, "private_downloads.json").writeText("[]")
+        val gone = DownloadCenter.wipeVaultFolder(d)
+        assertEquals(setOf("a.pdf", "half.mp4", ".enc-a.pdf", ".enc-c.bin"), gone.map { it.name }.toSet())
+        assertEquals(setOf(".nomedia", "private_downloads.json"), d.list()!!.toSet())
+    }
+}

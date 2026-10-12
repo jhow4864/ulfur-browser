@@ -369,15 +369,58 @@ class PrivateDownloadsActivity : AppCompatActivity() {
             .setNegativeButton(android.R.string.cancel, null).show()
     }
 
-    /** Ulfur #1: deletes every vault file and the encryption key, so nothing left behind can ever be decrypted. */
+    /**
+     * Ulfur #1: deletes every vault file and the encryption key, so nothing left behind can ever be decrypted.
+     * Red confirm sheet first, then a fresh fingerprint/face/PIN check ([WipeGate]); only then the wipe runs.
+     * The autofill/password store isn't touched, so the sheet doesn't mention passwords.
+     */
     private fun confirmWipe() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.vault_wipe_key_title)
-            .setMessage(R.string.vault_wipe_key_message)
-            .setPositiveButton(R.string.vault_wipe_key_confirm) { _, _ ->
-                val n = DownloadCenter.wipePrivateVaultAndKey()
-                Toast.makeText(this, resources.getQuantityString(R.plurals.vault_wiped, n, n), Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton(android.R.string.cancel, null).show()
+        val danger = getColor(R.color.danger)
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        val box = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(pad, pad, pad, pad)
+        }
+        box.addView(TextView(this).apply {
+            text = getString(R.string.vault_wipe_key_title); textSize = 20f; setTextColor(danger)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        box.addView(TextView(this).apply {
+            text = getString(R.string.vault_wipe_key_message); textSize = 15f
+            setTextColor(getColor(R.color.text_primary)); setPadding(0, pad / 2, 0, pad)
+        })
+        box.addView(com.google.android.material.button.MaterialButton(this).apply {
+            text = getString(R.string.vault_wipe_key_confirm)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(danger)
+            setTextColor(android.graphics.Color.WHITE)
+            setOnClickListener { sheet.dismiss(); wipeGate().request() }
+        })
+        box.addView(com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+            text = getString(android.R.string.cancel)
+            setOnClickListener { sheet.dismiss() }
+        })
+        sheet.setContentView(box)
+        sheet.show()
     }
+
+    private fun wipeGate() = com.jamhowman.beastbrowser.downloads.WipeGate(
+        authenticate = { onResult ->
+            val bp = BiometricPrompt(this, ContextCompat.getMainExecutor(this),
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = onResult(true)
+                    override fun onAuthenticationError(code: Int, errString: CharSequence) = onResult(false)
+                })
+            bp.authenticate(BiometricPrompt.PromptInfo.Builder()
+                .setTitle(getString(R.string.vault_wipe_key_title))
+                .setSubtitle("Confirm with your fingerprint, face or screen lock")
+                .setAllowedAuthenticators(PrivateAuth.AUTHENTICATORS)
+                .setConfirmationRequired(false)
+                .build())
+        },
+        wipe = {
+            val n = DownloadCenter.wipePrivateVaultAndKey()
+            Toast.makeText(this, resources.getQuantityString(R.plurals.vault_wiped, n, n), Toast.LENGTH_SHORT).show()
+        },
+    )
 }

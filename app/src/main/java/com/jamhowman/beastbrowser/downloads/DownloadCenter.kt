@@ -152,10 +152,27 @@ object DownloadCenter {
         if (legacy.isNotEmpty()) io.execute { legacy.forEach { encryptLegacy(it) } }
     }
 
+    /** Prefix of the temporary file [encryptLegacy] writes before swapping it in. */
+    internal const val ENC_PREFIX = ".enc-"
+
+    /**
+     * Wipe: every vault file, partial download and `.enc-` leftover. Keeps `.nomedia` and the vault list
+     * (already emptied by [clearPrivateVault]). Returns what was deleted.
+     */
+    internal fun wipeVaultFolder(dir: File): List<File> {
+        val out = ArrayList<File>()
+        dir.listFiles()?.forEach { f ->
+            if (!f.isFile || f.name == ".nomedia" || f.name == PRIVATE_STORE || f.name == "$PRIVATE_STORE.tmp") return@forEach
+            if (f.name.startsWith(".") && !f.name.startsWith(ENC_PREFIX)) return@forEach
+            if (f.delete()) out += f
+        }
+        return out
+    }
+
     /** Encrypts a pre-2.10 plaintext vault file. The old file is deleted (not shredded; flash can't promise that). */
     internal fun encryptLegacy(f: File): Boolean {
         if (!f.isFile || PrivateCrypto.isEncrypted(f)) return false
-        val tmp = File(f.parentFile, ".enc-" + f.name)
+        val tmp = File(f.parentFile, ENC_PREFIX + f.name)
         return runCatching {
             PrivateCrypto.writer(tmp).use { w -> f.inputStream().use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
             if (!f.delete() || !tmp.renameTo(f)) throw IOException("swap failed")
@@ -176,6 +193,14 @@ object DownloadCenter {
         val protectedNames = setOf(PRIVATE_STORE, "$PRIVATE_STORE.tmp")
         val deleted = ArrayList<File>()
         dir.listFiles()?.forEach { f ->
+            if (f.isFile && f.name.startsWith(ENC_PREFIX)) {
+                // Leftover from an interrupted pre-2.10 encryption pass (encryptLegacy). If the swap died after
+                // the original was deleted, the leftover IS the file: put it back. Otherwise it's a stale copy.
+                val target = File(dir, f.name.removePrefix(ENC_PREFIX))
+                if (!target.exists() && canonical(target) in keep && f.renameTo(target)) return@forEach
+                if (f.delete()) deleted += f
+                return@forEach
+            }
             if (!f.isFile || f.name.startsWith(".") || f.name in protectedNames) return@forEach
             if (canonical(f) in keep) return@forEach
             if (f.delete()) deleted += f else Log.w(TAG, "could not delete orphaned private file")
@@ -487,9 +512,7 @@ object DownloadCenter {
         val n = clearPrivateVault()
         io.execute {
             PrivateCrypto.destroyKey()
-            ensurePrivateDir().listFiles()?.forEach { f ->
-                if (f.isFile && !f.name.startsWith(".") && f.name != PRIVATE_STORE && f.name != "$PRIVATE_STORE.tmp") f.delete()
-            }
+            wipeVaultFolder(ensurePrivateDir())
         }
         return n
     }

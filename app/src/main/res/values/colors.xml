@@ -15,6 +15,8 @@
     <color name="private_ink">#5B3FA8</color>
     <color name="private_warn">#A15C00</color>
     <color name="warn">#FFB020</color>
+    <!-- 2.10: destructive actions (Wipe vault and key). White text on it is 4.98:1. -->
+    <color name="danger">#D32F2F</color>
     <color name="gx_red">#FA1E4E</color>
     <color name="gx_purple">#A63BFF</color>
     <color name="gx_cyan">#00B8D4</color>
