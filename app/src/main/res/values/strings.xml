@@ -426,4 +426,46 @@
     <string name="add_home_open_settings">App info</string>
     <string name="webapp_back">Back</string>
     <string name="webapp_open_in_ulfur">Open in Ulfur</string>
+
+    <!-- 2.9 theme packs -->
+    <string name="theme_import">Import theme pack</string>
+    <string name="theme_unverified">Unverified pack</string>
+    <string name="theme_default_tag">default</string>
+    <string name="theme_low_contrast">Some text may be hard to read.</string>
+    <string name="theme_apply">Apply</string>
+    <string name="theme_applied">Theme applied</string>
+    <string name="theme_bad_file">This file isn\'t a theme pack</string>
+    <string name="theme_too_large">This pack is too large</string>
+    <string name="theme_bad_contents">This pack contains files &brand; doesn\'t allow</string>
+    <string name="theme_delete">Delete</string>
+    <string name="theme_preview_dark">Dark</string>
+    <string name="theme_preview_light">Light</string>
+    <string name="theme_preview_tab">Tab · example.com</string>
+    <string name="theme_sw_accent">Accent</string>
+    <string name="theme_sw_start">Gradient start</string>
+    <string name="theme_sw_end">Gradient end</string>
+    <string name="theme_sw_on_accent">Text on accent</string>
+    <string name="theme_sw_text">Accent text</string>
+    <string name="theme_sw_surface">Selected</string>
+    <string name="theme_sw_eye">Wolf eye</string>
+    <string name="undo">Undo</string>
+    <string name="done">Done</string>
+    <!-- 2.9 safe start -->
+    <string name="safe_title">&brand; closed unexpectedly</string>
+    <string name="safe_body">We\'ve opened &brand; with your tabs and extensions turned off, so you can get back in.</string>
+    <string name="safe_restore">Restore everything</string>
+    <string name="safe_restore_selected">Restore selected</string>
+    <string name="safe_continue">Continue in safe start</string>
+    <string name="safe_share">Share crash report</string>
+    <string name="safe_bar">Safe start</string>
+    <string name="safe_bar_restore">Restore</string>
+    <string name="safe_row_fmt">%1$s · %2$s</string>
+    <string name="safe_again">It crashed again after restoring. Try turning extensions back on one at a time.</string>
+    <string name="safe_row_tabs">Tabs</string>
+    <string name="safe_row_tabs_status">paused, not deleted</string>
+    <string name="safe_row_extensions">Extensions</string>
+    <string name="safe_row_extensions_status">uBlock Origin is off for now</string>
+    <string name="safe_row_theme">Theme</string>
+    <string name="safe_row_theme_status">back to the default</string>
+    <string name="safe_no_report">Crash reports are off, so no report was saved. Turn on Settings › Crash reports to save the next one on this phone.</string>
 </resources>

@@ -162,8 +162,8 @@ object Engine {
         ublock?.let { ext ->
             val ctl = r.webExtensionController
             val enabled = ext.metaData.enabled
-            if (Prefs.ublockEnabled && !enabled) ctl.enable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
-            if (!Prefs.ublockEnabled && enabled) ctl.disable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
+            if (Prefs.ublockActive && !enabled) ctl.enable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
+            if (!Prefs.ublockActive && enabled) ctl.disable(ext, WebExtensionController.EnableSource.USER).accept({ it?.let { e -> uboBridge.attach(e); ublock = e } }, {})
         }
         syncCookieBanners()
     }
@@ -174,7 +174,7 @@ object Engine {
      * uBO bridge (re)connects; recorded only once uBO confirms, so a failed attempt is retried next time.
      */
     fun syncCookieBanners() {
-        if (!Prefs.ublockEnabled || !uboBridge.isConnected) return
+        if (!Prefs.ublockActive || !uboBridge.isConnected) return
         val want = Prefs.cookieBanners
         if (Prefs.cookieBannersApplied == want) return
         uboBridge.request(JSONObject().put("type", "setCookieLists").put("enabled", want), 30_000) { r ->
@@ -239,7 +239,7 @@ object Engine {
 
     /** uBO's per-site switch for [url] (true = filtering on). null if uBO/bridge isn't available. */
     fun uboSiteEnabled(url: String, cb: (Boolean?) -> Unit) {
-        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        if (ublock == null || !Prefs.ublockActive) { cb(null); return }
         uboBridge.request(JSONObject().put("type", "getSite").put("url", url), 2500) {
             cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", true) else null)
         }
@@ -247,7 +247,7 @@ object Engine {
 
     /** Sets uBO's per-site switch (adds/removes [url]'s host in uBO's trusted-site list). */
     fun setUboSiteEnabled(url: String, enabled: Boolean, cb: (Boolean?) -> Unit = {}) {
-        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        if (ublock == null || !Prefs.ublockActive) { cb(null); return }
         uboBridge.request(JSONObject().put("type", "setSite").put("url", url).put("enabled", enabled), 2500) {
             cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", enabled) else null)
         }
@@ -259,14 +259,14 @@ object Engine {
      * cleanup on that site; network blocking stays on. null if uBO/bridge isn't available.
      */
     fun uboCookieHidingOn(url: String, cb: (Boolean?) -> Unit) {
-        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        if (ublock == null || !Prefs.ublockActive) { cb(null); return }
         uboBridge.request(JSONObject().put("type", "getCosmetic").put("url", url), 2500) {
             cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", true) else null)
         }
     }
 
     fun setUboCookieHiding(url: String, on: Boolean, cb: (Boolean?) -> Unit = {}) {
-        if (ublock == null || !Prefs.ublockEnabled) { cb(null); return }
+        if (ublock == null || !Prefs.ublockActive) { cb(null); return }
         uboBridge.request(JSONObject().put("type", "setCosmetic").put("url", url).put("enabled", on), 2500) {
             cb(if (it?.optBoolean("ok") == true) it.optBoolean("enabled", on) else null)
         }
@@ -285,7 +285,7 @@ object Engine {
             if (!ext.metaData.allowedInPrivateBrowsing) {
                 ctl.setAllowedInPrivateBrowsing(ext, true).accept({ e -> e?.let { uboBridge.attach(it); ublock = it; notifyExtension(it) } }, {})
             }
-            if (!Prefs.ublockEnabled) applySettings()
+            if (!Prefs.ublockActive || !ext.metaData.enabled) applySettings() // 2.9: also re-enables after a safe start
             notifyExtension(ext)
         }, { e ->
             ublockError = e?.message ?: e.toString()

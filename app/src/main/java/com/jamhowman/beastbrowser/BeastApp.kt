@@ -2,6 +2,8 @@ package com.jamhowman.beastbrowser
 
 import android.app.Application
 import com.jamhowman.beastbrowser.crash.CrashReporter
+import com.jamhowman.beastbrowser.crash.SafeStart
+import com.jamhowman.beastbrowser.data.ThemePacks
 import com.jamhowman.beastbrowser.data.AppIcon
 import com.jamhowman.beastbrowser.data.Prefs
 import com.jamhowman.beastbrowser.data.Stats
@@ -14,10 +16,21 @@ import com.jamhowman.beastbrowser.data.UiTheme
 class BeastApp : Application() {
     override fun onCreate() {
         super.onCreate()
+        // 2.9 safe start: count this launch first, before anything that could crash (main process only).
+        val main = isMainProcess()
+        if (main) try { SafeStart.begin(this) } catch (_: Throwable) { }
         Prefs.init(this)
+        ThemePacks.init(this)
         AppIcon.sync(this) // 2.8: keep activity-alias state in line with the stored icon
         CrashReporter.install(this) // 2.5.1: opt-in, records nothing unless Settings › Crash reports is on
         Stats.init()
         UiTheme.apply()
+    }
+
+    private fun isMainProcess(): Boolean {
+        val name = if (android.os.Build.VERSION.SDK_INT >= 28) getProcessName() else try {
+            java.io.File("/proc/self/cmdline").readText().trimEnd('\u0000')
+        } catch (_: Throwable) { packageName }
+        return name == packageName
     }
 }

@@ -60,8 +60,14 @@ object CrashReporter {
     private fun recordAppCrash(t: Thread, e: Throwable) {
         if (!enabled()) return
         val ctx = appContext ?: return
-        val trace = CrashFormat.traceOf(e)
-        store(ctx).save(report(CrashReport.Kind.APP, CrashFormat.scrub(t.name), CrashFormat.summary(trace), trace))
+        store(ctx).save(appReport(t, e))
+    }
+
+    /** 2.9: private-session titles/URLs are masked on top of the generic scrubbing ([PrivateRedactor]). */
+    internal fun appReport(t: Thread, e: Throwable): CrashReport {
+        val trace = PrivateRedactor.redact(CrashFormat.traceOf(e))
+        return report(CrashReport.Kind.APP, PrivateRedactor.redact(CrashFormat.scrub(t.name)),
+            PrivateRedactor.redact(CrashFormat.summary(trace)), trace)
     }
 
     /** A tab's content process crashed. Records nothing about the tab (no URL, title, or private/normal). */

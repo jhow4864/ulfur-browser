@@ -38,6 +38,9 @@ import com.jamhowman.beastbrowser.data.ThemeColor
 import com.jamhowman.beastbrowser.data.ThemePalette
 import com.jamhowman.beastbrowser.data.ThemePreset
 import com.jamhowman.beastbrowser.data.UiTheme
+import com.jamhowman.beastbrowser.data.ThemePacks
+import android.content.Intent
+import androidx.activity.result.contract.ActivityResultContracts
 import com.jamhowman.beastbrowser.databinding.FragmentAppearanceBinding
 import com.jamhowman.beastbrowser.databinding.ViewSectionHeaderBinding
 import com.jamhowman.beastbrowser.widget.SpeedDialWidget
@@ -87,7 +90,7 @@ class AppearanceFragment : Fragment() {
         val ctx = requireContext()
         val night = AppTheme.isNight(ctx)
         val theme = Prefs.theme
-        val p = AppTheme.palette(theme, night)
+        val p = AppTheme.palette(ctx, Realm.PLAY, private = false) // 2.9: includes an applied theme pack
 
         b.accentWash.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(p.withAlpha(0x14), 0))
         header(b.headerPreview, p, R.string.appearance_section_preview,
@@ -107,6 +110,7 @@ class AppearanceFragment : Fragment() {
         header(b.headerIcon, p, R.string.appearance_section_icon,
             resources.getQuantityString(R.plurals.appearance_icons_count, AppIcon.entries.size, AppIcon.entries.size))
         bindIcons(ctx, p)
+        bindPacks(ctx, p)
         header(b.headerMotion, p, R.string.appearance_section_motion, null)
         bindWolf(p)
     }
@@ -265,7 +269,9 @@ class AppearanceFragment : Fragment() {
     // ------------------------------------------------------------------ presets
 
     private fun pickTheme(preset: ThemePreset) {
-        if (preset == Prefs.theme) return
+        val store = ThemePacks.store()
+        if (preset == Prefs.theme && store?.activeId() == null) return
+        store?.clearActive() // 2.9: a preset replaces the applied theme pack (the pack stays installed)
         Prefs.setAccent(Realm.PLAY, preset)
         themeChanged()
     }
@@ -276,6 +282,48 @@ class AppearanceFragment : Fragment() {
     }
 
     /** Applies a new preset choice to this screen (crossfade), the home-screen widget and, on resume, everything else. */
+    // ------------------------------------------------------------------ theme packs (2.9)
+
+    private val pickPack = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri ?: return@registerForActivityResult
+        startActivity(Intent(requireContext(), ThemePackPreviewActivity::class.java).setData(uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    }
+
+    /** "Import theme pack" row and the installed packs (tap to switch, long-press to delete). */
+    private fun bindPacks(ctx: Context, p: ThemePalette) {
+        b.importThemeRow.setOnClickListener { pickPack.launch(arrayOf("application/zip", "application/json", "application/octet-stream", "*/*")) }
+        val store = ThemePacks.store() ?: return
+        val active = store.activeId()
+        b.packRow.removeAllViews()
+        store.installed().forEach { pack ->
+            val night = AppTheme.isNight(ctx)
+            val pal = pack.palette(night)
+            val card = TextView(ctx).apply {
+                text = pack.name
+                textSize = 11f
+                maxLines = 2
+                gravity = android.view.Gravity.BOTTOM
+                setTextColor(pal.onColor)
+                setPadding(dp(ctx, 8), dp(ctx, 6), dp(ctx, 8), dp(ctx, 6))
+                background = GradientDrawable(GradientDrawable.Orientation.TL_BR, pal.gradient).apply {
+                    cornerRadius = dp(ctx, 10).toFloat()
+                    if (pack.id == active) setStroke(dp(ctx, 3), p.accentText)
+                }
+                contentDescription = pack.name
+                setOnClickListener { store.select(pack.id); themeChanged() }
+                setOnLongClickListener {
+                    com.google.android.material.dialog.MaterialAlertDialogBuilder(ctx).setTitle(pack.name)
+                        .setPositiveButton(R.string.theme_delete) { _, _ -> store.delete(pack.id); themeChanged() }
+                        .setNegativeButton(android.R.string.cancel, null).show()
+                    true
+                }
+            }
+            b.packRow.addView(card, LinearLayout.LayoutParams(dp(ctx, 96), dp(ctx, 64)).apply { setMargins(dp(ctx, 4), dp(ctx, 4), dp(ctx, 4), dp(ctx, 8)) })
+        }
+        b.packScroll.visibility = if (b.packRow.childCount == 0) View.GONE else View.VISIBLE
+    }
+
     private fun themeChanged() {
         val host = activity as? SettingsActivity
         if (host != null) host.onThemeChanged { if (_b != null) bind() } else bind()

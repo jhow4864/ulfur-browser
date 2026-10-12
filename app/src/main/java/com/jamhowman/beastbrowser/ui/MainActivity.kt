@@ -74,6 +74,9 @@ import com.jamhowman.beastbrowser.browser.Tab
 import com.jamhowman.beastbrowser.browser.TabCallbacks
 import com.jamhowman.beastbrowser.browser.UboBadge
 import com.jamhowman.beastbrowser.browser.UrlUtils
+import com.jamhowman.beastbrowser.crash.LaunchGuard
+import com.jamhowman.beastbrowser.crash.SafeStart
+import com.jamhowman.beastbrowser.data.SavedSession
 import com.jamhowman.beastbrowser.data.AppTheme
 import com.jamhowman.beastbrowser.data.PrivateLook
 import com.jamhowman.beastbrowser.data.BeastControl
@@ -293,6 +296,40 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         if (current == null) tabs.lastOrNull()?.let { selectTab(it) }
         com.jamhowman.beastbrowser.update.Updater.onLaunch(this) // GitHub release check, at most daily
         if (savedInstanceState == null) CrashReportUi.promptOnLaunch(this) // 2.5.1: opt-in, after a crash only
+        if (SafeStart.active) SafeStartUi.show(this, b.topBar)
+    }
+
+    // ======================================================================= safe start (2.9)
+
+    private var stableMarked = false
+    private val stableTimer = Runnable { markStable() }
+
+    /** First successful page load, [LaunchGuard.STABLE_MS] in the foreground, or leaving normally. */
+    private fun markStable() {
+        if (stableMarked) return
+        stableMarked = true
+        b.root.removeCallbacks(stableTimer)
+        Thread({ SafeStart.markStable() }, "launch-guard").start()
+    }
+
+    /** Safe start's Restore (everything or the chosen items): puts them back and re-arms the launch guard. */
+    fun restoreFromSafeStart(tabs: Boolean, extensions: Boolean, theme: Boolean) {
+        val before = allTabs.toList()
+        SafeStart.restore(tabs, extensions, theme)
+        stableMarked = false
+        b.root.removeCallbacks(stableTimer)
+        b.root.postDelayed(stableTimer, LaunchGuard.STABLE_MS)
+        if (tabs) {
+            restoreTabs(realm)
+            // Drop the untouched home tabs safe start opened, so the session is exactly what was saved.
+            if (realmTabs.getValue(realm).size > before.count { it.realm == realm }) {
+                before.filter { it.realm == realm && !it.isPrivate && it.showingHome && !it.canGoBack }
+                    .forEach { closeTab(it, force = true) }
+            }
+        }
+        if (extensions) Engine.applySettings()
+        if (theme) syncPalette(force = true)
+        refreshUi()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -307,6 +344,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     override fun onResume() {
         super.onResume()
+        if (!stableMarked) { b.root.removeCallbacks(stableTimer); b.root.postDelayed(stableTimer, LaunchGuard.STABLE_MS) }
         Engine.applySettings()
         syncForceDark() // Settings may have switched forced dark or edited "Never force dark on"
         syncPalette() // Settings > Appearance may have picked another theme: re-tint in place, no restart
@@ -408,6 +446,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     override fun onPause() {
         super.onPause()
+        b.root.removeCallbacks(stableTimer)
         wolf.onHomeHidden()
         Stats.save()
         tally.flushAsync()
@@ -416,6 +455,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     override fun onStop() {
         super.onStop()
+        if (!isChangingConfigurations) markStable() // left normally: this launch didn't crash
         if (Prefs.clearOnExit) Prefs.pendingWipe = true
     }
 
@@ -683,22 +723,20 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     /** Restores [realm]'s saved session once per run (Ghost never persists). */
     private fun restoreTabs(realm: Realm) {
+        // 2.9 safe start: the saved session is neither read nor (since the realm isn't marked restored) overwritten.
+        if (SafeStart.tabsPaused && realm.persistsTabs) return
         if (!restoredRealms.add(realm) || !realm.persistsTabs) return
         if (!Prefs.restoreTabs || Prefs.clearOnExit) return
-        val urls = Prefs.savedTabs(realm).split('\n').filter { it.isNotBlank() }
-        if (urls.isEmpty()) return
-        val groups = Prefs.savedTabGroups(realm).split('\n')
-        val parents = Prefs.savedTabParents(realm).split('\n')
-        val created = urls.mapIndexed { i, url ->
-            newTab(url, select = false, lazy = true, realm = realm).also {
-                it.groupId = groups.getOrNull(i)?.takeIf { g -> g.isNotBlank() }
-            }
+        val session = SavedSession.load(realm)
+        if (session.tabs.isEmpty()) return
+        val created = session.tabs.map { e ->
+            newTab(e.url, select = false, lazy = true, realm = realm).also { it.groupId = e.group }
         }
-        created.forEachIndexed { i, t ->
-            val parent = parents.getOrNull(i)?.toIntOrNull()?.let { created.getOrNull(it) }
-            if (parent != null && parent !== t) t.parentId = parent.id
+        session.tabs.forEachIndexed { i, e ->
+            val parent = e.parent?.let { created.getOrNull(it) }
+            if (parent != null && parent !== created[i]) created[i].parentId = parent.id
         }
-        created.getOrNull(Prefs.savedTabIndex(realm))?.let {
+        created.getOrNull(session.selected)?.let {
             if (realm == this.realm) selectTab(it) else realmCurrent[realm] = it
         }
     }
@@ -1110,7 +1148,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val ubo = Engine.ublock
         b.home.statsStatus.text = when {
             !Prefs.blockAds -> "OFF"
-            ubo != null && Prefs.ublockEnabled -> "ETP + uBO"
+            ubo != null && Prefs.ublockActive -> "ETP + uBO"
             else -> "ETP STRICT"
         }
     }
@@ -1699,14 +1737,14 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             append(when {
                 ubo == null && Engine.ublockError != null -> "failed to load"
                 ubo == null -> "starting…"
-                !Prefs.ublockEnabled -> "off"
+                !Prefs.ublockActive -> "off"
                 else -> "${t.uboCount} blocked"
             })
             append("   ·   Tracking Protection: ${t.etpBlocked.get()} blocked")
         }
         s.shieldsSwitch.text = "Shields for this site"
         fun render() {
-            val uboAvailable = ubo != null && Prefs.ublockEnabled
+            val uboAvailable = ubo != null && Prefs.ublockActive
             s.shieldsSwitch.setOnCheckedChangeListener(null)
             s.shieldsSwitch.isChecked = Prefs.blockAds && !t.siteShieldsDown
             s.shieldsSwitch.isEnabled = Prefs.blockAds && !t.showingHome && (t.trackingPermission != null || uboAvailable)
@@ -1743,7 +1781,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         s.shieldsListInfo.text = buildString {
             append("Built-in uBlock Origin ${ubo?.metaData?.version ?: ""} (default filter lists: uBO filters, EasyList, EasyPrivacy, Peter Lowe, URLhaus…) + Firefox Enhanced Tracking Protection (Strict)")
         }
-        s.uboPanelButton.isEnabled = ubo != null && Prefs.ublockEnabled
+        s.uboPanelButton.isEnabled = ubo != null && Prefs.ublockActive
         s.uboPanelButton.setOnClickListener { dialog.dismiss(); openUboPanel() }
         s.uboDashboardButton.isEnabled = ubo?.metaData?.optionsPageUrl != null
         s.uboDashboardButton.setOnClickListener { dialog.dismiss(); openUboDashboard() }
@@ -2173,6 +2211,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             val host = db.siteKey(tab.url)
             if (host.isNotEmpty()) Engine.setPageZoom(host, tab.zoomPercent)
         }
+        if (success && tab.url.startsWith("http")) markStable() // 2.9: first page load = stable launch
+        if (tab.isPrivate) com.jamhowman.beastbrowser.crash.PrivateRedactor.register(tab.url, tab.title)
         if (tab === current) { b.swipe.isRefreshing = false; refreshUi() }
         if (tab.homeHold) {
             // Finished before Gecko reported a paint: let the eye flash play on the home page, then show the page.

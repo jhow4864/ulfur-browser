@@ -3,6 +3,24 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## 2.9.0 (versionCode 25)
+
+* **Safe start.** If Ulfur crashes while starting twice in a row, it opens with your saved tabs and extensions
+  (uBlock Origin) paused, and an imported theme pack switched back to its base preset. Nothing is deleted. Pick
+  "Restore everything", "Continue in safe start" or "Share crash report"; the report is shown in full before it can be
+  shared. A slim amber "Safe start · Restore" bar stays under the address bar until you restore. If it crashes again
+  right after restoring, the screen says so and lets you turn tabs, extensions and the theme back on one at a time.
+  Counting launch crashes works even with crash reports off; a launch counts as stable after the first page loads,
+  12 s in the foreground, or when you leave the app normally.
+* **Crash reports never include private browsing.** Titles and addresses from private tabs and Ghost are masked in
+  any saved report, on top of the existing URL, e-mail and IP scrubbing.
+* **Theme packs.** Settings › Appearance › Import theme pack (or open a `.ulfurtheme` file) shows a full preview
+  first: a live mock-up of Ulfur in the pack's colours, a labelled swatch for every colour (with a "default" tag where
+  the pack leaves one to Ulfur), a light/dark toggle when the pack has both, and a warning if any text would be below
+  4.5:1 contrast. Nothing changes until you tap Apply, and Undo puts your previous theme back exactly for 10 s.
+  Broken, oversized or unsafe files get a plain error and leave your theme alone. Installed packs show as cards under
+  the import row; tap to switch, long-press to delete. Format: docs/theme-packs.md.
+
 ## 2.8.1 (versionCode 24)
 
 * **Add to Home screen uses the site's real icon on more sites.** Ulfur now reads the icons the page itself links
