@@ -63,7 +63,7 @@ object WebAppJson {
             backgroundColor = if (o.has("bg")) o.getInt("bg") else null,
             orientation = o.optStr("orientation"),
         )
-    }.getOrNull()?.takeIf { WebApps.origin(it.startUrl) != null }
+    }.getOrNull()?.takeIf { WebApps.isLaunchable(it) }
 
     private fun resolve(base: String, ref: String?): String? =
         ref?.takeIf { it.isNotBlank() }?.let { runCatching { java.net.URI(base).resolve(it.trim()).toString() }.getOrNull() }

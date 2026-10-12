@@ -123,4 +123,14 @@ class WebAppTest {
         assertNotNull(WebAppJson.fromManifest(JSONObject("{}"), "https://a.com/"))
         assertNull(WebAppJson.fromJson("{\"start_url\":\"javascript:alert(1)\",\"scope\":\"x\"}"))
     }
+
+    @Test fun launchRejectsUnsafeSpecs() {
+        assertTrue(WebApps.isLaunchable(WebAppSpec("https://a.com/app/", "https://a.com/app/")))
+        assertFalse(WebApps.isLaunchable(WebAppSpec("https://a.com/other", "https://a.com/app/")))
+        assertFalse(WebApps.isLaunchable(WebAppSpec("https://evil.com/", "https://a.com/")))
+        assertFalse(WebApps.isLaunchable(WebAppSpec("file:///sdcard/x.html", "file:///sdcard/")))
+        assertFalse(WebApps.isLaunchable(WebAppSpec("https://a.com/", "javascript:alert(1)")))
+        assertNull(WebAppJson.fromJson("{\"start_url\":\"https://evil.com/\",\"scope\":\"https://a.com/\"}"))
+        assertNotNull(WebAppJson.fromJson("{\"start_url\":\"https://a.com/x\",\"scope\":\"https://a.com/\"}"))
+    }
 }

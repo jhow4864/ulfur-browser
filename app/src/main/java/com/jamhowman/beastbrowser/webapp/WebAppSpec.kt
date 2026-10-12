@@ -117,6 +117,10 @@ object WebApps {
         return if (base.length > 24) base.take(23).trimEnd() + "…" else base
     }
 
+    /** Defensive launch check: http(s) start_url and scope, and start_url inside the scope. */
+    fun isLaunchable(spec: WebAppSpec): Boolean =
+        origin(spec.startUrl) != null && origin(spec.scope) != null && inScope(spec.startUrl, spec.scope)
+
     /** True if [url] is same-origin with [scope] and under its path (W3C "within scope"). */
     fun inScope(url: String, scope: String): Boolean {
         val u = runCatching { URI(url) }.getOrNull() ?: return false

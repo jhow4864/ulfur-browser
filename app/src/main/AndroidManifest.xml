@@ -56,13 +56,13 @@
             </intent-filter>
         </activity>
 
-        <!-- Issue #34: home-screen web apps. Exported so launcher shortcuts can start it; no intent filter, explicit
-             intents only. Document mode keyed on a per-app data URI gives each app its own task and recents card. -->
+        <!-- Issue #34: home-screen web apps. NOT exported: pinned shortcuts are launched as Ulfur itself, so other apps
+             can't open a chromeless window on a URL of their choosing. Explicit intents only. Document mode keyed on a per-app data URI gives each app its own task and recents card. -->
         <activity
             android:name=".webapp.WebAppActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density"
             android:documentLaunchMode="intoExisting"
-            android:exported="true"
+            android:exported="false"
             android:persistableMode="persistNever"
             android:resizeableActivity="true"
             android:taskAffinity=""
