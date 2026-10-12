@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Ulfur Helper",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Built-in helper for Ulfur: per-site HTTPS-Only exceptions, Reader view, media detection.",
   "browser_specific_settings": {
     "gecko": {

@@ -261,7 +261,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         db = BrowserDb.get(this)
         runtime = Engine.runtime(this)
         PasswordVault.init(this)
-        Engine.attachPasswordVault({ this }, { current?.session })
+        Engine.attachPasswordVault({ this }, { current?.session }, { current?.isPrivate == true || realm == Realm.GHOST })
         Engine.syncZoomMap(db.allZoomPrefs())
         syncForceDark()
         DownloadCenter.init(this)

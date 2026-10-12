@@ -75,9 +75,13 @@ object HelperSessions : WebExtension.MessageDelegate {
     }
 
     /** From TabCallbacks.onLocationChange: per-page state resets on a real navigation (not a #hash change). */
+    /** The tab's current top-level URL (scheme included), as last reported by Gecko. */
+    fun currentUrl(session: GeckoSession): String? = lastUrl[session]
+
     fun onLocationChange(session: GeckoSession, url: String) {
         val key = url.substringBefore('#')
         if (lastUrl.put(session, key) == key) return
+        com.jamhowman.beastbrowser.autofill.FieldGuard.clear(session) // 2.10: a focus report never outlives its page
         drm -= session
         ReaderMode.setReaderable(session, false, url)
     }
@@ -115,6 +119,7 @@ object HelperSessions : WebExtension.MessageDelegate {
             "readerable" -> ReaderMode.setReaderable(session, o.optBoolean("value"), o.optString("url"))
             "media" -> if (session !in drm) MediaSniffer.publish(session, parseMedia(o))
             "drm" -> markDrm(session)
+            "loginFocus" -> com.jamhowman.beastbrowser.autofill.FieldGuard.report(session, o, android.os.SystemClock.elapsedRealtime(), lastUrl[session])
             "themeColor" -> onThemeColor?.invoke(session, o.optString("value").takeIf { o.has("value") && !o.isNull("value") && it.isNotBlank() }?.take(64))
         }
     }

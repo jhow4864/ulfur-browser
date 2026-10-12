@@ -49,7 +49,8 @@ object PasswordVault {
 
     @Synchronized
     fun init(context: Context) {
-        if (initialized) return
+        // Re-bind if a different Application shows up (only happens in unit tests, one Application per test).
+        if (initialized && app === context.applicationContext) return
         app = context.applicationContext
         initialized = true
     }
@@ -255,8 +256,8 @@ object PasswordVault {
         if (!isUnlocked()) return emptyList()
         touch()
         if (origin.isNullOrBlank()) return unlocked.toList()
-        val key = normalizeOrigin(origin)
-        return unlocked.filter { normalizeOrigin(it.origin) == key || originsMatch(it.origin, origin) }
+        // 2.10 Ulfur #2: registrable-domain match only (FillPolicy); lookalikes never match.
+        return unlocked.filter { com.jamhowman.beastbrowser.autofill.FillPolicy.webMatch(it.origin, origin) }
     }
 
     fun fetchAll(): List<SavedLogin> {
@@ -578,9 +579,17 @@ object PasswordVault {
      */
     fun metaForOrigin(origin: String?): List<MetaLogin> {
         if (!initialized || origin.isNullOrBlank()) return emptyList()
-        return readMetaLogins().filter {
-            normalizeOrigin(it.origin) == normalizeOrigin(origin) || originsMatch(it.origin, origin)
-        }
+        return readMetaLogins().filter { com.jamhowman.beastbrowser.autofill.FillPolicy.webMatch(it.origin, origin) }
+    }
+
+    /** Locked-safe meta for every saved login (no secrets). Used by the Android AutofillService. */
+    fun allMeta(): List<MetaLogin> = if (!initialized) emptyList() else readMetaLogins()
+
+    /** The password of one login, or null if locked/unknown. Only called right after a per-fill auth (FillAuth). */
+    fun loginFor(guid: String): SavedLogin? {
+        if (!isUnlocked()) return null
+        touch()
+        return unlocked.firstOrNull { it.guid == guid }
     }
 
     private fun readMetaLogins(): List<MetaLogin> = runCatching {

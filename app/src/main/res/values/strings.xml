@@ -122,10 +122,10 @@
         <item quantity="other">Removes %1$d finished, failed or cancelled entries from this list. Downloaded files stay in Downloads/&brand;.</item>
     </plurals>
     <string name="private_downloads_note">Private downloads stay inside &brand; only. They never appear in Gallery or Files. They are encrypted with a key kept in your phone\'s secure keystore. Uninstalling the app or clearing its storage permanently deletes them.</string>
-    <string name="vault_wipe_key">Wipe vault and key</string>
-    <string name="vault_wipe_key_title">Wipe all private downloads and the key?</string>
-    <string name="vault_wipe_key_message">Deletes every private download and the encryption key that protects them. Any copy left behind can never be opened again. This can\'t be undone.</string>
-    <string name="vault_wipe_key_confirm">Wipe</string>
+    <string name="vault_wipe_key">Wipe private downloads</string>
+    <string name="vault_wipe_key_title">Wipe private downloads?</string>
+    <string name="vault_wipe_key_message">Your private downloads will be deleted for good. This can\'t be undone.</string>
+    <string name="vault_wipe_key_confirm">Wipe everything</string>
     <plurals name="vault_wiped">
         <item quantity="one">Wiped %d file and the key</item>
         <item quantity="other">Wiped %d files and the key</item>

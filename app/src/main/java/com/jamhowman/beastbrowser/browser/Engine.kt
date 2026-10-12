@@ -99,9 +99,10 @@ object Engine {
     fun attachPasswordVault(
         activityProvider: () -> FragmentActivity?,
         sessionProvider: () -> GeckoSession? = { null },
+        privateProvider: () -> Boolean = { false },
     ) {
         val r = runtime ?: return
-        r.setAutocompleteStorageDelegate(VaultStorageDelegate(activityProvider, sessionProvider))
+        r.setAutocompleteStorageDelegate(VaultStorageDelegate(activityProvider, sessionProvider, privateProvider))
     }
 
 

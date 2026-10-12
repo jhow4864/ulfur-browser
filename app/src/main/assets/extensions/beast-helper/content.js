@@ -65,6 +65,42 @@
     if (attempts++ < 6) setTimeout(connect, 400 * Math.pow(2, attempts));
   }
 
+  // ------------------------------------------------------------ Login field context (Ulfur 2.10 #2)
+  // On focus of a field, tell the app where it is: top frame or a same-origin frame, and whether it is visible.
+  // The app refuses to fill a saved login unless the latest report is fresh, visible, and not cross-origin.
+  // The script runs in the top frame only, so a focused cross-origin iframe shows up as the IFRAME element whose
+  // document we can't read.
+  function visibleEl(el, win) {
+    try {
+      if (!el || !el.getClientRects || el.getClientRects().length === 0) return false;
+      const r = el.getBoundingClientRect();
+      if (r.width < 4 || r.height < 4) return false;
+      if (r.bottom < 0 || r.right < 0 || r.top > win.innerHeight || r.left > win.innerWidth) return false;
+      for (let e = el; e && e.nodeType === 1; e = e.parentElement) {
+        const cs = win.getComputedStyle(e);
+        if (cs.visibility === "hidden" || cs.display === "none" || parseFloat(cs.opacity) < 0.1) return false;
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+  function reportField() {
+    const a = document.activeElement;
+    if (!a) return;
+    if (a.tagName === "IFRAME" || a.tagName === "FRAME") {
+      let doc = null;
+      try { doc = a.contentDocument; } catch (e) { doc = null; }
+      const same = !!doc && (() => { try { return a.contentWindow.location.origin === location.origin; } catch (e) { return false; } })();
+      const inner = same ? doc.activeElement : null;
+      post({ type: "loginFocus", top: false, sameOrigin: same,
+        visible: visibleEl(a, window) && (!same || visibleEl(inner, a.contentWindow)) });
+      return;
+    }
+    if (a.tagName !== "INPUT") return;
+    post({ type: "loginFocus", top: true, sameOrigin: true, visible: visibleEl(a, window) });
+  }
+  document.addEventListener("focusin", reportField, true);
+  document.addEventListener("pointerdown", () => setTimeout(reportField, 0), true);
+
   // ------------------------------------------------------------ Reader view
   function checkReaderable() {
     let v = false;

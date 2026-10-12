@@ -22,21 +22,33 @@ import org.mozilla.geckoview.GeckoSession
 class VaultStorageDelegate(
     private val activityProvider: () -> FragmentActivity?,
     private val sessionProvider: () -> GeckoSession? = { null },
+    /** 2.10 Ulfur #2: true while the current tab is private or the realm is Ghost: nothing is ever offered then. */
+    private val privateProvider: () -> Boolean = { false },
+    /** The current tab's URL: Gecko's fetch domain has no scheme, so the scheme comes from here (FillPolicy.fetchOrigin). */
+    private val pageUrlProvider: () -> String? = { sessionProvider()?.let { HelperSessions.currentUrl(it) } },
 ) : Autocomplete.StorageDelegate {
 
+    /**
+     * 2.10 Ulfur #2: Gecko only ever gets usernames. Passwords are blanked here so Gecko can't fill one on its own
+     * (page-load autofill); the real password is put in by Prompts.onLoginSelect after the per-fill check.
+     */
+    internal fun forGecko(list: List<SavedLogin>): Array<Autocomplete.LoginEntry> =
+        PasswordVault.toGeckoArray(list.map { it.copy(password = "") })
+
     override fun onLoginFetch(domain: String): GeckoResult<Array<Autocomplete.LoginEntry>> {
+        if (privateProvider()) return GeckoResult.fromValue(emptyArray())
+        val origin = com.jamhowman.beastbrowser.autofill.FillPolicy.fetchOrigin(domain, pageUrlProvider())
+            ?: return GeckoResult.fromValue(emptyArray())
         if (PasswordVault.isUnlocked()) {
-            return GeckoResult.fromValue(PasswordVault.toGeckoArray(PasswordVault.fetchForOrigin(domain)))
+            return GeckoResult.fromValue(forGecko(PasswordVault.fetchForOrigin(origin)))
         }
-        maybeOfferUnlockToFill(domain)
+        maybeOfferUnlockToFill(origin)
         return GeckoResult.fromValue(emptyArray())
     }
 
     override fun onLoginFetch(): GeckoResult<Array<Autocomplete.LoginEntry>> {
-        if (!PasswordVault.isUnlocked()) {
-            return GeckoResult.fromValue(emptyArray())
-        }
-        return GeckoResult.fromValue(PasswordVault.toGeckoArray(PasswordVault.fetchAll()))
+        // No site to match against: never hand Gecko the whole vault (2.10 Ulfur #2).
+        return GeckoResult.fromValue(emptyArray())
     }
 
     override fun onLoginSave(login: Autocomplete.LoginEntry) {

@@ -127,6 +127,6 @@ class SiteToolbarTest {
         val ext = File(main, "assets/extensions/beast-helper")
         val js = File(ext, "content.js").readText()
         assertTrue(js.contains("type: \"themeColor\"") && js.contains("window === window.top") && js.contains("matchMedia(media)"))
-        assertTrue(File(ext, "manifest.json").readText().contains("\"version\": \"1.3.0\""))
+        assertTrue(File(ext, "manifest.json").readText().contains("\"version\": \"1.4.0\"")) // 1.4.0: 2.10 loginFocus + element picker
     }
 }
