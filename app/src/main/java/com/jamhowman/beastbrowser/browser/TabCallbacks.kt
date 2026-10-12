@@ -44,6 +44,7 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     override fun onLocationChange(session: GeckoSession, url: String?, perms: MutableList<ContentPermission>, hasUserGesture: Boolean) {
         if (url == null || url == "about:blank" && !tab.hasLoaded) return
         tab.url = url
+        if (tab.isPrivate) com.jamhowman.beastbrowser.crash.PrivateRedactor.register(url) // 2.9: never in a crash report
         HelperSessions.onLocationChange(session, url)
         tab.trackingPermission = perms.firstOrNull { it.permission == PermissionDelegate.PERMISSION_TRACKING }
         tab.etpDownOverride = null
@@ -107,6 +108,7 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
 
     override fun onTitleChange(session: GeckoSession, title: String?) {
         tab.title = title.orEmpty()
+        if (tab.isPrivate) com.jamhowman.beastbrowser.crash.PrivateRedactor.register(title)
         host.onTabUpdated(tab)
     }
 

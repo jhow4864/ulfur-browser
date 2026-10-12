@@ -204,6 +204,28 @@
             android:exported="false"
             android:parentActivityName=".ui.MainActivity" />
 
+        <!-- 2.9: theme-pack preview. Exported so a .ulfurtheme opened from a file manager lands here (content:// only since 2.9.1); the file is
+             untrusted and fully validated (ThemePackParser) before anything is shown, and nothing applies until Apply. -->
+        <activity
+            android:name=".ui.ThemePackPreviewActivity"
+            android:exported="true"
+            android:parentActivityName=".ui.SettingsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/vnd.ulfur.theme+zip" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:pathPattern=".*\\.ulfurtheme" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".ui.LibraryActivity"
             android:exported="false"
