@@ -56,6 +56,21 @@
             </intent-filter>
         </activity>
 
+        <!-- Issue #34: home-screen web apps. Exported so launcher shortcuts can start it; no intent filter, explicit
+             intents only. Document mode keyed on a per-app data URI gives each app its own task and recents card. -->
+        <activity
+            android:name=".webapp.WebAppActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density"
+            android:documentLaunchMode="intoExisting"
+            android:exported="true"
+            android:persistableMode="persistNever"
+            android:resizeableActivity="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize" />
+        <receiver
+            android:name=".webapp.PinResultReceiver"
+            android:exported="false" />
+
         <!-- 2.8 alternate app icons: one launcher alias per colourway (disabled until AppIcon.apply). -->
         <activity-alias
             android:name=".ui.IconAliasDefault"

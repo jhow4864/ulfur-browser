@@ -77,6 +77,7 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         tab.loading = true
         tab.hasLoaded = true
         tab.resetPageStats()
+        tab.webApp = null
         tab.autoplayBlocked = 0
         MediaSniffer.clear(session)
         host.onBlockedChanged(tab)
@@ -107,6 +108,11 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     override fun onTitleChange(session: GeckoSession, title: String?) {
         tab.title = title.orEmpty()
         host.onTabUpdated(tab)
+    }
+
+    /** Issue #34: Gecko's processed manifest, used by "Add to Home screen" (icon, name, standalone window). */
+    override fun onWebAppManifest(session: GeckoSession, manifest: org.json.JSONObject) {
+        tab.webApp = runCatching { com.jamhowman.beastbrowser.webapp.WebAppJson.fromManifest(manifest, tab.url) }.getOrNull()
     }
 
     override fun onCloseRequest(session: GeckoSession) = host.closeTabRequested(tab)

@@ -63,6 +63,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.jamhowman.beastbrowser.webapp.HomeScreenInstaller
 import com.jamhowman.beastbrowser.R
 import com.jamhowman.beastbrowser.browser.AutoplayPolicy
 import com.jamhowman.beastbrowser.browser.ForcedDark
@@ -1456,7 +1457,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             MenuItem(R.drawable.ic_desktop, "Desktop site", t.desktopMode) { toggleDesktop(t) },
             MenuItem(R.drawable.ic_up, zoomLabel(t), t.zoomPercent != 100) { showZoom(t) },
             if (HomeShortcut.eligible(t.url, t.isPrivate, onPage)) MenuItem(R.drawable.ic_home, getString(R.string.menu_add_home)) {
-                if (!HomeShortcut.request(this, t.title, t.url, accent.color, accent.onColor)) toast(getString(R.string.add_home_unsupported))
+                addToHomeScreen(t)
             } else null,
             MenuItem(R.drawable.ic_star, "Add to Speed Dial") {
                 if (onPage) showAddTile(t.title, t.url) else showAddTile(null, null)
@@ -2613,6 +2614,48 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         s.setBackgroundTint(getColor(R.color.surface3)).setTextColor(getColor(R.color.text_primary))
         if (action != null) s.setAction(actionLabel) { action() }.setActionTextColor(snackActionColor(this, accent.color))
         s.show()
+    }
+
+    // ======================================================================= add to home screen (issue #34)
+
+    private fun addToHomeScreen(t: Tab) {
+        HomeScreenInstaller.install(this, t.title, t.url, t.webApp) { r ->
+            if (isDestroyed) return@install
+            when (r) {
+                is HomeScreenInstaller.Result.Unsupported -> showShortcutHelp(unsupported = true)
+                is HomeScreenInstaller.Result.Updated -> snack(getString(R.string.add_home_updated, r.label), null)
+                is HomeScreenInstaller.Result.Requested -> awaitPinConfirmation(r.id, System.currentTimeMillis())
+            }
+        }
+    }
+
+    /**
+     * ColorOS/Realme (and some other launchers) ship with "Create home screen shortcuts" off for each app, and then
+     * requestPinShortcut fails silently. No confirmation within 5 s → explain and offer App info. While the launcher's
+     * own confirm dialog is up we're not resumed, so keep waiting (up to a minute) rather than talking over it.
+     */
+    private fun awaitPinConfirmation(id: String, started: Long) {
+        b.root.postDelayed({
+            if (isDestroyed || HomeScreenInstaller.isConfirmed(id)) return@postDelayed
+            val waited = System.currentTimeMillis() - started
+            if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) && waited < 60_000) {
+                awaitPinConfirmation(id, started); return@postDelayed
+            }
+            showShortcutHelp(unsupported = false)
+        }, if (System.currentTimeMillis() - started < 1000) HomeScreenInstaller.CONFIRM_TIMEOUT_MS else 1500L)
+    }
+
+    private fun showShortcutHelp(unsupported: Boolean) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.add_home_help_title)
+            .setMessage(if (unsupported) R.string.add_home_unsupported_help else R.string.add_home_no_confirm_help)
+            .setPositiveButton(R.string.add_home_open_settings) { _, _ ->
+                runCatching {
+                    startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
