@@ -59,7 +59,9 @@ class PasswordSecurityTest {
         val prompts = File(main, "java/com/jamhowman/beastbrowser/ui/Prompts.kt").readText()
         assertTrue(prompts.contains("session.settings.usePrivateMode"))
         assertTrue("generated passwords filtered in private tabs", prompts.contains("filter { it.hint and generated == 0 }"))
-        assertTrue("generated option never auto-confirmed", prompts.contains("options.size == 1 && options[0].hint and generated == 0"))
+        // 2.10 Ulfur #2: no option (saved or generated) is ever auto-confirmed; private/Ghost tabs get no fill at all.
+        assertFalse("no silent single-option confirm", prompts.contains("options.size == 1"))
+        assertTrue(prompts.contains("privateOrGhost = isPrivate(session)"))
     }
 
     @Test fun resetVaultDeletesEveryVaultFile() {

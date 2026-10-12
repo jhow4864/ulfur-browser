@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.jamhowman.beastbrowser.R
+import com.jamhowman.beastbrowser.passwords.PasswordVault
 import com.jamhowman.beastbrowser.browser.HelperSessions
 import com.jamhowman.beastbrowser.databinding.RowPasswordGeneratorBinding
 import com.jamhowman.beastbrowser.passwords.PasswordGenerator
@@ -193,26 +194,46 @@ class Prompts(
         return o.result
     }
 
-    /** Pick among vault logins when Gecko offers a select prompt (fill). Allowed in private tabs. */
+    /**
+     * Pick among vault logins when Gecko offers a select prompt (fill).
+     * 2.10 Ulfur #2: never in private/Ghost tabs, never into a hidden field or a cross-origin frame (FieldGuard),
+     * the user always picks (no silent single-login fill), and every fill asks for biometric/PIN (FillAuth) before
+     * the password, which Gecko never received, is put into the chosen entry.
+     */
     override fun onLoginSelect(
         session: GeckoSession,
         prompt: PromptDelegate.AutocompleteRequest<Autocomplete.LoginSelectOption>,
     ): GeckoResult<PromptResponse> {
-        // Picking a GENERATED option makes Gecko call StorageDelegate.onLoginSave directly (no onLoginSave prompt),
-        // so: never offer it in private tabs, and never auto-confirm it.
         val generated = Autocomplete.SelectOption.Hint.GENERATED
-        val options = if (isPrivate(session)) prompt.options.filter { it.hint and generated == 0 }.toTypedArray() else prompt.options
+        val decision = com.jamhowman.beastbrowser.autofill.FillPolicy.browserFill(
+            privateOrGhost = isPrivate(session),
+            field = com.jamhowman.beastbrowser.autofill.FieldGuard.get(session),
+            nowMs = android.os.SystemClock.elapsedRealtime(),
+        )
+        if (decision != com.jamhowman.beastbrowser.autofill.FillPolicy.Decision.ALLOW) return GeckoResult.fromValue(prompt.dismiss())
+        val options = prompt.options
         if (options.isEmpty()) return GeckoResult.fromValue(prompt.dismiss())
-        if (options.size == 1 && options[0].hint and generated == 0) return GeckoResult.fromValue(prompt.confirm(options[0]))
         val o = Once()
         val generatedOptions = options.filter { it.hint and generated != 0 }
         val logins = options.filter { it.hint and generated == 0 }
         fun label(opt: Autocomplete.LoginSelectOption) = opt.value.username.takeIf { it.isNotBlank() } ?: "(no username)"
+        /** Per-fill check, then the real password from the vault (matched again by registrable domain). */
+        fun fill(opt: Autocomplete.LoginSelectOption) {
+            val site = opt.value.origin
+            com.jamhowman.beastbrowser.autofill.FillAuth.authorize(activity, com.jamhowman.beastbrowser.util.Domains.display(android.net.Uri.parse(site).host)) { ok ->
+                val saved = if (ok) opt.value.guid?.let { PasswordVault.loginFor(it) } else null
+                if (saved == null || !com.jamhowman.beastbrowser.autofill.FillPolicy.webMatch(saved.origin, site)) {
+                    o.complete(prompt.dismiss()); return@authorize
+                }
+                o.complete(prompt.confirm(Autocomplete.LoginSelectOption(withPassword(opt.value, saved.password))))
+            }
+        }
         if (generatedOptions.isEmpty()) {
+            var picked = false
             builder("Choose a login")
-                .setItems(options.map { label(it) }.toTypedArray()) { d, i -> o.complete(prompt.confirm(options[i])); d.dismiss() }
+                .setItems(logins.map { label(it) }.toTypedArray()) { d, i -> picked = true; d.dismiss(); fill(logins[i]) }
                 .setNegativeButton(android.R.string.cancel) { _, _ -> o.complete(prompt.dismiss()) }
-                .setOnDismissListener { o.complete(prompt.dismiss()) }
+                .setOnDismissListener { if (!picked) o.complete(prompt.dismiss()) }
                 .show()
             return o.result
         }
@@ -220,13 +241,14 @@ class Prompts(
         val box = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
         val pad = dp(activity, 22)
         var dialog: androidx.appcompat.app.AlertDialog? = null
+        var pickedLogin = false
         logins.forEach { opt ->
             box.addView(TextView(activity).apply {
                 text = label(opt)
                 textSize = 16f
                 setTextColor(activity.getColor(R.color.text_primary))
                 setPadding(pad, dp(activity, 14), pad, dp(activity, 14))
-                setOnClickListener { o.complete(prompt.confirm(opt)); dialog?.dismiss() }
+                setOnClickListener { pickedLogin = true; dialog?.dismiss(); fill(opt) }
             })
         }
         val gen = RowPasswordGeneratorBinding.inflate(LayoutInflater.from(activity), box, true)
@@ -240,7 +262,7 @@ class Prompts(
         val d = builder("Choose a login")
             .setView(box)
             .setNegativeButton(android.R.string.cancel) { _, _ -> o.complete(prompt.dismiss()) }
-            .setOnDismissListener { o.complete(prompt.dismiss()) }
+            .setOnDismissListener { if (!pickedLogin) o.complete(prompt.dismiss()) }
             .create()
         dialog = d
         gen.useGenerated.setOnClickListener {

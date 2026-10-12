@@ -283,6 +283,24 @@
             android:exported="false"
             android:grantUriPermissions="true" />
 
+        <!-- 2.10 (Ulfur #2): saved logins for other apps, matched by signing certificate; biometric/PIN per fill. -->
+        <service
+            android:name=".autofill.UlfurAutofillService"
+            android:label="@string/app_name"
+            android:exported="true"
+            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.autofill.AutofillService" />
+            </intent-filter>
+            <meta-data android:name="android.autofill" android:resource="@xml/ulfur_autofill_service" />
+        </service>
+
+        <activity
+            android:name=".autofill.AutofillAuthActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Beast" />
+
         <!-- 2.3.5: home-screen Speed Dial widget -->
         <receiver
             android:name=".widget.SpeedDialWidget"

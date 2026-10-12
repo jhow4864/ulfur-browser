@@ -115,6 +115,7 @@ object HelperSessions : WebExtension.MessageDelegate {
             "readerable" -> ReaderMode.setReaderable(session, o.optBoolean("value"), o.optString("url"))
             "media" -> if (session !in drm) MediaSniffer.publish(session, parseMedia(o))
             "drm" -> markDrm(session)
+            "loginFocus" -> com.jamhowman.beastbrowser.autofill.FieldGuard.report(session, o, android.os.SystemClock.elapsedRealtime())
             "themeColor" -> onThemeColor?.invoke(session, o.optString("value").takeIf { o.has("value") && !o.isNull("value") && it.isNotBlank() }?.take(64))
         }
     }
