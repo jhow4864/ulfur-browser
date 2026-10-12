@@ -219,4 +219,41 @@ class FilterListsTest {
         assertTrue("last updated + rule count", row.contains("R.string.filters_status, l.ruleCount"))
         assertTrue(File(main, "res/values/strings.xml").readText().contains(">Add list by URL<"))
     }
+
+    // ---------------------------------------------------------------- Designer nudge: stale lists
+
+    @Test fun staleNudgeOnlyPastSevenDays() {
+        val day = FilterStore.DAY_MS
+        clock = 100 * day
+        val s = store()
+        assertNull("no lists", s.staleDays(clock))
+        val a = (s.add("https://a.example/a.txt") as FilterStore.AddResult.Added).list.id
+        assertNull("never downloaded doesn't count", s.staleDays(clock))
+        clock = 100 * day
+        s.update(a) { "||a^" }
+        assertNull(s.staleDays(100 * day + 7 * day))           // exactly 7 days: not yet
+        assertEquals(7, s.staleDays(100 * day + 7 * day + 1))  // just over 7 days
+        assertEquals(12, s.staleDays(100 * day + 12 * day + 5))
+        s.setEnabled(a, false)
+        assertNull("disabled lists don't nudge", s.staleDays(100 * day + 30 * day))
+        s.setEnabled(a, true)
+        clock = 125 * day
+        val b = (s.add("https://a.example/b.txt") as FilterStore.AddResult.Added).list.id
+        s.update(b) { "||b^" }
+        assertEquals("oldest enabled list wins", 30, s.staleDays(130 * day + 1))
+        clock = 130 * day
+        s.update(a) { "||a^" }
+        assertNull("after Update all nothing is stale", s.staleDays(130 * day + 1))
+    }
+
+    @Test fun staleNudgeLineRunsUpdateAll() {
+        val ui = File(main, "java/com/jamhowman/beastbrowser/ui/FiltersActivity.kt").readText()
+        val render = ui.substringAfter("private fun render()")
+        val nudge = render.substringAfter("store.staleDays()").substringBefore("\n        }\n")
+        assertTrue("at the top", render.indexOf("store.staleDays()") < render.indexOf("filters_lists_header"))
+        assertTrue(nudge.contains("R.plurals.filters_stale") && nudge.contains("setOnClickListener { updateAll() }"))
+        assertTrue(ui.substringAfter("private fun updateAll()").substringBefore("\n    }").contains("store.lists.map { it.id }"))
+        val strings = File(main, "res/values/strings.xml").readText()
+        assertTrue(strings.contains(">Lists are %d days old · Update<"))
+    }
 }

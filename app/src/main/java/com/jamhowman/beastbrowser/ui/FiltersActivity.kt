@@ -62,12 +62,18 @@ class FiltersActivity : AppCompatActivity() {
 
     private fun render() {
         body.removeAllViews()
+        // Designer nudge: "Lists are N days old · Update" at the top when an enabled list is over 7 days old.
+        store.staleDays()?.let { days ->
+            body.addView(text(resources.getQuantityString(R.plurals.filters_stale, days, days), 13f).apply {
+                setTextColor(getColor(R.color.warn))
+                setPadding(0, 0, 0, pad / 2)
+                isClickable = true; isFocusable = true
+                setOnClickListener { updateAll() }
+            })
+        }
         body.addView(header(getString(R.string.filters_lists_header)))
         body.addView(text(getString(R.string.filters_lists_note), 13f, secondary = true))
-        if (store.lists.isNotEmpty()) body.addView(button(getString(R.string.filters_update_all)) {
-            Toast.makeText(this@FiltersActivity, R.string.filters_updating, Toast.LENGTH_SHORT).show()
-            Filters.update(this@FiltersActivity, store.lists.map { it.id })
-        })
+        if (store.lists.isNotEmpty()) body.addView(button(getString(R.string.filters_update_all)) { updateAll() })
         store.lists.forEach { l -> body.addView(listRow(l)) }
         // Designer spec: "Add list by URL" at the bottom of the lists; https only (FilterRules.checkListUrl).
         val input = EditText(this).apply {
@@ -103,6 +109,11 @@ class FiltersActivity : AppCompatActivity() {
                 })
             }
         }
+    }
+
+    private fun updateAll() {
+        Toast.makeText(this, R.string.filters_updating, Toast.LENGTH_SHORT).show()
+        Filters.update(this, store.lists.map { it.id })
     }
 
     private fun listRow(l: FilterStore.FilterList): View = LinearLayout(this).apply {

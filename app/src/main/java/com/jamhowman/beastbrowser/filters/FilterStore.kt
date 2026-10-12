@@ -106,6 +106,17 @@ class FilterStore(private val dir: File, private val now: () -> Long = System::c
         return updated
     }
 
+    /**
+     * Designer nudge (2.10): age in whole days of the oldest enabled, downloaded list when it's more than
+     * [STALE_DAYS] days old; null otherwise (nothing to nudge about). Lists never downloaded don't count.
+     */
+    fun staleDays(nowMs: Long = now()): Int? {
+        val oldest = lists.filter { it.enabled && it.updatedAt > 0 }.minOfOrNull { it.updatedAt } ?: return null
+        val age = nowMs - oldest
+        if (age <= STALE_DAYS * DAY_MS) return null
+        return (age / DAY_MS).toInt()
+    }
+
     fun rulesOf(id: String): List<String> = runCatching {
         File(listDir, "$id.txt").takeIf { it.isFile }?.readLines().orEmpty()
     }.getOrDefault(emptyList())
@@ -135,5 +146,9 @@ class FilterStore(private val dir: File, private val now: () -> Long = System::c
         pickerRules.forEach { r -> FilterRules.pickerRule(r.host, r.selector)?.let { append(it.filter).append('\n') } }
     }.trimEnd()
 
-    companion object { private val ID_RE = Regex("[a-z0-9]{1,24}") }
+    companion object {
+        const val STALE_DAYS = 7L
+        const val DAY_MS = 24L * 60 * 60 * 1000
+        private val ID_RE = Regex("[a-z0-9]{1,24}")
+    }
 }

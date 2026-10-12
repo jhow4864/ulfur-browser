@@ -483,6 +483,10 @@
     <string name="filters_lists_header">Your filter lists</string>
     <string name="filters_lists_note">Extra uBlock-style lists, fetched over https only (up to 10 MB each). Rules uBlock Origin only accepts from trusted sources are skipped. uBlock Origin\'s built-in lists are in its dashboard.</string>
     <string name="filters_add">Add list by URL</string>
+    <plurals name="filters_stale">
+        <item quantity="one">Lists are %d day old · Update</item>
+        <item quantity="other">Lists are %d days old · Update</item>
+    </plurals>
     <string name="filters_update_all">Update all</string>
     <string name="filters_update">Update</string>
     <string name="filters_remove">Remove</string>
