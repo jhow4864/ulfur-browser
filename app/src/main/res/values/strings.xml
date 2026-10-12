@@ -477,4 +477,32 @@
     <string name="safe_row_theme">Theme</string>
     <string name="safe_row_theme_status">back to the default</string>
     <string name="safe_no_report">Crash reports are off, so no report was saved. Turn on Settings › Crash reports to save the next one on this phone.</string>
+    <!-- 2.10 Ulfur #3: filter lists + element picker -->
+    <string name="filters_pref_summary">Your own https filter lists and the elements you hid with the picker</string>
+    <string name="filters_title">Filter lists &amp; element rules</string>
+    <string name="filters_lists_header">Your filter lists</string>
+    <string name="filters_lists_note">Extra uBlock-style lists, fetched over https only (up to 10 MB each). Rules uBlock Origin only accepts from trusted sources are skipped. uBlock Origin\'s built-in lists are in its dashboard.</string>
+    <string name="filters_add">Add list by URL</string>
+    <plurals name="filters_stale">
+        <item quantity="one">Lists are %d day old · Update</item>
+        <item quantity="other">Lists are %d days old · Update</item>
+    </plurals>
+    <string name="filters_update_all">Update all</string>
+    <string name="filters_update">Update</string>
+    <string name="filters_remove">Remove</string>
+    <string name="filters_remove_q">Remove %1$s?</string>
+    <string name="filters_delete">Delete</string>
+    <string name="filters_updating">Updating…</string>
+    <string name="filters_enable">Use %1$s</string>
+    <string name="filters_status">Updated %2$s · %1$d rules</string>
+    <string name="filters_never">Not downloaded yet</string>
+    <string name="filters_dropped">%1$d rules skipped</string>
+    <string name="filters_picker_header">Hidden elements</string>
+    <string name="filters_picker_empty">Use Shields › Hide an element on a site. Each rule only applies on the site it was made on.</string>
+    <string name="picker_hide_element">Hide an element</string>
+    <string name="picker_manage">Your lists</string>
+    <string name="picker_private">The element picker isn\'t available in private tabs</string>
+    <string name="picker_saved">Hidden on this site</string>
+    <string name="picker_undo">Undo</string>
+    <string name="picker_failed">Couldn\'t hide that element</string>
 </resources>

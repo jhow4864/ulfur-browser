@@ -133,6 +133,10 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 summary = "${fmt(Stats.total.get())} blocked so far"
                 setOnPreferenceClickListener { Stats.reset(); summary = "0 blocked so far"; true }
             }
+            // 2.10 Ulfur #3 (Designer spec): filter lists live in Settings.
+            findPreference<Preference>("ulfur_filters")?.setOnPreferenceClickListener {
+                startActivity(Intent(requireContext(), FiltersActivity::class.java)); true
+            }
             findPreference<Preference>("ublock_dashboard")?.setOnPreferenceClickListener {
                 val url = Engine.ublock?.metaData?.optionsPageUrl
                 if (url != null) {
