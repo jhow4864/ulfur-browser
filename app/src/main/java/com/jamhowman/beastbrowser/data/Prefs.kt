@@ -56,6 +56,8 @@ object Prefs {
         set(v) = sp.edit { putString("app_icon", v) }
     /** dark | light | system — chrome theme (default dark). */
     val uiTheme get() = sp.getString("ui_theme", "dark") ?: "dark"
+    /** 2.10 Ulfur #5: tint the toolbar with the page theme-color (off by default). */
+    val siteToolbarColor get() = sp.getBoolean("site_toolbar_color", false)
     val restoreTabs get() = sp.getBoolean("restore_tabs", true)
     /** 2.5: picture-in-picture for playing fullscreen video (default on). */
     val pipEnabled get() = sp.getBoolean("pip", true)

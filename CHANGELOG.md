@@ -5,6 +5,8 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
 
 ## 2.10.0 (versionCode 27), theme packs v2 (part 1)
 
+- **Match toolbar to site colour** (Settings › General, off by default): the toolbar takes the page `<meta name="theme-color">` (honours `media`; beast-helper 1.3.0) or the manifest `theme_color`. Opaque colours only; ink flips white/near-black for ≥ 4.5:1; never in private tabs or Ghost; colours within ΔE 10 of the private toolbar are nudged away. Overrides a theme pack toolbar only while on. Fix: address text uses text-on-pill colour with packs.
+
 * **Theme packs can now change backgrounds, surfaces and text colours** (schema 2) and carry up to four background
   images: home/new tab, the toolbar strip, the tab switcher and the Settings header. Images are drawn to fill their
   area around a focal point, under a dimming layer that Ulfur strengthens automatically when text would be hard to
