@@ -44,9 +44,34 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
         }
         savedInstanceState?.getCharSequence(STATE_TITLE)?.let { b.toolbar.title = it }
         accentLine(b.settingsAccentLine, screen.palette.color, 0x99)
+        paintHeader()
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().replace(R.id.settingsContainer, SettingsFragment()).commit()
         }
+    }
+
+    /**
+     * 2.10: a v2 pack's settings header. With a header image the toolbar becomes a 3:1 band (Designer's 1440×480)
+     * with the title pushed to its bottom-left; without one it just takes the pack's toolbar colours.
+     */
+    private fun paintHeader() {
+        val p = screen.palette
+        val s = p.surfaces
+        val lp = b.toolbar.layoutParams
+        val bar = dp(this, 56)
+        if (s == null) {
+            b.toolbar.background = null
+            b.toolbar.setTitleTextColor(getColor(R.color.text_primary))
+            lp.height = bar; b.toolbar.layoutParams = lp; b.toolbar.titleMarginTop = 0
+            return
+        }
+        val r = s.resolved(p.night)
+        b.toolbar.setTitleTextColor(r.onToolbar)
+        val img = ThemeImageDrawable.active(com.jamhowman.beastbrowser.data.ImageSlot.HEADER, p.night)
+        b.toolbar.background = img ?: android.graphics.drawable.ColorDrawable(r.toolbar)
+        val h = if (img != null) resources.displayMetrics.widthPixels / 3 else bar
+        lp.height = h; b.toolbar.layoutParams = lp
+        b.toolbar.titleMarginTop = (h - bar).coerceAtLeast(0)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -70,7 +95,7 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
     fun onThemeChanged(rebind: () -> Unit) {
         val root = b.root
         val snapshot = if (root.isLaidOut && root.width > 0 && root.height > 0) root.drawToBitmap() else null
-        if (screen.refresh()) accentLine(b.settingsAccentLine, screen.palette.color, 0x99)
+        if (screen.refresh()) { accentLine(b.settingsAccentLine, screen.palette.color, 0x99); paintHeader() }
         rebind()
         if (snapshot == null || !ValueAnimator.areAnimatorsEnabled()) return
         val old = snapshot.toDrawable(resources).apply { setBounds(0, 0, root.width, root.height) }

@@ -37,7 +37,17 @@ class ThemedScreen(
 
     private fun resolve() = AppTheme.palette(activity, Prefs.realm, private)
 
-    override fun onCreate(owner: LifecycleOwner) = applySystemBars(activity.window, palette)
+    override fun onCreate(owner: LifecycleOwner) {
+        applySystemBars(activity.window, palette)
+        applySurfaces()
+    }
+
+    /** 2.10: a v2 pack's background behind the whole screen (window), so lists and fragments sit on it. */
+    private fun applySurfaces() {
+        val s = palette.surfaces ?: return
+        val r = s.resolved(palette.night)
+        activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(r.background))
+    }
 
     override fun onResume(owner: LifecycleOwner) {
         if (resolve() != palette) activity.recreate()
@@ -53,6 +63,8 @@ class ThemedScreen(
         palette = p
         AppTheme.applyOverlays(activity.theme, p)
         applySystemBars(activity.window, p)
+        if (p.surfaces != null) applySurfaces()
+        else activity.window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(activity.getColor(R.color.bg)))
         return true
     }
 }

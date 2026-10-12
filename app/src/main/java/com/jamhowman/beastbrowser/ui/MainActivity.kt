@@ -19,6 +19,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
@@ -78,6 +79,8 @@ import com.jamhowman.beastbrowser.crash.LaunchGuard
 import com.jamhowman.beastbrowser.crash.SafeStart
 import com.jamhowman.beastbrowser.data.SavedSession
 import com.jamhowman.beastbrowser.data.AppTheme
+import com.jamhowman.beastbrowser.data.ImageSlot
+import com.jamhowman.beastbrowser.data.ThemeSurfaces
 import com.jamhowman.beastbrowser.data.PrivateLook
 import com.jamhowman.beastbrowser.data.BeastControl
 import com.jamhowman.beastbrowser.data.BrowserDb
@@ -1219,7 +1222,45 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         b.btnMenu.tooltipText = "Menu · long-press for realms (${realm.label})"
         styleToggle()
         b.findCount.setTextColor(accent.accentText)
+        applySurfaces()
         refreshUi()
+    }
+
+    /**
+     * 2.10 theme packs v2 (Play only; private tabs, Work and Ghost get null surfaces): backgrounds, toolbar, text and
+     * images, set in code. With no pack every view goes back to its resource colour, so this can always run.
+     * Not reached (still XML-styled): speed-dial tile labels, cards' inner text, sheets, dialogs, menus' rows.
+     */
+    private fun applySurfaces() {
+        val s = accent.surfaces
+        val night = AppTheme.isNight(this)
+        val r = (s ?: ThemeSurfaces()).resolved(night)
+        if (s == null) {
+            b.home.root.background = null
+            b.switcher.root.setBackgroundColor(getColor(R.color.scrim))
+            b.home.wordmark.setTextColor(getColor(R.color.text_primary))
+            b.home.speedDialHeader.setTextColor(getColor(R.color.text_primary))
+            b.home.statsHeader.setTextColor(getColor(R.color.text_primary))
+            b.home.homeSearchInput.setTextColor(getColor(R.color.text_primary))
+            b.urlInput.setTextColor(getColor(R.color.text_primary))
+            return
+        }
+        val bars = accent.systemBars ?: r.background
+        b.root.setBackgroundColor(bars)
+        b.topBar.background = ThemeImageDrawable.active(ImageSlot.TOOLBAR, night) ?: ColorDrawable(r.toolbar)
+        b.bottomBar.setBackgroundColor(r.toolbar)
+        b.urlInput.setTextColor(r.onToolbar)
+        b.urlInput.setHintTextColor(r.onToolbar and 0x00FFFFFF or 0x99000000.toInt())
+        b.home.root.background = ThemeImageDrawable.active(ImageSlot.HOME, night) ?: ColorDrawable(r.background)
+        b.switcher.root.background = ThemeImageDrawable.active(ImageSlot.SWITCHER, night) ?: ColorDrawable(r.background)
+        listOf(b.home.wordmark, b.home.speedDialHeader, b.home.statsHeader, b.home.homeSearchInput).forEach { it.setTextColor(r.text) }
+        (getDrawable(R.drawable.bg_home_search)!!.mutate() as GradientDrawable).let {
+            it.setColor(r.surfaceVariant)
+            it.setStroke(dp(this, 1), accent.withAlpha(0x66))
+            b.home.homeSearch.background = it
+        }
+        (getDrawable(R.drawable.bg_card)?.mutate() as? GradientDrawable)?.let { it.setColor(r.surface); b.home.statsCard.background = it }
+        b.accentLineBottom.setBackgroundColor(r.divider)
     }
 
     private fun styleToggle() {
