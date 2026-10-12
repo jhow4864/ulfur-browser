@@ -11,12 +11,10 @@ plugins {
     id("com.android.application")
 }
 
-// GeckoView 158 for Ulfur 2.8. Stable 158 isn't on maven.mozilla.org until release day (13 Oct 2026), so this
-// branch builds against the newest 158 *beta*. RELEASE DAY: set geckoviewChannel = "" and geckoviewVersion to the
-// stable build (artifact org.mozilla.geckoview:geckoview-arm64-v8a:158.0.<buildid>), and update README.md and
-// THIRD_PARTY_NOTICES.md to match. Never ship a release built from the beta channel.
-val geckoviewChannel = "-beta"                   // "" = release channel (stable), "-beta" = beta channel
-val geckoviewVersion = "158.0.20261007115609"   // newest 158 beta on maven.mozilla.org as of 9 Oct 2026
+// GeckoView 158 for Ulfur 2.8. Stable 158 is on maven.mozilla.org (first release build 158.0.20261007201254).
+// Keep geckoviewChannel = "" for releases. Never ship a release built from the beta channel.
+val geckoviewChannel = ""                        // "" = release channel (stable), "-beta" = beta channel
+val geckoviewVersion = "158.0.20261007201254"   // stable 158 on maven.mozilla.org as of 12 Oct 2026
 // One ABI per build keeps the APK sensible (~110 MB). Default arm64-v8a (phones);
 // `-Pbeast.abi=x86_64` builds an emulator/Chromebook APK, `armeabi-v7a` for old 32-bit phones.
 val beastAbi = (findProperty("beast.abi") as String?) ?: "arm64-v8a"
