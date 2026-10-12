@@ -3,7 +3,7 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
-## Unreleased (2.8)
+## 2.8.0 (versionCode 23)
 
 * **Alternate app icons.** Settings › Appearance has an App icon picker with the brand Default icon plus eight colourways that match the accent themes (Blood Moon, Frost, Toxic, Ember, Void, Gold, Sakura, Ash).
 * **Ulfur Monitor replaces Ulfur Control.** It still shows live CPU, memory and network use. The three "limit" sliders
@@ -13,7 +13,14 @@ Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each rele
   the address bar again; tap it to save. You can turn it off in Settings › General › Video download button.
 * **Media Radar is gone.** The full-screen radar overlay, its menu entry and the long-press on the download button
   have been removed. The download button and save sheet do the same job.
-* **GeckoView 158.** The engine moves from GeckoView 157 to 158 (Firefox 158), with its security fixes.
+* **GeckoView 158.** The engine moves from GeckoView 157 to stable GeckoView 158 (158.0.20261007201254, Firefox 158),
+  with its security fixes.
+* **Add to Home screen makes real home-screen web apps** (#34, PR #35). Menu › Add to Home screen pins a shortcut with
+  the site's own icon (its web app icon, apple-touch-icon or favicon, falling back to a letter tile). Sites with a web
+  app manifest open in their own standalone window, and links outside the app open in a normal tab. If the launcher
+  can't pin shortcuts, Ulfur explains why and offers App info. Adding the same site again updates its shortcut.
+* Ulfur is now licensed under GPL-3.0.
+* 2.8.0 is versionCode 23 and installs over the 2.8.0-pre1, pre2 and pre3 test builds (versionCodes 20 to 22).
 
 ## 2.7.1 (versionCode 19)
 
