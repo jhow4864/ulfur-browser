@@ -12,6 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger
 class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val realm: Realm = Realm.PLAY) {
     var url: String = UrlUtils.HOME
     var title: String = ""
+    /** Issue #34: the current page's web app manifest (GeckoView onWebAppManifest), reset on each page load. */
+    var webApp: com.jamhowman.beastbrowser.webapp.WebAppSpec? = null
     var thumbnail: Bitmap? = null
     var progress: Int = 100
     var loading = false
