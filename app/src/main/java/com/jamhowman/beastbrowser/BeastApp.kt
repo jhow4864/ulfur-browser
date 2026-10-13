@@ -27,7 +27,7 @@ class BeastApp : Application(), androidx.work.Configuration.Provider {
         if (main) try { registerActivityLifecycleCallbacks(LaunchCallbacks) } catch (_: Throwable) { }
         Prefs.init(this)
         ThemePacks.init(this)
-        AppIcon.sync(this) // 2.8: keep activity-alias state in line with the stored icon
+        runCatching { AppIcon.sync(this) } // 2.8: keep activity-alias state in line with the stored icon
         CrashReporter.install(this) // 2.5.1: opt-in, records nothing unless Settings › Crash reports is on
         Stats.init()
         UiTheme.apply()

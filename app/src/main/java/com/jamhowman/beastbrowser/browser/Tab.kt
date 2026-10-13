@@ -10,6 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /** @param realm 2.3.8: the [Realm] (cookie jar / tab list) this tab belongs to. */
 class Tab(val id: Long, val isPrivate: Boolean, var session: GeckoSession, val realm: Realm = Realm.PLAY) {
+    /** 2.12.1: camera or mic currently recording (Gecko MediaDelegate); stopped when hidden / backgrounded / closed. */
+    @Volatile var capturing: Boolean = false
+
     var url: String = UrlUtils.HOME
     var title: String = ""
     /** Issue #34: the current page's web app manifest (GeckoView onWebAppManifest), reset on each page load. */

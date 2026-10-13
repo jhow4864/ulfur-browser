@@ -50,7 +50,8 @@ object Engine {
     private var helper: WebExtension? = null
     private var sitePrefs: WebExtension? = null
 
-    private var runtime: GeckoRuntime? = null
+    var runtime: GeckoRuntime? = null
+        private set
     /** Last Secure DNS config handed to Gecko (TRR prefs are only rewritten when it changes). */
     private var appliedDns: SecureDns.Config? = null
     var ublock: WebExtension? = null
@@ -59,7 +60,8 @@ object Engine {
         private set
     private val extensionListeners = mutableListOf<(WebExtension) -> Unit>()
 
-    @Volatile private var appContext: Context? = null
+    @Volatile var appContext: Context? = null
+        private set
 
     fun runtime(context: Context): GeckoRuntime {
         runtime?.let { return it }

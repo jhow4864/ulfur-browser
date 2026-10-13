@@ -12,6 +12,17 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- In-app updater (update/Updater.kt): install new releases downloaded from GitHub -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- 2.12.1: only requested when a site the user allowed asks for camera / mic / location (never at launch). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
 
     <queries>
         <intent>
@@ -257,6 +268,10 @@
             android:label="Private downloads"
             android:parentActivityName=".ui.DownloadsActivity" />
 
+        <activity
+            android:name=".ui.SitePermissionsActivity"
+            android:exported="false"
+            android:label="@string/site_perms_title" />
         <activity
             android:name=".ui.FiltersActivity"
             android:exported="false"

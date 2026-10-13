@@ -9,16 +9,32 @@
     android:paddingTop="8dp"
     android:paddingBottom="8dp">
 
-    <TextView
-        android:id="@+id/tileIcon"
-        android:layout_width="58dp"
-        android:layout_height="58dp"
-        android:background="@drawable/bg_tile"
-        android:fontFamily="sans-serif-black"
-        android:gravity="center"
-        android:textColor="?attr/colorPrimary"
-        android:textSize="22sp"
-        tools:text="Y" />
+    <!-- 2.12: 56dp plate; a real site icon (32dp, tileImage) sits on it, the letter (tileIcon) is the fallback. -->
+    <FrameLayout
+        android:id="@+id/tilePlate"
+        android:layout_width="56dp"
+        android:layout_height="56dp">
+
+        <TextView
+            android:id="@+id/tileIcon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_tile"
+            android:fontFamily="sans-serif-black"
+            android:gravity="center"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="22sp"
+            tools:text="Y" />
+
+        <ImageView
+            android:id="@+id/tileImage"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tileLabel"

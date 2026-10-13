@@ -134,6 +134,9 @@ class SettingsActivity : AppCompatActivity(), PreferenceFragmentCompat.OnPrefere
                 setOnPreferenceClickListener { Stats.reset(); summary = "0 blocked so far"; true }
             }
             // 2.10 Ulfur #3 (Designer spec): filter lists live in Settings.
+            findPreference<Preference>("site_permissions")?.setOnPreferenceClickListener { // 2.12
+                startActivity(Intent(requireContext(), SitePermissionsActivity::class.java)); true
+            }
             findPreference<Preference>("ulfur_filters")?.setOnPreferenceClickListener {
                 startActivity(Intent(requireContext(), FiltersActivity::class.java)); true
             }

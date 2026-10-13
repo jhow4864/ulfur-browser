@@ -3,6 +3,20 @@
 Ulfur was called Beast Browser up to 2.3.8. Version tags are `vX.Y.Z`. Each release ships one
 `Ulfur-<version>-arm64.apk`, signed with the Ulfur release key.
 
+## 2.12.1 (versionCode 34), camera, mic and location per site
+
+- Sites can now use your camera, mic and location when you allow them. In a normal or private tab, a site asking gets a prompt: Allow / Block, plus "Only this time" for camera and mic. Ulfur asks Android for the matching permission only when a site you've allowed actually needs it, never at launch. If you refuse it there, the site is just denied, and Android won't ask you again this session.
+- Private and Ghost choices last only for the session.
+- Camera and mic stop when you switch away from the tab, close it or leave the app.
+- The permissions dashboard: Allow now works for camera, mic and location. The Pop-ups, Downloads and Clipboard filters are hidden until Ulfur has those settings.
+- New Android permissions: CAMERA, RECORD_AUDIO, ACCESS_COARSE_LOCATION, ACCESS_FINE_LOCATION. No background location. Camera, mic and location hardware are all marked optional.
+- 2.12.0 was superseded before release.
+
+## 2.12.0 (versionCode 33), site permissions + quick-pick icons
+
+- **Site permissions** (Settings › Privacy & security, or long-press the shield): every site that has asked for something, most recently used first, with filter chips and search. Each site's page has an Allow · Ask · Block choice per permission, plus "Reset this site" and "Clear site data". Changes write Gecko's own stored permission, so they apply right away in open tabs, and you get 10 seconds to undo. Camera and mic choices are checked on every request. Private and Ghost choices only last for the session and are never shown or saved. Ulfur doesn't hold Android camera, mic or location access, so for those you can only choose Ask or Block.
+- **Quick-pick icons**: home speed-dial tiles show the site's real icon (32dp on the tile plate) and fall back to the letter tile. Icons come over https only, are capped at 1 MB, are sent with no cookies, are cached on the phone and refreshed weekly. They are never fetched while the home page belongs to a Private or Ghost tab, and never for tiles added from one.
+
 ## 2.10.0 (versionCode 27), theme packs v2 (part 1)
 
 - **Match toolbar to site colour** (Settings › General, off by default): the toolbar takes the page `<meta name="theme-color">` (honours `media`; beast-helper 1.3.0) or the manifest `theme_color`. Opaque colours only; ink flips white/near-black for ≥ 4.5:1; never in private tabs or Ghost; colours within ΔE 10 of the private toolbar are nudged away. Overrides a theme pack toolbar only while on. Fix: address text uses text-on-pill colour with packs.
