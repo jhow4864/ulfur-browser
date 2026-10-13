@@ -437,6 +437,7 @@
 
     <!-- 2.9 theme packs -->
     <string name="theme_import">Import theme pack</string>
+    <string name="vault_open_with_warning">The other app will see this file decrypted and may keep a copy, add it to its history or upload it. Ulfur\'s player keeps it inside the vault.</string>
     <string name="theme_from_photo">Create theme from photo</string>
     <string name="theme_from_photo_reading">Reading photo…</string>
     <string name="filters_auto">Update lists automatically</string>

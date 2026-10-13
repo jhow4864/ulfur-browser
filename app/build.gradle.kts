@@ -76,9 +76,9 @@ android {
         targetSdk = 37
         // Every release needs a higher versionCode than the last one (2.5.0 shipped as 16): Android and the in-app
         // updater only install a higher versionCode as an update.
-        // 2.8.0 = 23 (pre1-pre3 used 20-22); 2.8.1 = 24; 2.10.0 = 28; 2.10.1 = 29; 2.11.0 = 30.
-        versionCode = 30
-        versionName = "2.11.0"
+        // 2.8.0 = 23 (pre1-pre3 used 20-22); 2.8.1 = 24; 2.10.0 = 28; 2.10.1 = 29; 2.11.0 = 30; 2.11.1 = 31.
+        versionCode = 31
+        versionName = "2.11.1"
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += beastAbi }
     }
@@ -154,6 +154,8 @@ dependencies {
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.vectordrawable:vectordrawable-seekable:1.0.0")
     implementation("androidx.work:work-runtime-ktx:2.10.1") // 2.11: weekly filter-list updates
+    implementation("androidx.media3:media3-exoplayer:1.5.1") // 2.11.1: in-app player for private videos
+    implementation("androidx.media3:media3-ui:1.5.1")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.14.1")
