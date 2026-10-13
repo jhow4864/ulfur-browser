@@ -4,4 +4,6 @@
     <external-path name="downloads" path="Download/" />
     <external-files-path name="app_downloads" path="Download/" />
     <files-path name="internal_downloads" path="downloads/" />
+    <!-- 2.11: exported theme packs (app-private cache; shared by grant only). -->
+    <cache-path name="theme_exports" path="theme-exports/" />
 </paths>

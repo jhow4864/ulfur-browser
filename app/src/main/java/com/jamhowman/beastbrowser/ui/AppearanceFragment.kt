@@ -292,6 +292,7 @@ class AppearanceFragment : Fragment() {
 
     /** "Import theme pack" row and the installed packs (tap to switch, long-press to delete). */
     private fun bindPacks(ctx: Context, p: ThemePalette) {
+        b.photoThemeRow.setOnClickListener { startActivity(Intent(ctx, PhotoThemeActivity::class.java)) }
         b.importThemeRow.setOnClickListener { pickPack.launch(arrayOf("application/zip", "application/json", "application/octet-stream", "*/*")) }
         val store = ThemePacks.store() ?: return
         val active = store.activeId()

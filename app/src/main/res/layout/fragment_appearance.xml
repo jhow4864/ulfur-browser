@@ -450,6 +450,19 @@
                 android:textColor="@color/text_primary"
                 android:textSize="15sp" />
 
+            <TextView
+                android:id="@+id/photoThemeRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:text="@string/theme_from_photo"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+
             <HorizontalScrollView
                 android:id="@+id/packScroll"
                 android:layout_width="match_parent"
