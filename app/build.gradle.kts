@@ -76,9 +76,9 @@ android {
         targetSdk = 37
         // Every release needs a higher versionCode than the last one (2.5.0 shipped as 16): Android and the in-app
         // updater only install a higher versionCode as an update.
-        // 2.8.0 = 23 (pre1-pre3 used 20-22); 2.8.1 = 24; 2.10.0 = 28.
-        versionCode = 28
-        versionName = "2.10.0"
+        // 2.8.0 = 23 (pre1-pre3 used 20-22); 2.8.1 = 24; 2.10.0 = 28; 2.10.1 = 29.
+        versionCode = 29
+        versionName = "2.10.1"
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += beastAbi }
     }

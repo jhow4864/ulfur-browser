@@ -30,6 +30,28 @@ class ThemePackStore(val dir: File, private val sp: SharedPreferences, private v
 
     @Volatile private var cached: kotlin.Pair<String, ThemePack?>? = null
 
+    /** 2.10.1: per-realm pack choices (see [RealmThemes]). */
+    val realms = RealmThemes(sp)
+
+    /** Id of the pack painting [realm] (its own pack, else the main pack), or null. */
+    fun packIdFor(realm: Realm): String? = realms.resolvedId(realm, activeId()) { File(dir, "$it.json").isFile }
+
+    /** The pack painting [realm], or null. A deleted or unreadable realm pack falls back to the main pack. */
+    fun packFor(realm: Realm): ThemePack? {
+        val id = packIdFor(realm) ?: return null
+        if (id == activeId()) return active()
+        realmCache[id]?.let { return it }
+        return (load(id) ?: return active()).also { realmCache[id] = it }
+    }
+
+    private val realmCache = java.util.concurrent.ConcurrentHashMap<String, ThemePack>()
+
+    /** Installed packs with their ids, oldest first (the realm picker lists these). */
+    fun installedWithIds(): List<kotlin.Pair<String, ThemePack>> = (dir.listFiles() ?: emptyArray())
+        .filter { it.isFile && NAME.matches(it.name) }
+        .sortedBy { it.lastModified() }
+        .mapNotNull { f -> val id = f.name.removeSuffix(".json"); load(id)?.let { id to it } }
+
     fun installed(): List<ThemePack> = (dir.listFiles() ?: emptyArray())
         .filter { it.isFile && NAME.matches(it.name) }
         .sortedBy { it.lastModified() }
@@ -80,6 +102,8 @@ class ThemePackStore(val dir: File, private val sp: SharedPreferences, private v
     fun delete(id: String) {
         if (!ID.matches(id)) return
         if (activeId() == id) clearActive()
+        realms.resetPack(id) // 2.10.1: realms that used it go back to the main theme
+        realmCache.remove(id)
         File(dir, "$id.json").delete()
         File(dir, id).deleteRecursively()
     }
@@ -99,6 +123,7 @@ object ThemePacks {
 
     fun init(context: Context) {
         if (store == null) store = ThemePackStore(File(context.applicationContext.filesDir, ThemePackStore.DIR), Prefs.sp, AndroidImageCodec)
+                .also { it.realms.migrate() } // 2.10.0 -> 2.10.1: existing users see no change
     }
 
     fun store(): ThemePackStore? = store
@@ -106,16 +131,23 @@ object ThemePacks {
     /** 2.10: decoded bitmaps of the active pack's images, cached per pack id (null when paused or none). */
     @Volatile private var bitmaps: kotlin.Pair<String, Map<ImageSlot, android.graphics.Bitmap>>? = null
 
-    fun activeBitmap(slot: ImageSlot): android.graphics.Bitmap? {
-        val p = activeForPalette() ?: return null
+    fun activeBitmap(slot: ImageSlot, realm: Realm = Prefs.realm): android.graphics.Bitmap? {
+        val p = packFor(realm) ?: return null
         if (p.images.isEmpty()) return null
-        val id = store?.activeId() ?: return null
+        val id = store?.packIdFor(realm) ?: return null
         val cached = bitmaps?.takeIf { it.first == id }?.second
             ?: p.images.mapNotNull { (s, img) -> AndroidImageCodec.bitmap(img)?.let { s to it } }.toMap().also { bitmaps = id to it }
         return cached[slot]
     }
 
-    fun activePack(): ThemePack? = activeForPalette()
+    fun activePack(realm: Realm = Prefs.realm): ThemePack? = packFor(realm)
+
+    /** 2.10.1: the pack painting [realm] now, or null (none, or every pack paused by safe start). */
+    fun packFor(realm: Realm): ThemePack? =
+        if (com.jamhowman.beastbrowser.crash.SafeStart.themePaused) null else try { store?.packFor(realm) } catch (_: Throwable) { null }
+
+    /** True when any realm is painted by a pack (safe start offers the theme row then). */
+    fun anyPackInUse(): Boolean = store?.let { s -> Realm.entries.any { s.packIdFor(it) != null } } == true
 
     /** Tests only: rebind to [context]'s filesDir and prefs. */
     fun resetForTests(context: Context) { store = null; init(context) }

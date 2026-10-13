@@ -14,7 +14,12 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.jamhowman.beastbrowser.R
+import com.jamhowman.beastbrowser.data.AppTheme
 import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.data.RealmThemes
+import com.jamhowman.beastbrowser.data.ThemePack
+import com.jamhowman.beastbrowser.data.ThemePackStore
+import com.jamhowman.beastbrowser.data.ThemePacks
 import com.jamhowman.beastbrowser.data.Realm
 import java.util.Locale
 
@@ -32,6 +37,7 @@ object RealmSheet {
         tabCounts: Map<Realm, Int>,
         onPick: (Realm) -> Unit,
         onWipe: (Realm) -> Unit,
+        onThemeChanged: (Realm) -> Unit = {},
     ) {
         val dialog = BottomSheetDialog(activity)
         val pad = dp(activity, 24)
@@ -62,7 +68,10 @@ object RealmSheet {
 
         val row = LinearLayout(activity).apply { orientation = LinearLayout.HORIZONTAL }
         Realm.entries.forEach { realm ->
-            row.addView(seal(activity, realm, realm == current, tabCounts[realm] ?: 0) { sealView ->
+            row.addView(seal(activity, realm, realm == current, tabCounts[realm] ?: 0, onSwatch = {
+                dialog.dismiss()
+                pickPack(activity, realm) { onThemeChanged(realm) }
+            }) { sealView ->
                 sealView.animate().scaleX(1.12f).scaleY(1.12f).setDuration(110).withEndAction {
                     dialog.dismiss()
                     if (realm != current) onPick(realm)
@@ -101,7 +110,7 @@ object RealmSheet {
     }
 
     /** Ringed seal with the realm icon, its name and a tab count; the current realm is filled with its accent. */
-    private fun seal(activity: AppCompatActivity, realm: Realm, isCurrent: Boolean, tabs: Int, onClick: (View) -> Unit): View {
+    private fun seal(activity: AppCompatActivity, realm: Realm, isCurrent: Boolean, tabs: Int, onSwatch: () -> Unit, onClick: (View) -> Unit): View {
         val accent = Prefs.accentFor(realm)
         val col = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -155,7 +164,61 @@ object RealmSheet {
             setTextColor(activity.getColor(R.color.text_hint))
             gravity = Gravity.CENTER
         })
+        // 2.10.1: this realm's own theme swatch (only ever its own resolved pack, never another realm's).
+        val sw = swatchColors(realm, AppTheme.isNight(activity))
+        col.addView(View(activity).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(sw.first)
+                setStroke(dp(activity, 2), sw.second)
+            }
+            isClickable = true
+            isFocusable = true
+            contentDescription = "${realm.label} theme: " + swatchLabel(realm) + ". Change"
+            setOnClickListener { onSwatch() }
+        }, LinearLayout.LayoutParams(dp(activity, 24), dp(activity, 24)).apply {
+            topMargin = dp(activity, 6)
+            gravity = Gravity.CENTER_HORIZONTAL
+        })
         col.setOnClickListener { onClick(frame) }
         return col
     }
+
+    /** The pack shown on [realm]'s card: that realm's own resolved pack only (null = theme colours). */
+    fun swatchPack(realm: Realm): ThemePack? = ThemePacks.packFor(realm)
+
+    /** Fill and ring of [realm]'s swatch: its pack's accent and toolbar, else its preset accent. */
+    fun swatchColors(realm: Realm, night: Boolean): Pair<Int, Int> {
+        val pack = swatchPack(realm)
+        val p = AppTheme.palette(Prefs.accentFor(realm), night, false, pack)
+        val ring = p.surfaces?.resolved(night)?.toolbar ?: p.withAlpha(0x66)
+        return p.color to ring
+    }
+
+    fun swatchLabel(realm: Realm): String = when (val c = ThemePacks.store()?.realms?.choice(realm)) {
+        is RealmThemes.Choice.Pack -> swatchPack(realm)?.name ?: "main theme"
+        RealmThemes.Choice.Off -> "theme colours only"
+        else -> "main theme" + (swatchPack(realm)?.let { " (${it.name})" } ?: "")
+    }
+
+    /** Pack picker for one realm: "Use main theme", "Theme colours only", then every installed pack. */
+    fun pickPack(activity: AppCompatActivity, realm: Realm, onChanged: () -> Unit) {
+        val store = ThemePacks.store() ?: return
+        val options = pickerOptions(store)
+        val cur = store.realms.choice(realm)
+        val checked = options.indexOfFirst { it.second == cur }.coerceAtLeast(0)
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
+            .setTitle("${realm.label} realm theme")
+            .setSingleChoiceItems(options.map { it.first }.toTypedArray(), checked) { d, i ->
+                store.realms.set(realm, options[i].second)
+                d.dismiss()
+                onChanged()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    fun pickerOptions(store: ThemePackStore): List<Pair<String, RealmThemes.Choice>> =
+        listOf("Use main theme" to RealmThemes.Choice.Main, "Theme colours only" to RealmThemes.Choice.Off) +
+            store.installedWithIds().map { (id, p) -> p.name to RealmThemes.Choice.Pack(id) }
 }
