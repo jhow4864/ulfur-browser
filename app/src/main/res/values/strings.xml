@@ -514,4 +514,23 @@
     <string name="picker_saved">Hidden on this site</string>
     <string name="picker_undo">Undo</string>
     <string name="picker_failed">Couldn\'t hide that element</string>
+    <!-- 2.12 Site permissions (docs/design-drop-2.12.md) -->
+    <string name="site_perms_title">Site permissions</string>
+    <string name="site_perms_summary">Camera, mic, location, notifications and more, per site</string>
+    <string name="site_perms_search">Search sites</string>
+    <string name="site_perms_empty">No site has asked for anything yet.</string>
+    <string name="site_perms_all_ask">Will ask</string>
+    <string name="site_perms_reset_all">Reset all permissions</string>
+    <string name="site_perms_reset_all_confirm">Reset all? Sites will ask again.</string>
+    <string name="site_perms_reset">Reset</string>
+    <string name="site_perms_reset_all_done">All site permissions reset</string>
+    <string name="site_perms_reset_site">Reset this site</string>
+    <string name="site_perms_reset_site_done">Permissions reset for %1$s</string>
+    <string name="site_perms_clear_data">Clear site data</string>
+    <string name="site_perms_clear_data_confirm">Clear cookies and site data for %1$s?</string>
+    <string name="site_perms_last_visited">Last visited %1$s</string>
+    <string name="site_perms_used">Used %1$s</string>
+    <string name="site_perms_allow_unsupported">Ulfur doesn\'t have Android access for this, so it can only ask or block</string>
+    <string name="site_perms_session_note">Private and Ghost tab permissions are session only and never shown or saved here.</string>
+    <string name="site_perms_private_session_only">Private tab permissions are session only</string>
 </resources>

@@ -87,7 +87,7 @@ enum class AppIcon(
 
     fun componentName(context: Context): ComponentName {
         val pkg = context.packageName
-        return ComponentName(pkg, "$pkg.ui.$aliasSimpleName")
+        return ComponentName(pkg, "com.jamhowman.beastbrowser.ui.$aliasSimpleName") // class names keep the namespace even with applicationIdSuffix
     }
 
     companion object {

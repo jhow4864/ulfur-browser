@@ -198,6 +198,11 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     // ---------------------------------------------------------------- permissions: privacy-first defaults
 
     override fun onContentPermissionRequest(session: GeckoSession, perm: ContentPermission): GeckoResult<Int>? {
+        // 2.12: "last used" for the dashboard's most-recent-first list. Never recorded for private / Ghost requests.
+        if (!perm.privateMode && !tab.isPrivate && SitePermissions.shownInDashboard(perm.permission)) {
+            val o = SitePermissions.origin(perm.uri)
+            Engine.appContext?.let { c -> if (o != null) SitePermissionsEngine.store(c).touch(o, SitePermissions.Kind.fromGecko(perm.permission), System.currentTimeMillis()) }
+        }
         val value = when (perm.permission) {
             // 2.5: Settings > Media > Autoplay, plus the per-site exception from the Shields sheet
             PermissionDelegate.PERMISSION_AUTOPLAY_INAUDIBLE, PermissionDelegate.PERMISSION_AUTOPLAY_AUDIBLE -> {
@@ -221,7 +226,23 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         session: GeckoSession, uri: String,
         video: Array<out PermissionDelegate.MediaSource>?, audio: Array<out PermissionDelegate.MediaSource>?,
         callback: PermissionDelegate.MediaCallback,
-    ) = callback.reject()
+    ) {
+        // 2.12: per-site camera / mic decision, read fresh on every request. Private / Ghost: memory only, never on disk.
+        val origin = SitePermissions.origin(uri)
+        val private = tab.isPrivate || session.settings.usePrivateMode
+        val kinds = listOfNotNull(if (!video.isNullOrEmpty()) SitePermissions.Kind.CAMERA else null,
+            if (!audio.isNullOrEmpty()) SitePermissions.Kind.MIC else null)
+        val ctx = Engine.appContext
+        val allowed = origin != null && kinds.isNotEmpty() && kinds.all { k ->
+            val st = if (private) SessionPermissions.get(origin, k) else ctx?.let { SitePermissionsEngine.store(it).state(origin, k) }
+            SitePermissions.mediaAllowed(st, androidGranted = false)
+        }
+        if (origin != null && !private && ctx != null) {
+            val now = System.currentTimeMillis()
+            kinds.forEach { SitePermissionsEngine.store(ctx).touch(origin, it, now) }
+        }
+        if (allowed) callback.grant(video?.firstOrNull(), audio?.firstOrNull()) else callback.reject()
+    }
 
     override fun onAndroidPermissionsRequest(session: GeckoSession, permissions: Array<out String>?, callback: PermissionDelegate.Callback) =
         callback.reject()

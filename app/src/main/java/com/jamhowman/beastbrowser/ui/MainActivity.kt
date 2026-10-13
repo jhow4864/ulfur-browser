@@ -690,6 +690,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
 
     private fun burnGhostJar() {
         Realm.GHOST.contextId?.let { id -> runCatching { runtime.storageController.clearDataForSessionContext(id) } }
+        com.jamhowman.beastbrowser.browser.SessionPermissions.clear() // 2.12: session-only grants die with Ghost
     }
 
     private fun showHome(tab: Tab) {
@@ -896,6 +897,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             if (t.loading) t.session.stop() else t.session.reload()
         }
         b.shieldButton.setOnClickListener { showShields() }
+        b.shieldButton.setOnLongClickListener { openSitePermissions(); true } // 2.12 design drop: "Permissions for this site"
         b.readerButton.setOnClickListener { toggleReader() }
         b.mediaButton.setOnClickListener { current?.session?.let { onMediaBadgeTapped(it) } }
         MediaSniffer.addListener { session ->
@@ -992,7 +994,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                     .setNeutralButton("Open in new tab") { _, _ -> newTab(tile.url) }
                     .setNegativeButton("Cancel", null).show()
             },
-            onAdd = { showAddTile(null, null) })
+            onAdd = { showAddTile(null, null) },
+            allowIconFetch = { current?.isPrivate != true && realm != Realm.GHOST })
         b.home.speedDial.layoutManager = GridLayoutManager(this, 4)
         b.home.speedDial.adapter = tileAdapter
     }
@@ -1007,7 +1010,8 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 val full = UrlUtils.fromInput(u, Prefs.searchEngine)
                 val name = d.tileName.text?.toString()?.trim().takeUnless { it.isNullOrEmpty() }
                     ?: Domains.display(UrlUtils.host(full)).substringBefore('.').replaceFirstChar { it.uppercase() }
-                tileAdapter.tiles.add(Tile(name, full)); SpeedDialStore.save(tileAdapter.tiles); tileAdapter.notifyDataSetChanged()
+                val fromPrivate = current?.isPrivate == true || realm == Realm.GHOST // 2.12: never fetch its icon
+                tileAdapter.tiles.add(Tile(name, full, fromPrivate)); SpeedDialStore.save(tileAdapter.tiles); tileAdapter.notifyDataSetChanged()
                 SpeedDialWidget.refreshAll(this)
                 snack("Added $name to Speed Dial")
             }
@@ -1919,6 +1923,16 @@ class MainActivity : AppCompatActivity(), BrowserHost {
                 HelperSessions.request(session, org.json.JSONObject().put("type", "unhideLast"), 5_000) { }
             }
         }
+    }
+
+    /** 2.12: long-press shield → this site's permissions. Private / Ghost grants are session-only and not shown. */
+    private fun openSitePermissions() {
+        val t = current ?: return
+        if (t.isPrivate || realm == Realm.GHOST) { snack(getString(R.string.site_perms_private_session_only)); return }
+        val origin = com.jamhowman.beastbrowser.browser.SitePermissions.origin(t.url)
+        startActivity(Intent(this, SitePermissionsActivity::class.java).apply {
+            if (origin != null && !t.showingHome) putExtra(SitePermissionsActivity.EXTRA_ORIGIN, origin)
+        })
     }
 
     private fun showShields() {

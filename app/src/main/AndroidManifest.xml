@@ -258,6 +258,10 @@
             android:parentActivityName=".ui.DownloadsActivity" />
 
         <activity
+            android:name=".ui.SitePermissionsActivity"
+            android:exported="false"
+            android:label="@string/site_perms_title" />
+        <activity
             android:name=".ui.FiltersActivity"
             android:exported="false"
             android:label="@string/filters_title" />
