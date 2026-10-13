@@ -147,9 +147,63 @@ object DownloadCenter {
                 _items.value.filter { it.isPrivate }.mapNotNull { it.filePath }
             sweepOrphanedPrivateFiles(privDir, keep)
         }
-        // Vault files from before 2.10 are plaintext: encrypt them in place (new file, then swap).
-        val legacy = _privateItems.value.mapNotNull { it.filePath?.let(::File) }
-        if (legacy.isNotEmpty()) io.execute { legacy.forEach { encryptLegacy(it) } }
+        // Vault files from before 2.10 are plaintext: encrypt them in place (new file, then swap). 2.11.1: files
+        // from 2.10/2.11.0 (UPD1, no stored name/type) are re-encrypted to UPD2 and their `.bin` / generic
+        // octet-stream entries get their real type (extension, then decrypted magic bytes). All in memory.
+        // Cheap part first, synchronously: a specific type from the extension.
+        _privateItems.value = _privateItems.value.map { fixTypeFromName(it) }
+        val vault = _privateItems.value
+        if (vault.isNotEmpty()) io.execute {
+            val fixed = vault.associate { it.id to migrateVaultItem(it) }
+            if (fixed.any { (id, v) -> vault.first { it.id == id } != v }) {
+                _privateItems.update { cur -> cur.map { fixed[it.id] ?: it } }
+                savePrivate()
+            }
+        }
+    }
+
+    /** Extension-only type fix for an item whose stored type is missing or generic. */
+    internal fun fixTypeFromName(d: DownloadItem): DownloadItem =
+        if (!VaultMime.isGeneric(d.mime)) d else VaultMime.fromExtension(d.fileName)?.let { d.copy(mime = it) } ?: d
+
+    /**
+     * 2.11.1 vault upgrade for one item: plaintext -> UPD2, UPD1 -> UPD2 (re-encrypted through memory, `.enc-` temp
+     * file then swap), then the real type and a matching name stored in the file and returned. Never throws; on
+     * any failure the item is returned as it was.
+     */
+    internal fun migrateVaultItem(d: DownloadItem): DownloadItem {
+        val f = d.filePath?.let(::File) ?: return d
+        if (!f.isFile) return d
+        return runCatching {
+            if (!PrivateCrypto.isEncrypted(f)) encryptLegacy(f, PrivateCrypto.Meta(d.fileName, d.mime))
+            else if (!PrivateCrypto.hasMeta(f)) reencryptV2(f, PrivateCrypto.Meta(d.fileName, d.mime))
+            withRealType(d, f)
+        }.getOrElse { Log.w(TAG, "vault upgrade failed for one file", it); d }
+    }
+
+    /** Resolves type (stored, extension, magic bytes) and name, and writes both into the file's meta record. */
+    internal fun withRealType(d: DownloadItem, f: File): DownloadItem {
+        val (head, stored) = PrivateCrypto.RandomAccess(f).use { ra ->
+            val b = ByteArray(minOf(512L, ra.size).toInt())
+            var n = 0
+            while (n < b.size) { val r = ra.read(n.toLong(), b, n, b.size - n); if (r <= 0) break; n += r }
+            b.copyOf(n) to ra.meta
+        }
+        val mime = VaultMime.resolve(d.mime.takeUnless { VaultMime.isGeneric(it) } ?: stored?.mime, d.fileName, head)
+        val name = VaultMime.fixName(d.fileName, mime)
+        java.util.Arrays.fill(head, 0)
+        if (stored != PrivateCrypto.Meta(name, mime) && PrivateCrypto.hasMeta(f)) PrivateCrypto.updateMeta(f, PrivateCrypto.Meta(name, mime))
+        return if (name == d.fileName && mime == d.mime) d else d.copy(fileName = name, mime = mime)
+    }
+
+    /** UPD1 -> UPD2 with [meta]: decrypt chunk by chunk into a new encrypted file, then swap. */
+    internal fun reencryptV2(f: File, meta: PrivateCrypto.Meta): Boolean {
+        val tmp = File(f.parentFile, ENC_PREFIX + f.name)
+        return runCatching {
+            PrivateCrypto.writer(tmp, meta = meta).use { w -> PrivateCrypto.reader(f).use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
+            if (!f.delete() || !tmp.renameTo(f)) throw IOException("swap failed")
+            true
+        }.getOrElse { tmp.delete(); throw it }
     }
 
     /** Prefix of the temporary file [encryptLegacy] writes before swapping it in. */
@@ -170,11 +224,11 @@ object DownloadCenter {
     }
 
     /** Encrypts a pre-2.10 plaintext vault file. The old file is deleted (not shredded; flash can't promise that). */
-    internal fun encryptLegacy(f: File): Boolean {
+    internal fun encryptLegacy(f: File, meta: PrivateCrypto.Meta? = null): Boolean {
         if (!f.isFile || PrivateCrypto.isEncrypted(f)) return false
         val tmp = File(f.parentFile, ENC_PREFIX + f.name)
         return runCatching {
-            PrivateCrypto.writer(tmp).use { w -> f.inputStream().use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
+            PrivateCrypto.writer(tmp, meta = meta).use { w -> f.inputStream().use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
             if (!f.delete() || !tmp.renameTo(f)) throw IOException("swap failed")
             true
         }.getOrElse { Log.w(TAG, "could not encrypt an older vault file", it); tmp.delete(); false }
@@ -568,6 +622,12 @@ object DownloadCenter {
                 total = length
             }
             if (item.contentUri == null && item.filePath == null) {
+                // 2.11.1: links/sniffed media were named from the URL alone (often `videoplayback.bin`,
+                // application/octet-stream); the response's own headers know better.
+                if (initial == null) {
+                    val (n, m) = refineFromHeaders(item.fileName, item.mime, item.url, headers["content-type"], headers["content-disposition"])
+                    if (n != item.fileName || m != item.mime) { item = item.copy(fileName = n, mime = m); val r = item; set(id) { it.copy(fileName = r.fileName, mime = r.mime) } }
+                }
                 item = createTarget(item)
                 job.target = item
                 val fresh = item
@@ -821,7 +881,7 @@ object DownloadCenter {
             // Ulfur #1: private files are encrypted as they stream in; plaintext never reaches disk. A chunked
             // AEAD stream can't be appended to safely, so a private download always (re)starts at byte 0.
             val f = File(item.filePath ?: throw IOException("No target"))
-            val w = PrivateCrypto.writer(f)
+            val w = PrivateCrypto.writer(f, meta = PrivateCrypto.Meta(item.fileName, item.mime))
             return object : Output {
                 override fun write(b: ByteArray, n: Int) = w.write(b, 0, n)
                 override fun finish() = w.finish()
@@ -987,7 +1047,9 @@ object DownloadCenter {
     }
 
 
-    private fun vaultFinished(item: DownloadItem) {
+    private fun vaultFinished(done: DownloadItem) {
+        // 2.11.1: settle the real type/name (extension, then decrypted magic bytes) and store them in the file.
+        val item = done.filePath?.let { p -> runCatching { withRealType(done, File(p)) }.getOrNull() } ?: done
         _items.update { list -> list.filterNot { it.id == item.id } }
         _privateItems.update { cur ->
             if (cur.any { it.id == item.id }) cur
@@ -1007,6 +1069,16 @@ object DownloadCenter {
                 tmp.writeText(arr.toString()); tmp.renameTo(f)
             }.onFailure { Log.w(TAG, "private save failed", it) }
         }
+    }
+
+    /** Name and type from the response when the enqueue-time guess was generic (pure; see [VaultMime]). */
+    internal fun refineFromHeaders(name: String, mime: String, url: String, contentType: String?, disposition: String?): Pair<String, String> {
+        val headerType = contentType?.substringBefore(';')?.trim()?.lowercase()?.takeIf { it.isNotEmpty() && !VaultMime.isGeneric(it) }
+        var n = name
+        if (disposition != null) runCatching { URLUtil.guessFileName(url, disposition, headerType ?: mime) }.getOrNull()
+            ?.let { g -> if (Regex("(?i)filename").containsMatchIn(disposition)) n = sanitize(g) }
+        val m = if (VaultMime.isGeneric(mime)) (headerType ?: VaultMime.fromExtension(n) ?: mime) else mime
+        return VaultMime.fixName(n, m) to m
     }
 
     private fun guessMime(name: String) =

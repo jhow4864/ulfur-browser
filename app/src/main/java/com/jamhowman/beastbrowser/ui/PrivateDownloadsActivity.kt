@@ -332,8 +332,27 @@ class PrivateDownloadsActivity : AppCompatActivity() {
             DownloadCenter.deletePrivate(d.id)
             return
         }
-        try { startActivity(DownloadCenter.openIntent(d) ?: return) }
-        catch (_: Exception) { Toast.makeText(this, "No app can open ${d.fileName}", Toast.LENGTH_SHORT).show() }
+        // 2.11.1: videos and audio play inside Ulfur (decrypted on demand, in memory) by default.
+        if (com.jamhowman.beastbrowser.downloads.VaultMime.isPlayable(d.mime)) {
+            startActivity(PrivateVideoActivity.intent(this, d.id)); return
+        }
+        openWith(d, warn = false)
+    }
+
+    /** "Open with…": another app reads the file through a seekable descriptor; it sees the decrypted file. */
+    private fun openWith(d: DownloadItem, warn: Boolean = true) {
+        if (!DownloadCenter.fileExists(d)) return
+        fun go() {
+            val i = DownloadCenter.openIntent(d) ?: return
+            try { startActivity(if (warn) Intent.createChooser(i, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) else i) }
+            catch (_: Exception) { Toast.makeText(this, "No app can open ${d.fileName}", Toast.LENGTH_SHORT).show() }
+        }
+        if (!warn) { go(); return }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Open with another app?")
+            .setMessage(getString(com.jamhowman.beastbrowser.R.string.vault_open_with_warning))
+            .setPositiveButton("Open with…") { _, _ -> go() }
+            .setNegativeButton(android.R.string.cancel, null).show()
     }
 
     private fun share(d: DownloadItem) {
@@ -345,6 +364,8 @@ class PrivateDownloadsActivity : AppCompatActivity() {
     private fun showMore(d: DownloadItem, anchor: View) {
         val pm = PopupMenu(this, anchor)
         pm.menu.add("Open").setOnMenuItemClickListener { open(d); true }
+        if (com.jamhowman.beastbrowser.downloads.VaultMime.isPlayable(d.mime))
+            pm.menu.add("Open with…").setOnMenuItemClickListener { openWith(d); true }
         pm.menu.add("Share").setOnMenuItemClickListener { share(d); true }
         pm.menu.add(R.string.vault_move).setOnMenuItemClickListener { requestMove(setOf(d.id)); true }
         pm.menu.add("Delete").setOnMenuItemClickListener { confirmDelete(d); true }

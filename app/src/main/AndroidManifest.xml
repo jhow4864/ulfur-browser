@@ -244,6 +244,14 @@
             android:parentActivityName=".ui.MainActivity" />
 
         <activity
+            android:name=".ui.PrivateVideoActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Beast"
+            android:parentActivityName=".ui.PrivateDownloadsActivity" />
+
+        <activity
             android:name=".ui.PrivateDownloadsActivity"
             android:exported="false"
             android:label="Private downloads"
