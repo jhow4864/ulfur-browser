@@ -295,6 +295,19 @@
         </provider>
 
         <!-- 2.10 (Ulfur #1): decrypts private downloads into a pipe for open/share; grant-only access. -->
+        <!-- 2.11.2: no WorkManager auto-init in a ContentProvider (it ran before safe start and crashed every launch
+             in 2.11.0/2.11.1). BeastApp is a Configuration.Provider; WorkManager starts on first use, after safe start. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <provider
             android:name=".downloads.PrivateVaultProvider"
             android:authorities="${applicationId}.privatevault"

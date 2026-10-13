@@ -76,9 +76,9 @@ android {
         targetSdk = 37
         // Every release needs a higher versionCode than the last one (2.5.0 shipped as 16): Android and the in-app
         // updater only install a higher versionCode as an update.
-        // 2.8.0 = 23 (pre1-pre3 used 20-22); 2.8.1 = 24; 2.10.0 = 28; 2.10.1 = 29; 2.11.0 = 30; 2.11.1 = 31.
-        versionCode = 31
-        versionName = "2.11.1"
+        // 2.8.0 = 23 (pre1-pre3 used 20-22); 2.8.1 = 24; 2.10.0 = 28; 2.10.1 = 29; 2.11.0 = 30; 2.11.1 = 31; 2.11.2 = 32.
+        versionCode = 32
+        versionName = "2.11.2"
         vectorDrawables.useSupportLibrary = true
         ndk { abiFilters += beastAbi }
     }
@@ -100,6 +100,15 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             // Release key only. Without it the variant is left unsigned and validateReleaseSigning fails the build.
             signingConfig = if (hasReleaseKey) signingConfigs.getByName("release") else null
+        }
+        // 2.11.2: the release build's R8/minified code, signed with the debug key and a separate application id, so
+        // the shrunk startup path can be run on an emulator (and gated by Apk Tester) without the release key.
+        create("releaseTest") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".r8test"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
         }
     }
 
