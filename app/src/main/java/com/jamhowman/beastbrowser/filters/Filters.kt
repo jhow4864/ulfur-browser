@@ -34,6 +34,14 @@ object Filters {
         }
     }
 
+    /** 2.11 auto-update: same store and executor as manual updates (never two updates at once); blocks the caller. */
+    fun updateBlocking(ctx: Context, fetch: (String) -> String): FilterAutoUpdate.Outcome {
+        val s = store(ctx)
+        val o = io.submit<FilterAutoUpdate.Outcome> { FilterAutoUpdate.runOnce(s, fetch) }.get()
+        changed(); sync(ctx)
+        return o
+    }
+
     /** Pushes the compiled block to uBO if it changed since the last confirmed push (also on every bridge hello). */
     fun sync(ctx: Context, force: Boolean = false) {
         val s = store(ctx)

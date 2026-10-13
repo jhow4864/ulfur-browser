@@ -17,6 +17,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.jamhowman.beastbrowser.R
+import com.jamhowman.beastbrowser.data.Prefs
+import com.jamhowman.beastbrowser.filters.FilterAutoUpdate
 import com.jamhowman.beastbrowser.filters.FilterRules
 import com.jamhowman.beastbrowser.filters.FilterStore
 import com.jamhowman.beastbrowser.filters.Filters
@@ -74,6 +76,7 @@ class FiltersActivity : AppCompatActivity() {
         body.addView(header(getString(R.string.filters_lists_header)))
         body.addView(text(getString(R.string.filters_lists_note), 13f, secondary = true))
         if (store.lists.isNotEmpty()) body.addView(button(getString(R.string.filters_update_all)) { updateAll() })
+        autoUpdateRows()
         store.lists.forEach { l -> body.addView(listRow(l)) }
         // Designer spec: "Add list by URL" at the bottom of the lists; https only (FilterRules.checkListUrl).
         val input = EditText(this).apply {
@@ -109,6 +112,36 @@ class FiltersActivity : AppCompatActivity() {
                 })
             }
         }
+    }
+
+    /** 2.11: weekly auto-update (on by default, Wi-Fi only unless mobile data is allowed) and its last run. */
+    private fun autoUpdateRows() {
+        val sp = Prefs.sp
+        fun toggle(label: Int, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) =
+            LinearLayout(this).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                addView(text(getString(label), 15f), LinearLayout.LayoutParams(0, -2, 1f))
+                addView(MaterialSwitch(this@FiltersActivity).apply {
+                    isChecked = checked; isEnabled = enabled; contentDescription = getString(label)
+                    setOnCheckedChangeListener { _, on -> onChange(on) }
+                })
+            }
+        val auto = FilterAutoUpdate.enabled(sp)
+        body.addView(toggle(R.string.filters_auto, auto, true) { on ->
+            sp.edit().putBoolean(FilterAutoUpdate.KEY_ENABLED, on).apply(); FilterAutoUpdate.schedule(this); render()
+        })
+        body.addView(text(getString(R.string.filters_auto_summary), 12f, secondary = true))
+        body.addView(toggle(R.string.filters_auto_mobile, FilterAutoUpdate.allowMobile(sp), auto) { on ->
+            sp.edit().putBoolean(FilterAutoUpdate.KEY_MOBILE, on).apply(); FilterAutoUpdate.schedule(this)
+        })
+        val last = sp.getLong(FilterAutoUpdate.KEY_LAST, 0L)
+        val err = sp.getString(FilterAutoUpdate.KEY_LAST_ERROR, null)
+        val whenText = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(last))
+        body.addView(text(when {
+            last <= 0L -> getString(R.string.filters_auto_never)
+            err != null -> getString(R.string.filters_auto_last_failed, whenText, err)
+            else -> getString(R.string.filters_auto_last, whenText)
+        }, 12f, secondary = true).apply { setPadding(0, 0, 0, pad / 2) })
     }
 
     private fun updateAll() {

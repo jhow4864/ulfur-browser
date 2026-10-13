@@ -25,6 +25,7 @@ class BeastApp : Application() {
         CrashReporter.install(this) // 2.5.1: opt-in, records nothing unless Settings › Crash reports is on
         Stats.init()
         UiTheme.apply()
+        if (main) runCatching { com.jamhowman.beastbrowser.filters.FilterAutoUpdate.schedule(this) } // 2.11 weekly lists
     }
 
     /** 2.9.1: started to show an activity (vs. widget update / broadcast / job), judged at the start of onCreate. */
