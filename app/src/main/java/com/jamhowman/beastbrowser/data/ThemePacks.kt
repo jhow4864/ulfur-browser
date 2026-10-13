@@ -69,9 +69,23 @@ class ThemePackStore(val dir: File, private val sp: SharedPreferences, private v
         return (ThemePackParser.parseJson(f.readBytes(), images, codec, sanitize = false) as? ThemePackResult.Ok)?.pack
     }
 
+    /** 2.11: stores [pack] in app-private storage without making it the main pack; returns its id. */
+    fun install(pack: ThemePack): String {
+        val id = pack.id
+        write(pack, id)
+        return id
+    }
+
     fun apply(pack: ThemePack): Snapshot {
         val id = pack.id
         val snap = Snapshot(sp.getString(KEY_ACCENT, null), sp.getString(KEY_PACK, null), if (File(dir, "$id.json").isFile) null else id)
+        write(pack, id)
+        sp.edit(commit = true) { putString(KEY_ACCENT, pack.base.storageKey); putString(KEY_PACK, id) }
+        cached = null
+        return snap
+    }
+
+    private fun write(pack: ThemePack, id: String) {
         dir.mkdirs()
         if (pack.images.isNotEmpty()) {
             val imgDir = File(dir, id).apply { mkdirs() }
@@ -80,9 +94,6 @@ class ThemePackStore(val dir: File, private val sp: SharedPreferences, private v
         val tmp = File(dir, "$id.json.tmp")
         tmp.writeText(pack.toJson().toString(2))
         if (!tmp.renameTo(File(dir, "$id.json"))) { tmp.delete(); error("could not store theme pack") }
-        sp.edit(commit = true) { putString(KEY_ACCENT, pack.base.storageKey); putString(KEY_PACK, id) }
-        cached = null
-        return snap
     }
 
     fun undo(s: Snapshot) {

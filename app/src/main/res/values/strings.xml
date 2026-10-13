@@ -437,6 +437,14 @@
 
     <!-- 2.9 theme packs -->
     <string name="theme_import">Import theme pack</string>
+    <string name="theme_from_photo">Create theme from photo</string>
+    <string name="theme_from_photo_reading">Reading photo…</string>
+    <string name="filters_auto">Update lists automatically</string>
+    <string name="filters_auto_summary">Weekly, when the battery isn\'t low. Wi-Fi only unless mobile data is allowed.</string>
+    <string name="filters_auto_mobile">Allow mobile data</string>
+    <string name="filters_auto_never">Last auto-update: not yet</string>
+    <string name="filters_auto_last">Last auto-update: %1$s</string>
+    <string name="filters_auto_last_failed">Last auto-update: %1$s · failed (%2$s); old rules kept</string>
     <string name="theme_unverified">Unverified pack</string>
     <string name="theme_default_tag">default</string>
     <string name="theme_low_contrast">Some text may be hard to read.</string>
