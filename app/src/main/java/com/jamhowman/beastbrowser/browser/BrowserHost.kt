@@ -29,6 +29,11 @@ interface BrowserHost {
     fun autoplayFor(tab: Tab, site: String): AutoplayPolicy.Mode?
     /** 2.5: an autoplay request on [tab] was refused. */
     fun onAutoplayBlocked(tab: Tab, site: String)
+    /** 2.12.1: ask the user about [kinds] for [origin] (Allow / Block, plus "Only this time" when [allowOnce]). */
+    fun promptSitePermission(tab: Tab, origin: String, kinds: List<SitePermissions.Kind>, allowOnce: Boolean,
+        done: (PermissionFlow.Decision) -> Unit) = done(PermissionFlow.Decision.BLOCK)
+    /** 2.12.1: request Android runtime permissions now; [done] with the granted set (already-held ones included). */
+    fun requestAndroidPermissions(perms: List<String>, done: (Set<String>) -> Unit) = done(emptySet())
     fun onContextMenu(tab: Tab, element: ContextElement)
     fun onDownload(tab: Tab, response: WebResponse)
     fun onCrashed(tab: Tab)

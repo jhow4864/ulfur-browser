@@ -22,8 +22,8 @@ object SitePermissions {
         LOCAL_NETWORK("Local network", Chip.ALL), LOCAL_DEVICE("Local devices", Chip.ALL),
         PERSISTENT_STORAGE("Persistent storage", Chip.ALL), OTHER("Other", Chip.ALL);
 
-        /** Ulfur holds no Android camera / mic / location permission, so "Allow" can't take effect for these. */
-        val allowSupported: Boolean get() = this != CAMERA && this != MIC && this != LOCATION
+        /** 2.12.1: Ulfur asks Android for camera / mic / location when an allowed site needs them, so Allow works for all. */
+        val allowSupported: Boolean get() = true
 
         companion object {
             fun fromGecko(p: Int): Kind = when (p) {
@@ -42,10 +42,9 @@ object SitePermissions {
         }
     }
 
-    /** Filter chips from the spec. Pop-ups / Downloads / Clipboard have no per-site permission in Ulfur yet: always empty. */
+    /** Filter chips. Designer: Pop-ups / Downloads / Clipboard stay hidden until Ulfur has those per-site settings. */
     enum class Chip(val label: String) {
-        ALL("All"), CAMERA("Camera"), MIC("Mic"), LOCATION("Location"), NOTIFICATIONS("Notifications"),
-        POPUPS("Pop-ups"), DOWNLOADS("Downloads"), CLIPBOARD("Clipboard")
+        ALL("All"), CAMERA("Camera"), MIC("Mic"), LOCATION("Location"), NOTIFICATIONS("Notifications")
     }
 
     enum class State(val label: String) {
@@ -89,10 +88,7 @@ object SitePermissions {
         .map { (o, e) -> Site(o, e.sortedBy { it.kind.ordinal }) }
         .sortedWith(compareByDescending<Site> { it.lastUsed }.thenBy { it.domain }.thenBy { it.origin })
 
-    /**
-     * Camera / mic: the stored decision is read on every request, so a Block applies to the next request with no
-     * reload. Grants need Ulfur to hold the Android permission too, which it doesn't (yet), so only Block/Ask matter.
-     */
+    /** Camera / mic: the stored decision is read on every request; a grant also needs the Android permission. */
     fun mediaAllowed(state: State?, androidGranted: Boolean): Boolean = state == State.ALLOW && androidGranted
 
     fun filter(sites: List<Site>, chip: Chip, query: String): List<Site> {

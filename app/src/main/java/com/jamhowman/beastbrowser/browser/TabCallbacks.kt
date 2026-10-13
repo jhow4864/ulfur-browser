@@ -26,7 +26,7 @@ import org.mozilla.geckoview.WebResponse
 /** All per-session Gecko delegates for one tab. */
 class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
     NavigationDelegate, ProgressDelegate, ContentDelegate, HistoryDelegate, ScrollDelegate,
-    PermissionDelegate, ContentBlocking.Delegate, MediaSession.Delegate {
+    PermissionDelegate, ContentBlocking.Delegate, MediaSession.Delegate, GeckoSession.MediaDelegate {
 
     fun attach(session: GeckoSession) {
         session.navigationDelegate = this
@@ -37,6 +37,7 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         session.permissionDelegate = this
         session.contentBlockingDelegate = this
         session.mediaSessionDelegate = this
+        session.mediaDelegate = this
     }
 
     // ---------------------------------------------------------------- navigation
@@ -217,9 +218,33 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
                 ContentPermission.VALUE_ALLOW // DRM video (Netflix etc.)
             }
             PermissionDelegate.PERMISSION_STORAGE_ACCESS -> ContentPermission.VALUE_DENY
-            else -> ContentPermission.VALUE_DENY // location, notifications, XR, local network
+            // 2.12.1: location gets a real prompt (Gecko only asks when nothing is stored, i.e. "Ask"). Gecko stores the
+            // answer (session-only in private mode); dismissing denies this request.
+            PermissionDelegate.PERMISSION_GEOLOCATION -> {
+                val origin = SitePermissions.origin(perm.uri) ?: return GeckoResult.fromValue(ContentPermission.VALUE_DENY)
+                val r = GeckoResult<Int>()
+                host.promptSitePermission(tab, origin, listOf(SitePermissions.Kind.LOCATION), false) { d ->
+                    r.complete(if (PermissionFlow.allows(d)) ContentPermission.VALUE_ALLOW else ContentPermission.VALUE_DENY)
+                }
+                return r
+            }
+            else -> ContentPermission.VALUE_DENY // notifications, XR, local network
         }
         return GeckoResult.fromValue(value)
+    }
+
+    /** 2.12.1: stored decisions (normal: [SiteMediaStore]; Private / Ghost: [SessionPermissions], memory only). */
+    private val flowEnv = object : PermissionFlow.Env {
+        override fun stored(origin: String, kind: SitePermissions.Kind, private: Boolean): SitePermissions.State? =
+            if (private) SessionPermissions.get(origin, kind)
+            else Engine.appContext?.let { c -> SitePermissionsEngine.store(c).state(origin, kind) }
+        override fun remember(origin: String, kind: SitePermissions.Kind, state: SitePermissions.State, private: Boolean) {
+            if (private) SessionPermissions.set(origin, kind, state)
+            else Engine.appContext?.let { c -> SitePermissionsEngine.store(c).set(origin, kind, state) }
+        }
+        override fun prompt(origin: String, kinds: List<SitePermissions.Kind>, allowOnce: Boolean, done: (PermissionFlow.Decision) -> Unit) =
+            host.promptSitePermission(tab, origin, kinds, allowOnce, done)
+        override fun ensureAndroid(perms: List<String>, done: (Set<String>) -> Unit) = host.requestAndroidPermissions(perms, done)
     }
 
     override fun onMediaPermissionRequest(
@@ -227,25 +252,39 @@ class TabCallbacks(private val tab: Tab, private val host: BrowserHost) :
         video: Array<out PermissionDelegate.MediaSource>?, audio: Array<out PermissionDelegate.MediaSource>?,
         callback: PermissionDelegate.MediaCallback,
     ) {
-        // 2.12: per-site camera / mic decision, read fresh on every request. Private / Ghost: memory only, never on disk.
+        // 2.12.1: per-site camera / mic, read fresh on every request (a Block applies to the next request, no reload).
         val origin = SitePermissions.origin(uri)
         val private = tab.isPrivate || session.settings.usePrivateMode
-        val kinds = listOfNotNull(if (!video.isNullOrEmpty()) SitePermissions.Kind.CAMERA else null,
-            if (!audio.isNullOrEmpty()) SitePermissions.Kind.MIC else null)
+        val cam = video?.firstOrNull { it.source == PermissionDelegate.MediaSource.SOURCE_CAMERA }
+        val mic = audio?.firstOrNull { it.source == PermissionDelegate.MediaSource.SOURCE_MICROPHONE }
+        val kinds = listOfNotNull(cam?.let { SitePermissions.Kind.CAMERA }, mic?.let { SitePermissions.Kind.MIC })
         val ctx = Engine.appContext
-        val allowed = origin != null && kinds.isNotEmpty() && kinds.all { k ->
-            val st = if (private) SessionPermissions.get(origin, k) else ctx?.let { SitePermissionsEngine.store(it).state(origin, k) }
-            SitePermissions.mediaAllowed(st, androidGranted = false)
-        }
         if (origin != null && !private && ctx != null) {
             val now = System.currentTimeMillis()
             kinds.forEach { SitePermissionsEngine.store(ctx).touch(origin, it, now) }
         }
-        if (allowed) callback.grant(video?.firstOrNull(), audio?.firstOrNull()) else callback.reject()
+        PermissionFlow.media(flowEnv, origin, kinds, private) { ok ->
+            runCatching { if (ok) callback.grant(cam, mic) else callback.reject() }
+        }
     }
 
-    override fun onAndroidPermissionsRequest(session: GeckoSession, permissions: Array<out String>?, callback: PermissionDelegate.Callback) =
-        callback.reject()
+    /**
+     * Gecko asks for Android permissions before a media request reaches us (camera / mic) and after a site's location
+     * permission is allowed (location). Camera / mic: let it continue; the OS dialog happens in [PermissionFlow.media]
+     * only once the site is allowed. Location: the site is already allowed by now, so request it here.
+     */
+    override fun onAndroidPermissionsRequest(session: GeckoSession, permissions: Array<out String>?, callback: PermissionDelegate.Callback) {
+        val perms = permissions.orEmpty().toList()
+        if (perms.none { it.endsWith("_LOCATION") }) { callback.grant(); return }
+        host.requestAndroidPermissions(perms) { g ->
+            runCatching { if (PermissionFlow.androidSatisfied(perms, g)) callback.grant() else callback.reject() }
+        }
+    }
+
+    override fun onRecordingStatusChanged(session: GeckoSession, devices: Array<out GeckoSession.MediaDelegate.RecordingDevice>) {
+        tab.capturing = devices.any { it.status == GeckoSession.MediaDelegate.RecordingDevice.Status.RECORDING }
+        host.onTabUpdated(tab)
+    }
 
     // ---------------------------------------------------------------- Enhanced Tracking Protection
 

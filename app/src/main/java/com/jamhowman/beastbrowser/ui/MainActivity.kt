@@ -240,6 +240,58 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private val libraryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         res.data?.getStringExtra(EXTRA_URL)?.let { url -> current?.let { load(it, url) } }
     }
+    // 2.12.1: Android runtime permissions, requested only when a site the user allowed needs them (never at launch).
+    private val permQueue = ArrayDeque<Pair<List<String>, (Set<String>) -> Unit>>()
+    private val androidRefused = HashSet<String>() // this session: a refused permission is never re-asked (no loops)
+    private val permLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { res ->
+        res.forEach { (p, ok) -> if (!ok) androidRefused += p }
+        permQueue.removeFirstOrNull()?.let { (perms, done) -> runCatching { done(heldOf(perms)) } }
+        permQueue.firstOrNull()?.let { launchPerms(it.first) }
+    }
+    private fun heldOf(perms: List<String>) = perms.filter {
+        androidx.core.content.ContextCompat.checkSelfPermission(this, it) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    }.toSet()
+    private fun launchPerms(perms: List<String>) {
+        val ask = com.jamhowman.beastbrowser.browser.PermissionFlow.toRequest(perms, heldOf(perms), androidRefused)
+        if (ask.isEmpty()) { permQueue.removeFirstOrNull()?.let { (p, done) -> done(heldOf(p)) }; permQueue.firstOrNull()?.let { launchPerms(it.first) }; return }
+        runCatching { permLauncher.launch(ask.toTypedArray()) }.onFailure {
+            permQueue.removeFirstOrNull()?.let { (p, done) -> done(heldOf(p)) }
+        }
+    }
+
+    override fun requestAndroidPermissions(perms: List<String>, done: (Set<String>) -> Unit) {
+        val ask = com.jamhowman.beastbrowser.browser.PermissionFlow.toRequest(perms, heldOf(perms), androidRefused)
+        if (ask.isEmpty() || isFinishing) { done(heldOf(perms)); return }
+        permQueue.addLast(perms to done)
+        if (permQueue.size == 1) launchPerms(perms)
+    }
+
+    /** 2.12.1: per-site prompt for camera / mic / location in normal and private tabs (private answers: session only). */
+    override fun promptSitePermission(tab: Tab, origin: String, kinds: List<com.jamhowman.beastbrowser.browser.SitePermissions.Kind>,
+        allowOnce: Boolean, done: (com.jamhowman.beastbrowser.browser.PermissionFlow.Decision) -> Unit) {
+        if (isFinishing || isDestroyed) { done(com.jamhowman.beastbrowser.browser.PermissionFlow.Decision.BLOCK); return }
+        var answered = false
+        fun answer(d: com.jamhowman.beastbrowser.browser.PermissionFlow.Decision) { if (!answered) { answered = true; done(d) } }
+        val what = kinds.joinToString(" and ") { it.label.lowercase() }
+        val site = origin.substringAfter("://")
+        val note = if (tab.isPrivate || realm == Realm.GHOST) "\n\nPrivate tab: your choice lasts only for this session." else ""
+        MaterialAlertDialogBuilder(this).setTitle("Allow $site to use your $what?")
+            .setMessage("$origin wants to use your $what.$note")
+            .setPositiveButton("Allow") { _, _ -> answer(com.jamhowman.beastbrowser.browser.PermissionFlow.Decision.ALLOW_ALWAYS) }
+            .setNegativeButton("Block") { _, _ -> answer(com.jamhowman.beastbrowser.browser.PermissionFlow.Decision.BLOCK) }
+            .apply { if (allowOnce) setNeutralButton("Only this time") { _, _ -> answer(com.jamhowman.beastbrowser.browser.PermissionFlow.Decision.ALLOW_ONCE) } }
+            .setOnDismissListener { answer(com.jamhowman.beastbrowser.browser.PermissionFlow.Decision.DISMISSED) }
+            .show()
+    }
+
+    /** 2.12.1: camera / mic never keep running in a hidden tab or with the app in the background: reload ends capture. */
+    private fun stopCaptureIfNeeded(tab: Tab, tabVisible: Boolean, appForeground: Boolean) {
+        if (com.jamhowman.beastbrowser.browser.PermissionFlow.shouldStopCapture(tab.capturing, tabVisible, appForeground)) {
+            tab.capturing = false
+            runCatching { tab.session.reload() }
+        }
+    }
+
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
         res.data?.getStringExtra(EXTRA_URL)?.let { newTab(it) }
     }
@@ -478,6 +530,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     override fun onStop() {
         super.onStop()
         if (!isChangingConfigurations) markStable() // left normally: this launch didn't crash
+        if (!isChangingConfigurations) allTabs.forEach { stopCaptureIfNeeded(it, it === current, appForeground = false) } // 2.12.1
         if (Prefs.clearOnExit) Prefs.pendingWipe = true
     }
 
@@ -620,6 +673,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
     private fun selectTab(tab: Tab) {
         val old = current
         if (old != null && old !== tab) {
+            stopCaptureIfNeeded(old, tabVisible = false, appForeground = true) // 2.12.1
             old.session.setActive(false)
             runCatching { runtime.webExtensionController.setTabActive(old.session, false) }
         }
@@ -655,6 +709,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             return
         }
         list.removeAt(idx)
+        tab.capturing = false // 2.12.1: closing the session below ends camera / mic capture
         uboActions.remove(tab.id)
         // Tab DNA: orphans are adopted by the grandparent
         list.forEach { if (it.parentId == tab.id) it.parentId = tab.parentId }

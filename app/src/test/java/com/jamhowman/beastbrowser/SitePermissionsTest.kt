@@ -65,7 +65,7 @@ class SitePermissionsTest {
         val s = SitePermissions.group(listOf(Entry("https://cam.com", Kind.CAMERA, State.BLOCK), Entry("https://geo.org", Kind.LOCATION, State.BLOCK)))
         assertEquals(listOf("https://cam.com"), SitePermissions.filter(s, Chip.CAMERA, "").map { it.origin })
         assertEquals(listOf("https://geo.org"), SitePermissions.filter(s, Chip.ALL, "GEO").map { it.origin })
-        assertTrue(SitePermissions.filter(s, Chip.POPUPS, "").isEmpty())
+        assertEquals(listOf("ALL", "CAMERA", "MIC", "LOCATION", "NOTIFICATIONS"), Chip.entries.map { it.name }) // Designer: no Pop-ups/Downloads/Clipboard yet
         assertEquals(2, SitePermissions.filter(s, Chip.ALL, " ").size)
     }
 
@@ -109,7 +109,8 @@ class SitePermissionsTest {
         // The media delegate reads the store fresh inside each request (no per-tab cache to invalidate).
         val cb = src("browser/TabCallbacks.kt")
         val body = cb.substringAfter("override fun onMediaPermissionRequest").substringBefore("override fun onAndroidPermissionsRequest")
-        assertTrue(body.contains("SitePermissionsEngine.store(it).state(origin, k)"))
+        assertTrue(body.contains("PermissionFlow.media(flowEnv, origin, kinds, private)"))
+        assertTrue(cb.contains("SitePermissionsEngine.store(c).state(origin, kind)"))
         assertTrue(body.contains("callback.reject()"))
     }
 
@@ -158,10 +159,10 @@ class SitePermissionsTest {
         s.set("https://b.com", Kind.MIC, State.BLOCK); s.clearAll(); assertNull(kv.v)
     }
 
-    @Test fun allowOnlyOfferedWhereUlfurCanHonourIt() {
-        assertFalse(Kind.CAMERA.allowSupported); assertFalse(Kind.MIC.allowSupported); assertFalse(Kind.LOCATION.allowSupported)
-        assertTrue(Kind.NOTIFICATIONS.allowSupported)
+    @Test fun allowEnabledForCameraMicLocation() {
+        assertTrue(Kind.CAMERA.allowSupported); assertTrue(Kind.MIC.allowSupported); assertTrue(Kind.LOCATION.allowSupported)
         assertFalse(SitePermissions.mediaAllowed(State.ALLOW, androidGranted = false))
+        assertTrue(SitePermissions.mediaAllowed(State.ALLOW, androidGranted = true))
     }
 
     @Test fun wiredIntoSettingsAndShieldLongPress() {

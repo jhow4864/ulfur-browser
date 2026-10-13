@@ -143,6 +143,9 @@ class FilterAutoUpdateTest {
             "android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE",
             "android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.POST_NOTIFICATIONS",
             "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+            // 2.12.1 (Jam approved): per-site camera / mic / location, requested only when an allowed site asks.
+            "android.permission.CAMERA", "android.permission.RECORD_AUDIO",
+            "android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION",
             "android.permission.REQUEST_INSTALL_PACKAGES",
         ), perms)
     }
