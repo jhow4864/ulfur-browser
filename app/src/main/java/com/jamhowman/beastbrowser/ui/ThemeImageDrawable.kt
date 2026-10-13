@@ -43,10 +43,10 @@ class ThemeImageDrawable(
     override fun getOpacity() = PixelFormat.OPAQUE
 
     companion object {
-        /** The active pack's [slot] image for [night], or null (no pack, paused by safe start, no image). */
-        fun active(slot: ImageSlot, night: Boolean): ThemeImageDrawable? {
-            val pack = ThemePacks.activePack() ?: return null
-            return of(pack, slot, night, ThemePacks.activeBitmap(slot) ?: return null)
+        /** [realm]'s pack [slot] image for [night], or null (no pack, paused by safe start, no image). */
+        fun active(slot: ImageSlot, night: Boolean, realm: com.jamhowman.beastbrowser.data.Realm = com.jamhowman.beastbrowser.data.Prefs.realm): ThemeImageDrawable? {
+            val pack = ThemePacks.activePack(realm) ?: return null
+            return of(pack, slot, night, ThemePacks.activeBitmap(slot, realm) ?: return null)
         }
 
         fun of(pack: ThemePack, slot: ImageSlot, night: Boolean, bmp: Bitmap): ThemeImageDrawable? {

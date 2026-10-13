@@ -771,7 +771,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             if (r in restoredRealms || !r.persistsTabs) realmTabs.getValue(r).size
             else Prefs.savedTabs(r).split('\n').count { it.isNotBlank() }
         }
-        RealmSheet.show(this, realm, counts, ::switchRealm, ::wipeRealm)
+        RealmSheet.show(this, realm, counts, ::switchRealm, ::wipeRealm) { r -> if (r == realm) applyRealmTheme() }
     }
 
     private fun switchRealm(r: Realm) {
@@ -796,7 +796,7 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             val next = realmCurrent[r]?.takeIf { it in tabs } ?: tabs.lastOrNull()
             if (next != null) selectTab(next) else newTab()
         }
-        syncPalette(force = true) // realm label, seal and tooltip too, even when both realms share a palette
+        applyRealmTheme() // 2.10.1: the new realm's own pack, live (no restart)
         updateHomeStats()
         if (b.switcher.root.isVisible) {
             syncSwitcherMode()
@@ -809,6 +809,16 @@ class MainActivity : AppCompatActivity(), BrowserHost {
             Realm.PLAY -> "Play realm · your original cookies & tabs"
             Realm.GHOST -> "Ghost realm · private, own cookie jar"
         })
+    }
+
+    /**
+     * 2.10.1: repaint for the current realm's pack in place (realm label, seal and tooltip too, even when realms
+     * share a palette), then lay "Match toolbar to site colour" back on top of the pack's toolbar.
+     */
+    private fun applyRealmTheme() {
+        syncPalette(force = true)
+        siteColors = null
+        current?.let { applySiteToolbar(it) }
     }
 
     /** Ghost: close every Ghost tab and wipe the jar. Work: wipe cookies & site data, reload its pages. */
@@ -1346,11 +1356,16 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         val night = AppTheme.isNight(this)
         val r = (s ?: ThemeSurfaces()).resolved(night)
         if (s == null) {
-            b.home.root.background = null
+            // 2.10.1: private and Ghost tabs keep their own toolbar under any pack, but the realm pack's home
+            // background may still show (its text colour, which the image scrim is resolved against).
+            val homeImg = ThemeImageDrawable.active(ImageSlot.HOME, night, realm)
+            val homeText = homeImg?.let { com.jamhowman.beastbrowser.data.ThemePacks.activePack(realm)?.slotColors(ImageSlot.HOME, night)?.first }
+                ?: getColor(R.color.text_primary)
+            b.home.root.background = homeImg
             b.switcher.root.setBackgroundColor(getColor(R.color.scrim))
-            b.home.wordmark.setTextColor(getColor(R.color.text_primary))
-            b.home.speedDialHeader.setTextColor(getColor(R.color.text_primary))
-            b.home.statsHeader.setTextColor(getColor(R.color.text_primary))
+            b.home.wordmark.setTextColor(homeText)
+            b.home.speedDialHeader.setTextColor(homeText)
+            b.home.statsHeader.setTextColor(homeText)
             b.home.homeSearchInput.setTextColor(getColor(R.color.text_primary))
             b.urlInput.setTextColor(getColor(R.color.text_primary))
             b.urlInput.setHintTextColor(getColor(R.color.text_hint))
@@ -1359,14 +1374,14 @@ class MainActivity : AppCompatActivity(), BrowserHost {
         }
         val bars = accent.systemBars ?: r.background
         b.root.setBackgroundColor(bars)
-        b.topBar.background = ThemeImageDrawable.active(ImageSlot.TOOLBAR, night) ?: ColorDrawable(r.toolbar)
+        b.topBar.background = ThemeImageDrawable.active(ImageSlot.TOOLBAR, night, realm) ?: ColorDrawable(r.toolbar)
         b.bottomBar.setBackgroundColor(r.toolbar)
         baseTopBar = b.topBar.background
         // The address text sits on the pill (surface2), not on the toolbar: text_primary, not onToolbar (2.10 fix).
         b.urlInput.setTextColor(getColor(R.color.text_primary))
         b.urlInput.setHintTextColor(getColor(R.color.text_hint))
-        b.home.root.background = ThemeImageDrawable.active(ImageSlot.HOME, night) ?: ColorDrawable(r.background)
-        b.switcher.root.background = ThemeImageDrawable.active(ImageSlot.SWITCHER, night) ?: ColorDrawable(r.background)
+        b.home.root.background = ThemeImageDrawable.active(ImageSlot.HOME, night, realm) ?: ColorDrawable(r.background)
+        b.switcher.root.background = ThemeImageDrawable.active(ImageSlot.SWITCHER, night, realm) ?: ColorDrawable(r.background)
         listOf(b.home.wordmark, b.home.speedDialHeader, b.home.statsHeader, b.home.homeSearchInput).forEach { it.setTextColor(r.text) }
         (getDrawable(R.drawable.bg_home_search)!!.mutate() as GradientDrawable).let {
             it.setColor(r.surfaceVariant)

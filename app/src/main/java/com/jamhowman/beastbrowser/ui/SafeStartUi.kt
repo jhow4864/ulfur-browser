@@ -34,7 +34,7 @@ object SafeStartUi {
     private fun showScreen(activity: MainActivity, topBar: View) {
         val ctx = activity
         val again = SafeStart.launch?.crashedAfterRestore == true
-        val themeWasPack = ThemePacks.store()?.activeId() != null
+        val themeWasPack = ThemePacks.anyPackInUse()
         val pad = dp(ctx, 24)
         val dim = ctx.getColor(R.color.text_secondary)
         val toggles = mutableMapOf<String, CheckBox>()

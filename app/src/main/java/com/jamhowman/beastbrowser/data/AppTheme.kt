@@ -80,7 +80,7 @@ object AppTheme {
 
     /** Palette of [realm] (default: the current one) for [context]'s light/dark mode. */
     fun palette(context: Context, realm: Realm = Prefs.realm, private: Boolean = realm.alwaysPrivate): ThemePalette =
-        palette(Prefs.accentFor(realm), isNight(context), private, if (realm == Realm.PLAY) ThemePacks.activeForPalette() else null)
+        palette(Prefs.accentFor(realm), isNight(context), private, ThemePacks.packFor(realm))
 
     /** 2.9: [pack] (an applied theme pack, Play only) recolours the preset before the private override. */
     fun palette(preset: ThemePreset, night: Boolean, private: Boolean, pack: ThemePack?): ThemePalette {
