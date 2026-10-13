@@ -82,6 +82,7 @@ class PrivateDownloadsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         prompting = savedInstanceState?.getBoolean(KEY_PROMPTING) ?: false
         DownloadCenter.init(this)
+        DownloadCenter.migrateVaultLazily() // 2.11.2: old vault files upgraded here, off the main thread
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         b = ActivityPrivateDownloadsBinding.inflate(layoutInflater)

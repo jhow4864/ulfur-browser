@@ -13,12 +13,18 @@ import com.jamhowman.beastbrowser.data.UiTheme
  * Note: GeckoView content processes are services of this app, so this runs in them too.
  * Keep it light; the GeckoRuntime is created lazily by MainActivity (main process only).
  */
-class BeastApp : Application() {
+class BeastApp : Application(), androidx.work.Configuration.Provider {
+    /** 2.11.2: on-demand WorkManager init (the startup-provider initializer is removed in the manifest). */
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder().setMinimumLoggingLevel(android.util.Log.WARN).build()
+
     override fun onCreate() {
+        // 2.11.2: the launch is counted on the very first line, before super.onCreate() and anything else, and the
+        // count itself can never throw (safe start must see every crashing launch).
+        val main = try { isMainProcess() } catch (_: Throwable) { true }
+        if (main) try { SafeStart.begin(this, startedForActivity()) } catch (_: Throwable) { }
         super.onCreate()
-        // 2.9 safe start: count this launch first, before anything that could crash (main process only).
-        val main = isMainProcess()
-        if (main) try { SafeStart.begin(this, startedForActivity()); registerActivityLifecycleCallbacks(LaunchCallbacks) } catch (_: Throwable) { }
+        if (main) try { registerActivityLifecycleCallbacks(LaunchCallbacks) } catch (_: Throwable) { }
         Prefs.init(this)
         ThemePacks.init(this)
         AppIcon.sync(this) // 2.8: keep activity-alias state in line with the stored icon

@@ -147,17 +147,46 @@ object DownloadCenter {
                 _items.value.filter { it.isPrivate }.mapNotNull { it.filePath }
             sweepOrphanedPrivateFiles(privDir, keep)
         }
-        // Vault files from before 2.10 are plaintext: encrypt them in place (new file, then swap). 2.11.1: files
-        // from 2.10/2.11.0 (UPD1, no stored name/type) are re-encrypted to UPD2 and their `.bin` / generic
-        // octet-stream entries get their real type (extension, then decrypted magic bytes). All in memory.
-        // Cheap part first, synchronously: a specific type from the extension.
-        _privateItems.value = _privateItems.value.map { fixTypeFromName(it) }
+        // 2.11.2: only the cheap, in-memory type fix runs here. Re-encrypting old vault files (plaintext / UPD1)
+        // and sniffing types is lazy: [migrateVaultLazily] from the vault screen, off the main thread, guarded.
+        _privateItems.value = _privateItems.value.map { runCatching { fixTypeFromName(it) }.getOrDefault(it) }
+    }
+
+    @Volatile private var migrationStarted = false
+    internal const val KEY_MIGRATION_RUNNING = "vault_migration_running"
+    internal const val KEY_MIGRATION_DISABLED = "vault_migration_disabled"
+
+    /**
+     * 2.11.2: upgrades older vault files (plaintext -> UPD2, UPD1 -> UPD2, real type/name) once per process, on the
+     * io thread, never at startup. Any failure leaves that file untouched. A marker pref is set while it runs: if the
+     * process dies mid-migration, the next start sees the marker and disables migration instead of crashing again
+     * (the launch itself is counted by safe start). Skipped entirely while safe start is active.
+     */
+    fun migrateVaultLazily(sp: android.content.SharedPreferences? = runCatching { com.jamhowman.beastbrowser.data.Prefs.sp }.getOrNull()) {
+        if (migrationStarted) return
+        migrationStarted = true
+        if (runCatching { com.jamhowman.beastbrowser.crash.SafeStart.active || com.jamhowman.beastbrowser.crash.SafeStart.awaitingChoice }.getOrDefault(true)) return
+        if (sp != null) {
+            if (sp.getBoolean(KEY_MIGRATION_DISABLED, false)) return
+            if (sp.getBoolean(KEY_MIGRATION_RUNNING, false)) {
+                sp.edit().putBoolean(KEY_MIGRATION_DISABLED, true).remove(KEY_MIGRATION_RUNNING).commit(); return
+            }
+        }
         val vault = _privateItems.value
-        if (vault.isNotEmpty()) io.execute {
-            val fixed = vault.associate { it.id to migrateVaultItem(it) }
-            if (fixed.any { (id, v) -> vault.first { it.id == id } != v }) {
-                _privateItems.update { cur -> cur.map { fixed[it.id] ?: it } }
-                savePrivate()
+        if (vault.isEmpty()) return
+        io.execute {
+            try {
+                sp?.edit()?.putBoolean(KEY_MIGRATION_RUNNING, true)?.commit()
+                val fixed = HashMap<Long, DownloadItem>()
+                for (d in vault) { val n = migrateVaultItem(d); if (n != d) fixed[d.id] = n }
+                if (fixed.isNotEmpty()) {
+                    _privateItems.update { cur -> cur.map { fixed[it.id] ?: it } }
+                    savePrivate()
+                }
+            } catch (t: Throwable) {
+                Log.w(TAG, "vault migration stopped", t)
+            } finally {
+                sp?.edit()?.remove(KEY_MIGRATION_RUNNING)?.commit()
             }
         }
     }
@@ -178,7 +207,7 @@ object DownloadCenter {
             if (!PrivateCrypto.isEncrypted(f)) encryptLegacy(f, PrivateCrypto.Meta(d.fileName, d.mime))
             else if (!PrivateCrypto.hasMeta(f)) reencryptV2(f, PrivateCrypto.Meta(d.fileName, d.mime))
             withRealType(d, f)
-        }.getOrElse { Log.w(TAG, "vault upgrade failed for one file", it); d }
+        }.getOrElse { Log.w(TAG, "vault upgrade failed for one file", it); File(f.parentFile, ENC_PREFIX + f.name).delete(); d }
     }
 
     /** Resolves type (stored, extension, magic bytes) and name, and writes both into the file's meta record. */
@@ -201,7 +230,8 @@ object DownloadCenter {
         val tmp = File(f.parentFile, ENC_PREFIX + f.name)
         return runCatching {
             PrivateCrypto.writer(tmp, meta = meta).use { w -> PrivateCrypto.reader(f).use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
-            if (!f.delete() || !tmp.renameTo(f)) throw IOException("swap failed")
+            // One step: rename over the original (atomic on the same filesystem); never delete first.
+            if (!tmp.renameTo(f)) throw IOException("swap failed")
             true
         }.getOrElse { tmp.delete(); throw it }
     }
@@ -229,7 +259,7 @@ object DownloadCenter {
         val tmp = File(f.parentFile, ENC_PREFIX + f.name)
         return runCatching {
             PrivateCrypto.writer(tmp, meta = meta).use { w -> f.inputStream().use { it.copyTo(w, PrivateCrypto.CHUNK) }; w.finish() }
-            if (!f.delete() || !tmp.renameTo(f)) throw IOException("swap failed")
+            if (!tmp.renameTo(f)) throw IOException("swap failed") // atomic replace; never delete first
             true
         }.getOrElse { Log.w(TAG, "could not encrypt an older vault file", it); tmp.delete(); false }
     }
